@@ -1,0 +1,6 @@
+{
+  "name": "@vitals/workflows",
+  "version": "0.1.0",
+  "private": true,
+  "description": "n8n workflow definitions for Vitals data collection and report orchestration"
+}
