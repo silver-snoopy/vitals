@@ -16,6 +16,16 @@ const USER_ID = process.env.DB_DEFAULT_USER_ID ?? '00000000-0000-0000-0000-00000
 const DATABASE_URL =
   process.env.DATABASE_URL ?? 'postgresql://vitals:vitals@localhost:5432/vitals';
 
+// Maps Cronometer biometric metric names to normalized query-friendly names
+const BIOMETRIC_METRIC_MAP: Record<string, string> = {
+  'Weight (Withings)': 'weight_kg',
+  'Weight (Apple Health)': 'weight_kg',
+  'Body Fat (Withings)': 'body_fat_pct',
+  'Body Fat (Apple Health)': 'body_fat_pct',
+  'Heart Rate (Apple Health)': 'heart_rate_bpm',
+  'Resting Heart Rate (Apple Health)': 'resting_heart_rate_bpm',
+};
+
 function parseCsv(text: string): Record<string, unknown>[] {
   return parse(text, { columns: true, skip_empty_lines: true }) as Record<string, unknown>[];
 }
@@ -66,7 +76,9 @@ async function main(): Promise<void> {
       } else if (file.startsWith('cronometer_biometrics_')) {
         const measurementRows = rows.flatMap(row => {
           try {
-            return [normalizeBiometricsRow(row, USER_ID, 'cronometer')];
+            const r = normalizeBiometricsRow(row, USER_ID, 'cronometer');
+            r.metric = BIOMETRIC_METRIC_MAP[r.metric] ?? r.metric;
+            return [r];
           } catch {
             return [];
           }
