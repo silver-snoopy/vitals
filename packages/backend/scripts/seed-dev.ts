@@ -20,6 +20,26 @@ function parseCsv(text: string): Record<string, unknown>[] {
   return parse(text, { columns: true, skip_empty_lines: true }) as Record<string, unknown>[];
 }
 
+function dedupMeasurements(rows: import('../src/services/data/normalizers.js').MeasurementRow[]) {
+  const seen = new Set<string>();
+  return rows.filter(r => {
+    const key = `${r.userId}|${r.source}|${r.metric}|${r.measuredAt.toISOString()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function dedupWorkoutSets(rows: import('../src/services/data/normalizers.js').WorkoutSetRow[]) {
+  const seen = new Set<string>();
+  return rows.filter(r => {
+    const key = `${r.userId}|${r.source}|${r.exerciseName}|${r.setIndex}|${r.startedAt?.toISOString() ?? ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 async function main(): Promise<void> {
   const pool = initPool(DATABASE_URL);
   let totalMeasurements = 0;
@@ -35,9 +55,9 @@ async function main(): Promise<void> {
       const name = basename(file);
 
       if (file.startsWith('cronometer_nutrition_')) {
-        const measurementRows = rows.flatMap(row =>
+        const measurementRows = dedupMeasurements(rows.flatMap(row =>
           normalizeNutritionRow(row, USER_ID, 'cronometer'),
-        );
+        ));
         const result = await ingestMeasurements(pool, measurementRows);
         totalMeasurements += result.inserted;
         console.log(`[${name}]  nutrition   ${rows.length} rows -> ${result.inserted} inserted`);
@@ -51,13 +71,13 @@ async function main(): Promise<void> {
             return [];
           }
         });
-        const result = await ingestMeasurements(pool, measurementRows);
+        const result = await ingestMeasurements(pool, dedupMeasurements(measurementRows));
         totalMeasurements += result.inserted;
         console.log(`[${name}]  biometric   ${rows.length} rows -> ${result.inserted} inserted`);
         if (result.errors.length) console.warn('  errors:', result.errors);
 
       } else if (file.startsWith('hevy_workout')) {
-        const setRows = rows.map(row => normalizeHevyRow(row, USER_ID));
+        const setRows = dedupWorkoutSets(rows.map(row => normalizeHevyRow(row, USER_ID)));
         const result = await ingestWorkoutSets(pool, setRows);
         totalSets += result.inserted;
         console.log(`[${name}]  workout     ${rows.length} rows -> ${result.inserted} inserted`);
