@@ -13,6 +13,7 @@
 - Commit messages: imperative mood, max 72 chars on first line
 - Include body for non-trivial changes
 - Reference issue numbers when applicable
+- Feature branches: `feature/<name>`, merge to `master`
 
 ## Project Structure
 - npm workspaces monorepo: `packages/shared`, `packages/backend`, `packages/frontend`, `packages/workflows`
@@ -22,3 +23,26 @@
 - Build order: shared → backend → frontend
 - Local dev DB: `docker compose up -d` (PostgreSQL 16 on port 5432)
 - Tests: `npm run test` (Vitest across all packages)
+
+## Backend Conventions
+- **Routes:** Fastify plugin pattern — `async function routes(app: FastifyInstance, opts: { env: EnvConfig })`
+- **Route registration:** In `app.ts` via `await app.register(routes, { env })`
+- **DB access:** `app.db` (pg.Pool decorated via `plugins/database.ts`)
+- **DB queries:** Direct parameterized SQL via pg Pool — no ORM
+- **Protected routes:** `preHandler: apiKeyMiddleware(opts.env.n8nApiKey)`
+- **Env config:** All env vars in `EnvConfig` interface (`config/env.ts`), loaded via `loadEnv()`
+- **Normalizers:** Input `Record<string, unknown>` → output typed Row (`MeasurementRow`, `WorkoutSetRow`)
+- **Ingest:** 500-row batch INSERT with `ON CONFLICT DO UPDATE` for idempotent upserts
+- **Providers:** Implement `DataProvider` from `@vitals/shared`, registered via `register.ts`
+
+## Testing Conventions
+- Framework: Vitest
+- Mock database: `vi.mock('../../plugins/database.js', () => ({ databasePlugin: async (app) => { app.decorate('db', {}); } }))`
+- Route tests: Fastify `app.inject()` with `testEnv` object matching `EnvConfig`
+- Integration tests: `*.integration.test.ts` — excluded from default run via `vitest.config.ts`
+- Run integration tests: `npm run test:integration -w @vitals/backend`
+
+## Documentation
+- Architecture: `docs/architecture.md`
+- Implementation plans: `docs/plans/` (dated, versioned by phase)
+- Decision records: `docs/research/` (dated ADR-style documents)
