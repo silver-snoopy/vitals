@@ -47,6 +47,9 @@ dist/
 .vscode/
 .idea/
 
+# Git worktrees
+.worktrees/
+
 # OS
 .DS_Store
 Thumbs.db
