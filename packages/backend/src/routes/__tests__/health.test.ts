@@ -1,9 +1,26 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { buildApp } from '../../app.js';
+
+// Mock the database plugin so tests don't need a real PostgreSQL connection
+vi.mock('../../plugins/database.js', () => ({
+  databasePlugin: async (app: { decorate: (k: string, v: unknown) => void }) => {
+    app.decorate('db', {});
+  },
+}));
+
+const testEnv = {
+  port: 3001,
+  databaseUrl: 'postgresql://test:test@localhost:5432/test',
+  aiProvider: 'claude',
+  anthropicApiKey: '',
+  n8nApiKey: '',
+  dbDefaultUserId: '00000000-0000-0000-0000-000000000001',
+  nodeEnv: 'test',
+};
 
 describe('GET /health', () => {
   it('returns ok status', async () => {
-    const app = await buildApp();
+    const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'GET',
       url: '/health',

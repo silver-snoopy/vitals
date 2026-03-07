@@ -12,11 +12,12 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@vitals/shared": "*",
-    "fastify": "^5.2.0",
     "@fastify/cors": "^11.0.0",
-    "pg": "^8.13.0",
-    "dotenv": "^16.4.0"
+    "@vitals/shared": "*",
+    "dotenv": "^16.4.0",
+    "fastify": "^5.2.0",
+    "fastify-plugin": "^5.1.0",
+    "pg": "^8.13.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

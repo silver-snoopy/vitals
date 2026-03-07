@@ -21,8 +21,8 @@ todos/
 plans/
 backups/
 
-# Plugins & binaries (reinstalled per machine)
-plugins/
+# Claude Code plugins (reinstalled per machine)
+/plugins/
 
 # IDE & browser state (machine-local)
 ide/
