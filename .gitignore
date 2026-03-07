@@ -52,3 +52,6 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local dev seed data (real health exports — never commit)
+data/
