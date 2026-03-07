@@ -15,7 +15,7 @@ export interface AICompletionResult {
 
 export interface AIProviderConfig {
   apiKey: string;
-  model: string;
+  model?: string;
   maxTokens?: number;
   temperature?: number;
 }

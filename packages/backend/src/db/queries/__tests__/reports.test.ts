@@ -112,7 +112,7 @@ describe('saveReport', () => {
       insights: 'Strength is improving.',
       actionItems: [{ category: 'workout' as const, priority: 'medium' as const, text: 'Add more volume.' }],
       dataCoverage: { nutritionDays: 7, workoutDays: 5, biometricDays: 7 },
-      aiProvider: 'claude',
+      aiProvider: 'claude' as const,
       aiModel: 'claude-sonnet-4-20250514',
     };
 

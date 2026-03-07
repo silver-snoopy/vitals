@@ -90,7 +90,7 @@ describe('buildReportPrompt', () => {
       insights: '- Good progress',
       actionItems: [],
       dataCoverage: { nutritionDays: 7, workoutDays: 4, biometricDays: 7 },
-      aiProvider: 'claude',
+      aiProvider: 'claude' as const,
       aiModel: 'claude-sonnet-4-20250514',
       createdAt: '2026-03-01T08:00:00.000Z',
     };

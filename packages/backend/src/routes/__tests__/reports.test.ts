@@ -29,7 +29,7 @@ vi.mock('../../services/ai/report-generator.js', () => ({
     insights: '- Good progress',
     actionItems: [],
     dataCoverage: { nutritionDays: 7, workoutDays: 5, biometricDays: 7 },
-    aiProvider: 'claude',
+    aiProvider: 'claude' as const,
     aiModel: 'claude-sonnet-4-20250514',
     createdAt: '2026-03-07T08:00:00.000Z',
   }),
@@ -42,7 +42,7 @@ vi.mock('../../services/ai/ai-service.js', () => ({
 const testEnv: EnvConfig = {
   port: 3001,
   databaseUrl: 'postgresql://test:test@localhost:5432/test',
-  aiProvider: 'claude',
+  aiProvider: 'claude' as const,
   aiApiKey: 'test-key',
   n8nApiKey: 'test-api-key',
   dbDefaultUserId: '00000000-0000-0000-0000-000000000001',
@@ -88,7 +88,7 @@ describe('GET /api/reports/:id', () => {
       insights: '- Good progress',
       actionItems: [],
       dataCoverage: { nutritionDays: 7, workoutDays: 5, biometricDays: 7 },
-      aiProvider: 'claude',
+      aiProvider: 'claude' as const,
       aiModel: 'claude-sonnet-4-20250514',
       createdAt: '2026-03-07T08:00:00.000Z',
     });
