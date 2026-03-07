@@ -58,6 +58,22 @@ describe('normalizeNutritionRow', () => {
     const rows = normalizeNutritionRow({ date: '2026-03-01' }, userId, 'cronometer');
     expect(rows).toHaveLength(0);
   });
+
+  it('maps Cronometer "Carbs (g)" column to carbs_g metric', () => {
+    const raw = {
+      Date: '2026-01-10',
+      'Energy (kcal)': '1908',
+      'Protein (g)': '171',
+      'Carbs (g)': '263',
+      'Fat (g)': '46',
+      'Fiber (g)': '90',
+      'Sodium (mg)': '1635',
+    };
+    const rows = normalizeNutritionRow(raw, 'user-1', 'cronometer');
+    const carbs = rows.find(r => r.metric === 'carbs_g');
+    expect(carbs).toBeDefined();
+    expect(carbs!.value).toBe(263);
+  });
 });
 
 describe('normalizeHevyRow', () => {

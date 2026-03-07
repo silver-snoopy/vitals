@@ -54,4 +54,4 @@ dist/
 Thumbs.db
 
 # Local dev seed data (real health exports — never commit)
-data/
+/data/
