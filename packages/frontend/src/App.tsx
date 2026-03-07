@@ -1,27 +1,58 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Toaster } from '@/components/ui/sonner';
+import { useThemeStore } from '@/store/useThemeStore';
+import { AppShell } from '@/components/layout/AppShell';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
+import { NutritionPage } from '@/components/nutrition/NutritionPage';
+import { WorkoutsPage } from '@/components/workouts/WorkoutsPage';
+import { ReportsPage } from '@/components/reports/ReportsPage';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 1000 * 60 * 5 },
+  },
+});
 
-function DashboardPage() {
-  return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold">Vitals Dashboard</h1>
-      <p className="mt-2 text-gray-600">Health data analytics — coming soon.</p>
-    </div>
-  );
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const theme = useThemeStore((s) => s.theme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const apply = (dark: boolean) =>
+      dark ? root.classList.add('dark') : root.classList.remove('dark');
+
+    if (theme === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      apply(mq.matches);
+      const handler = (e: MediaQueryListEvent) => apply(e.matches);
+      mq.addEventListener('change', handler);
+      return () => mq.removeEventListener('change', handler);
+    }
+    apply(theme === 'dark');
+  }, [theme]);
+
+  return <>{children}</>;
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-        </Routes>
-      </BrowserRouter>
+      <ThemeProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route index element={<DashboardPage />} />
+              <Route path="nutrition" element={<NutritionPage />} />
+              <Route path="workouts" element={<WorkoutsPage />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+        <Toaster richColors />
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
-
-export default App;
