@@ -3,7 +3,8 @@
     "allow": [
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(gh api repos/silver-snoopy/health-analysis/contents/src/core/services/cronometer_service.ts --jq '.content')",
-      "Bash(gh api repos/silver-snoopy/health-analysis/contents/src/core/services/hevy_service.ts --jq '.content')"
+      "Bash(gh api repos/silver-snoopy/health-analysis/contents/src/core/services/hevy_service.ts --jq '.content')",
+      "Bash(node -e \":*)"
     ]
   }
 }

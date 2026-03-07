@@ -19,5 +19,7 @@
     "explanatory-output-style@claude-plugins-official": true
   },
   "autoUpdatesChannel": "latest",
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "skipDangerousModePermissionPrompt": true,
+  "bypassDangerousModePermissionPrompt": true
 }

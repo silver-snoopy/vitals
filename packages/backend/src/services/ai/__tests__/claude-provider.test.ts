@@ -40,7 +40,7 @@ describe('ClaudeProvider', () => {
 
   it('extracts system message and passes as top-level param', async () => {
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const instance = (Anthropic as ReturnType<typeof vi.fn>).mock.results[0].value;
+    const instance = (Anthropic as unknown as ReturnType<typeof vi.fn>).mock.results[0].value;
     const mockCreate = instance.messages.create as ReturnType<typeof vi.fn>;
     mockCreate.mockClear();
 
@@ -57,7 +57,7 @@ describe('ClaudeProvider', () => {
 
   it('handles messages without a system prompt', async () => {
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const instance = (Anthropic as ReturnType<typeof vi.fn>).mock.results[0].value;
+    const instance = (Anthropic as unknown as ReturnType<typeof vi.fn>).mock.results[0].value;
     const mockCreate = instance.messages.create as ReturnType<typeof vi.fn>;
     mockCreate.mockClear();
 
@@ -69,7 +69,7 @@ describe('ClaudeProvider', () => {
 
   it('accepts config overrides for model and maxTokens', async () => {
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
-    const instance = (Anthropic as ReturnType<typeof vi.fn>).mock.results[0].value;
+    const instance = (Anthropic as unknown as ReturnType<typeof vi.fn>).mock.results[0].value;
     const mockCreate = instance.messages.create as ReturnType<typeof vi.fn>;
     mockCreate.mockClear();
 
