@@ -5,6 +5,14 @@ on:
     branches: [master, 'feature/**']
   pull_request:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'What to deploy'
+        required: true
+        default: 'both'
+        type: choice
+        options: [backend, frontend, both]
 
 jobs:
   ci:
@@ -39,7 +47,9 @@ jobs:
   deploy-backend:
     name: Deploy Backend (Railway)
     needs: ci
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    if: >
+      (github.ref == 'refs/heads/master' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && (inputs.deploy_target == 'backend' || inputs.deploy_target == 'both'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +65,9 @@ jobs:
   deploy-frontend:
     name: Deploy Frontend (Vercel)
     needs: ci
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    if: >
+      (github.ref == 'refs/heads/master' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && (inputs.deploy_target == 'frontend' || inputs.deploy_target == 'both'))
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
