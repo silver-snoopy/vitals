@@ -102,7 +102,11 @@ export function normalizeHevyRow(
     weightKg: toNum(raw['weight_kg']),
     reps: toNum(raw['reps']),
     durationSeconds: toNum(raw['duration_seconds']),
-    distanceMeters: toNum(raw['distance_meters']),
+    distanceMeters: (() => {
+      const km = toNum(raw['distance_km']);
+      if (km !== null) return km * 1000;
+      return toNum(raw['distance_meters']);
+    })(),
     rpe: toNum(raw['rpe']),
     startedAt: toDate(raw['start_time'] ?? raw['started_at']),
     endedAt: toDate(raw['end_time'] ?? raw['ended_at']),

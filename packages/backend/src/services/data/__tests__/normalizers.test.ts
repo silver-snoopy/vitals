@@ -116,6 +116,22 @@ describe('normalizeHevyRow', () => {
     expect(row.weightKg).toBe(0);
     expect(row.durationSeconds).toBe(60);
   });
+
+  it('converts distance_km to distance_meters', () => {
+    const raw = {
+      exercise_title: 'Elliptical Trainer',
+      set_index: '0',
+      weight_kg: '',
+      reps: '',
+      distance_km: '0.53',
+      duration_seconds: '360',
+      rpe: '',
+      start_time: '10 Jan 2026, 13:55',
+      end_time: '10 Jan 2026, 14:57',
+    };
+    const row = normalizeHevyRow(raw, 'user-1');
+    expect(row.distanceMeters).toBeCloseTo(530, 1);
+  });
 });
 
 describe('normalizeBiometricsRow', () => {
