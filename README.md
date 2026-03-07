@@ -50,6 +50,16 @@ npm run dev -w packages/backend
 npm run dev -w packages/frontend
 ```
 
+### Seed local database (optional)
+
+Place Cronometer and Hevy CSV exports into `data/` at the repo root (gitignored), then:
+
+```bash
+npm run seed -w @vitals/backend
+```
+
+Re-running is safe — rows are upserted (no duplicates).
+
 ## Data Sources
 
 | Source | Type | Method |
