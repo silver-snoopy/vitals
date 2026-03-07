@@ -16,6 +16,12 @@ const testEnv = {
   n8nApiKey: '',
   dbDefaultUserId: '00000000-0000-0000-0000-000000000001',
   nodeEnv: 'test',
+  cronometerUsername: '',
+  cronometerPassword: '',
+  cronometerGwtHeader: '',
+  cronometerGwtPermutation: '',
+  hevyApiKey: '',
+  hevyApiBase: 'https://api.hevyapp.com/v1',
 };
 
 describe('GET /health', () => {
