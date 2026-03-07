@@ -1,8 +1,7 @@
 import type pg from 'pg';
 import type { CollectionResult } from '@vitals/shared';
 import { registry } from './provider-registry.js';
-import { loadCollectionMetadata } from '../../db/helpers.js';
-import { refreshDailyAggregates } from '../../db/helpers.js';
+import { loadCollectionMetadata, refreshDailyAggregates } from '../../db/helpers.js';
 
 export interface PipelineOptions {
   userId: string;
@@ -53,8 +52,9 @@ export async function runCollection(
   if (results.some(r => r.recordCount > 0)) {
     try {
       await refreshDailyAggregates(pool);
-    } catch {
+    } catch (err) {
       // non-fatal — aggregates will be stale until next successful run
+      console.warn('refreshDailyAggregates failed (non-fatal):', err instanceof Error ? err.message : err);
     }
   }
 

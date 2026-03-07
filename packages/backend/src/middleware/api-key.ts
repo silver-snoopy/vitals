@@ -6,7 +6,7 @@ export function apiKeyMiddleware(apiKey: string) {
 
     const provided = request.headers['x-api-key'];
     if (provided !== apiKey) {
-      reply.code(401).send({ error: 'Unauthorized', message: 'Invalid or missing X-API-Key header', statusCode: 401 });
+      return reply.code(401).send({ error: 'Unauthorized', message: 'Invalid or missing X-API-Key header', statusCode: 401 });
     }
   };
 }

@@ -26,17 +26,19 @@ export class CronometerNutritionProvider implements DataProvider {
     const errors: string[] = [];
     let recordCount = 0;
 
-    await saveCollectionMetadata(this.pool, {
-      userId: this.userId,
-      providerName: this.name,
-      lastSuccessfulFetch: null,
-      lastAttemptedFetch: new Date(),
-      recordCount: 0,
-      status: 'running',
-      errorMessage: null,
-    });
+    const previousMeta = await loadCollectionMetadata(this.pool, this.userId, this.name);
 
     try {
+      await saveCollectionMetadata(this.pool, {
+        userId: this.userId,
+        providerName: this.name,
+        lastSuccessfulFetch: previousMeta?.lastSuccessfulFetch ?? null,
+        lastAttemptedFetch: new Date(),
+        recordCount: 0,
+        status: 'running',
+        errorMessage: null,
+      });
+
       const csvText = await this.client.exportDailyNutrition(startDate, endDate);
       const rawRows = parseCsv(csvText);
 
@@ -63,7 +65,7 @@ export class CronometerNutritionProvider implements DataProvider {
       await saveCollectionMetadata(this.pool, {
         userId: this.userId,
         providerName: this.name,
-        lastSuccessfulFetch: null,
+        lastSuccessfulFetch: previousMeta?.lastSuccessfulFetch ?? null,
         lastAttemptedFetch: new Date(),
         recordCount: 0,
         status: 'error',
@@ -96,17 +98,19 @@ export class CronometerBiometricsProvider implements DataProvider {
     const errors: string[] = [];
     let recordCount = 0;
 
-    await saveCollectionMetadata(this.pool, {
-      userId: this.userId,
-      providerName: this.name,
-      lastSuccessfulFetch: null,
-      lastAttemptedFetch: new Date(),
-      recordCount: 0,
-      status: 'running',
-      errorMessage: null,
-    });
+    const previousMeta = await loadCollectionMetadata(this.pool, this.userId, this.name);
 
     try {
+      await saveCollectionMetadata(this.pool, {
+        userId: this.userId,
+        providerName: this.name,
+        lastSuccessfulFetch: previousMeta?.lastSuccessfulFetch ?? null,
+        lastAttemptedFetch: new Date(),
+        recordCount: 0,
+        status: 'running',
+        errorMessage: null,
+      });
+
       const csvText = await this.client.exportBiometrics(startDate, endDate);
       const rawRows = parseCsv(csvText);
 
@@ -137,7 +141,7 @@ export class CronometerBiometricsProvider implements DataProvider {
       await saveCollectionMetadata(this.pool, {
         userId: this.userId,
         providerName: this.name,
-        lastSuccessfulFetch: null,
+        lastSuccessfulFetch: previousMeta?.lastSuccessfulFetch ?? null,
         lastAttemptedFetch: new Date(),
         recordCount: 0,
         status: 'error',

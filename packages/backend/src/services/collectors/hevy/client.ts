@@ -45,8 +45,10 @@ function flattenWorkouts(workouts: Array<Record<string, unknown>>): Record<strin
           set_index: setIndex,
           weight_kg: set.weight_kg ?? set.weight,
           reps: set.reps,
-          distance_meters: set.distance_meters ?? set.distance_km != null
-            ? Number(set.distance_km ?? set.distance_meters ?? 0) * (set.distance_km != null ? 1000 : 1)
+          distance_meters: set.distance_km != null
+            ? Number(set.distance_km) * 1000
+            : set.distance_meters != null
+            ? Number(set.distance_meters)
             : null,
           duration_seconds: set.duration_seconds ?? set.duration,
           rpe: set.rpe,

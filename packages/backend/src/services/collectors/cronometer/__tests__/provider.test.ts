@@ -74,6 +74,46 @@ describe('CronometerNutritionProvider', () => {
     // pool.query is called for metadata upserts (saveCollectionMetadata)
     expect(pool.query).toHaveBeenCalled();
   });
+
+  it('preserves lastSuccessfulFetch from previous metadata on error', async () => {
+    const previousDate = new Date('2026-02-28T10:00:00.000Z');
+    const pool = {
+      query: vi.fn()
+        .mockResolvedValueOnce({
+          rows: [{
+            user_id: userId,
+            provider_name: 'cronometer-nutrition',
+            last_successful_fetch: previousDate,
+            last_attempted_fetch: new Date(),
+            record_count: 10,
+            status: 'success',
+            error_message: null,
+          }],
+        })
+        .mockResolvedValue({ rows: [] }),
+      connect: vi.fn().mockResolvedValue({
+        query: vi.fn().mockResolvedValue({ rowCount: 0 }),
+        release: vi.fn(),
+      }),
+    } as unknown as pg.Pool;
+
+    const client = makeClient({
+      exportDailyNutrition: vi.fn().mockRejectedValue(new Error('Cronometer down')),
+    });
+    const provider = new CronometerNutritionProvider(client, pool, userId);
+    const result = await provider.collect(start, end);
+
+    expect(result.errors[0]).toContain('Cronometer down');
+
+    // The error-path metadata save should include the preserved date, not null
+    const calls = (pool.query as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
+    const errorSaveCall = calls.find(call => {
+      const params = call[1] as unknown[];
+      return Array.isArray(params) && params.includes('error');
+    });
+    expect(errorSaveCall).toBeDefined();
+    expect(errorSaveCall![1]).toContain(previousDate);
+  });
 });
 
 describe('CronometerBiometricsProvider', () => {

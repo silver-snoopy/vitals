@@ -10,6 +10,7 @@ export function initPool(databaseUrl: string): pg.Pool {
     connectionString: databaseUrl,
     max: 10,
     idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
   });
   return pool;
 }

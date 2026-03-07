@@ -82,7 +82,7 @@ export async function ingestWorkoutSets(
 ): Promise<IngestResult> {
   if (rows.length === 0) return { inserted: 0, errors: [] };
 
-  const COL_COUNT = 12;
+  const COL_COUNT = 13;
   let inserted = 0;
   const errors: string[] = [];
 
@@ -92,7 +92,7 @@ export async function ingestWorkoutSets(
       values.push(
         r.userId, r.source, r.exerciseName, r.setIndex,
         r.weightKg, r.reps, r.durationSeconds, r.distanceMeters,
-        r.rpe, r.startedAt, r.endedAt, new Date(),
+        r.rpe, r.startedAt, r.endedAt, r.tags, new Date(),
       );
     }
 
@@ -100,7 +100,7 @@ export async function ingestWorkoutSets(
       INSERT INTO workout_sets
         (user_id, source, exercise_name, set_index,
          weight_kg, reps, duration_seconds, distance_meters,
-         rpe, started_at, ended_at, collected_at)
+         rpe, started_at, ended_at, tags, collected_at)
       VALUES ${buildPlaceholders(batch.length, COL_COUNT)}
       ON CONFLICT (user_id, source, exercise_name, set_index,
                    COALESCE(started_at, '1970-01-01'::timestamptz))
@@ -111,6 +111,7 @@ export async function ingestWorkoutSets(
         distance_meters = EXCLUDED.distance_meters,
         rpe = EXCLUDED.rpe,
         ended_at = EXCLUDED.ended_at,
+        tags = EXCLUDED.tags,
         collected_at = EXCLUDED.collected_at
     `;
 

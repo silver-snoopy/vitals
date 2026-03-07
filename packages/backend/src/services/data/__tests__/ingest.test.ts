@@ -144,7 +144,7 @@ describe('ingestWorkoutSets', () => {
     const pool = { connect: vi.fn().mockResolvedValue(client) } as unknown as pg.Pool;
 
     await ingestWorkoutSets(pool, [makeWorkoutSetRow()]);
-    // 1 row × 12 columns = 12 params
-    expect(capturedParams).toHaveLength(12);
+    // 1 row × 13 columns = 13 params (includes tags)
+    expect(capturedParams).toHaveLength(13);
   });
 });

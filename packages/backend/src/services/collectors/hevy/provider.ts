@@ -3,7 +3,7 @@ import type { DataProvider, CollectionResult } from '@vitals/shared';
 import type { HevyClient } from './client.js';
 import { normalizeHevyRow } from '../../data/normalizers.js';
 import { ingestWorkoutSets } from '../../data/ingest.js';
-import { saveCollectionMetadata } from '../../../db/helpers.js';
+import { loadCollectionMetadata, saveCollectionMetadata } from '../../../db/helpers.js';
 
 export class HevyProvider implements DataProvider {
   readonly name = 'hevy';
@@ -21,17 +21,19 @@ export class HevyProvider implements DataProvider {
     const errors: string[] = [];
     let recordCount = 0;
 
-    await saveCollectionMetadata(this.pool, {
-      userId: this.userId,
-      providerName: this.name,
-      lastSuccessfulFetch: null,
-      lastAttemptedFetch: new Date(),
-      recordCount: 0,
-      status: 'running',
-      errorMessage: null,
-    });
+    const previousMeta = await loadCollectionMetadata(this.pool, this.userId, this.name);
 
     try {
+      await saveCollectionMetadata(this.pool, {
+        userId: this.userId,
+        providerName: this.name,
+        lastSuccessfulFetch: previousMeta?.lastSuccessfulFetch ?? null,
+        lastAttemptedFetch: new Date(),
+        recordCount: 0,
+        status: 'running',
+        errorMessage: null,
+      });
+
       const rawRows = await this.client.fetchWorkouts(startDate, endDate);
       const setRows = rawRows.map(row => normalizeHevyRow(row, this.userId));
 
@@ -54,7 +56,7 @@ export class HevyProvider implements DataProvider {
       await saveCollectionMetadata(this.pool, {
         userId: this.userId,
         providerName: this.name,
-        lastSuccessfulFetch: null,
+        lastSuccessfulFetch: previousMeta?.lastSuccessfulFetch ?? null,
         lastAttemptedFetch: new Date(),
         recordCount: 0,
         status: 'error',

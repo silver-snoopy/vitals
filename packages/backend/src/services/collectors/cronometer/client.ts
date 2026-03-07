@@ -20,7 +20,7 @@ export function defaultGwtConfig(gwtHeader: string, gwtPermutation: string): Cro
     loginUrl: 'https://cronometer.com/login',
     exportUrl: 'https://cronometer.com/export',
     gwtAuthRegex: 'OK\\[(?<userid>\\d*),.*',
-    gwtTokenRegex: '"(?<token>.*)"',
+    gwtTokenRegex: '"(?<token>.*?)"',
   };
 }
 
@@ -39,8 +39,11 @@ class CookieJar {
     for (const entry of setCookies) {
       if (!entry) continue;
       const [pair] = entry.split(';');
-      const [key, value] = pair.split('=');
-      if (key && value) this.cookies.set(key.trim(), value.trim());
+      const eqIdx = pair.indexOf('=');
+      if (eqIdx < 1) continue;
+      const key = pair.slice(0, eqIdx).trim();
+      const value = pair.slice(eqIdx + 1).trim();
+      if (key) this.cookies.set(key, value);
     }
   }
 
