@@ -1,26 +1,28 @@
 import type { AIProvider } from '@vitals/shared';
 import type { EnvConfig } from '../../config/env.js';
 import { ClaudeProvider } from './claude-provider.js';
+import { GeminiProvider } from './gemini-provider.js';
 
 export function createAIProvider(env: EnvConfig): AIProvider {
-  const provider = env.aiProvider || 'claude';
+  const provider = env.aiProvider;
+
+  if (!env.aiApiKey) {
+    throw new Error(
+      'AI_API_KEY is required. Set it in your environment variables.',
+    );
+  }
 
   if (provider === 'claude') {
-    if (!env.anthropicApiKey) {
-      throw new Error(
-        'ANTHROPIC_API_KEY is required when AI_PROVIDER is "claude". ' +
-        'Set it in your environment variables.',
-      );
-    }
-    return new ClaudeProvider({
-      apiKey: env.anthropicApiKey,
-      model: 'claude-sonnet-4-20250514',
-    });
+    return new ClaudeProvider({ apiKey: env.aiApiKey });
+  }
+
+  if (provider === 'gemini') {
+    return new GeminiProvider({ apiKey: env.aiApiKey });
   }
 
   throw new Error(
     `Unknown AI provider: "${provider}". ` +
-    'Supported providers: "claude". ' +
+    'Supported providers: "claude", "gemini". ' +
     'Set AI_PROVIDER in your environment variables.',
   );
 }

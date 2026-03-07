@@ -1,10 +1,21 @@
 import 'dotenv/config';
 
+const AI_PROVIDERS = ['claude', 'gemini'] as const;
+
+function validateAiProvider(value: string): 'claude' | 'gemini' {
+  if (!AI_PROVIDERS.includes(value as 'claude' | 'gemini')) {
+    throw new Error(
+      `Invalid AI_PROVIDER="${value}". Must be one of: ${AI_PROVIDERS.map((p) => `"${p}"`).join(', ')}.`,
+    );
+  }
+  return value as 'claude' | 'gemini';
+}
+
 export interface EnvConfig {
   port: number;
   databaseUrl: string;
-  aiProvider: string;
-  anthropicApiKey: string;
+  aiProvider: 'claude' | 'gemini';
+  aiApiKey: string;
   n8nApiKey: string;
   dbDefaultUserId: string;
   nodeEnv: string;
@@ -22,8 +33,8 @@ export function loadEnv(): EnvConfig {
   return {
     port: parseInt(process.env.PORT || '3001', 10),
     databaseUrl: process.env.DATABASE_URL || 'postgresql://vitals:vitals@localhost:5432/vitals',
-    aiProvider: process.env.AI_PROVIDER || 'claude',
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+    aiProvider: validateAiProvider(process.env.AI_PROVIDER || 'claude'),
+    aiApiKey: process.env.AI_API_KEY || '',
     n8nApiKey: process.env.N8N_API_KEY || '',
     dbDefaultUserId: process.env.DB_DEFAULT_USER_ID || '00000000-0000-0000-0000-000000000001',
     nodeEnv: process.env.NODE_ENV || 'development',

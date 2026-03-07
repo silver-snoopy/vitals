@@ -17,6 +17,7 @@
     "@anthropic-ai/sdk": "^0.78.0",
     "@fastify/cors": "^11.0.0",
     "@fastify/multipart": "^9.4.0",
+    "@google/generative-ai": "^0.24.1",
     "@vitals/shared": "*",
     "csv-parse": "^6.1.0",
     "dotenv": "^16.4.0",

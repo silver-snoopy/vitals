@@ -27,7 +27,7 @@ const testEnv: EnvConfig = {
   port: 3001,
   databaseUrl: 'postgresql://test:test@localhost:5432/test',
   aiProvider: 'claude',
-  anthropicApiKey: '',
+  aiApiKey: '',
   n8nApiKey: 'test-api-key',
   dbDefaultUserId: '00000000-0000-0000-0000-000000000001',
   nodeEnv: 'test',

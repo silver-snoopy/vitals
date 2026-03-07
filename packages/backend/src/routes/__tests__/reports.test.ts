@@ -43,7 +43,7 @@ const testEnv: EnvConfig = {
   port: 3001,
   databaseUrl: 'postgresql://test:test@localhost:5432/test',
   aiProvider: 'claude',
-  anthropicApiKey: 'test-key',
+  aiApiKey: 'test-key',
   n8nApiKey: 'test-api-key',
   dbDefaultUserId: '00000000-0000-0000-0000-000000000001',
   nodeEnv: 'test',
@@ -133,10 +133,10 @@ describe('POST /api/reports/generate', () => {
   it('returns 503 when AI service throws (not configured)', async () => {
     const { createAIProvider } = await import('../../services/ai/ai-service.js');
     (createAIProvider as ReturnType<typeof vi.fn>).mockImplementationOnce(() => {
-      throw new Error('ANTHROPIC_API_KEY is required');
+      throw new Error('AI_API_KEY is required');
     });
 
-    const app = await buildApp({ ...testEnv, anthropicApiKey: '' });
+    const app = await buildApp({ ...testEnv, aiApiKey: '' });
     const response = await app.inject({
       method: 'POST',
       url: '/api/reports/generate',
