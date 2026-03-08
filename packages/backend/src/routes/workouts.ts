@@ -3,10 +3,7 @@ import type { EnvConfig } from '../config/env.js';
 import { validateDateRange, isDateRangeError } from '../utils/validate-dates.js';
 import { queryWorkoutSessions, queryExerciseProgress } from '../db/queries/workouts.js';
 
-export async function workoutRoutes(
-  app: FastifyInstance,
-  opts: { env: EnvConfig },
-): Promise<void> {
+export async function workoutRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   app.get<{ Querystring: { startDate?: string; endDate?: string } }>(
     '/api/workouts',
     async (request, reply) => {
@@ -37,11 +34,7 @@ export async function workoutRoutes(
     async (request, reply) => {
       const exerciseName = decodeURIComponent(request.params.exerciseName);
 
-      const data = await queryExerciseProgress(
-        app.db,
-        opts.env.dbDefaultUserId,
-        exerciseName,
-      );
+      const data = await queryExerciseProgress(app.db, opts.env.dbDefaultUserId, exerciseName);
 
       return reply.code(200).send({ data });
     },

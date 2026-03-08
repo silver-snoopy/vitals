@@ -4,11 +4,22 @@ import type pg from 'pg';
 import type { AIProvider, AICompletionResult } from '@vitals/shared';
 
 vi.mock('../../../db/queries/measurements.js', () => ({
-  queryDailyNutritionSummary: vi.fn().mockResolvedValue([
-    { date: '2026-03-01', calories: 2100, protein: 150, carbs: 220, fat: 70, fiber: 25 },
-  ]),
+  queryDailyNutritionSummary: vi
+    .fn()
+    .mockResolvedValue([
+      { date: '2026-03-01', calories: 2100, protein: 150, carbs: 220, fat: 70, fiber: 25 },
+    ]),
   queryMeasurementsByMetric: vi.fn().mockResolvedValue([
-    { id: 'bio-1', userId: 'user-uuid', date: '2026-03-01T00:00:00.000Z', metric: 'weight_kg', value: 80, unit: 'kg', source: 'cronometer', collectedAt: '2026-03-01T06:00:00.000Z' },
+    {
+      id: 'bio-1',
+      userId: 'user-uuid',
+      date: '2026-03-01T00:00:00.000Z',
+      metric: 'weight_kg',
+      value: 80,
+      unit: 'kg',
+      source: 'cronometer',
+      collectedAt: '2026-03-01T06:00:00.000Z',
+    },
   ]),
 }));
 
@@ -25,9 +36,7 @@ vi.mock('../../../db/queries/reports.js', () => ({
 const validAIResponse = JSON.stringify({
   summary: 'A productive week.',
   insights: '- Calories on target\n- Protein slightly low',
-  actionItems: [
-    { category: 'nutrition', priority: 'medium', text: 'Increase protein by 20g.' },
-  ],
+  actionItems: [{ category: 'nutrition', priority: 'medium', text: 'Increase protein by 20g.' }],
 });
 
 const mockAIProvider: AIProvider = {

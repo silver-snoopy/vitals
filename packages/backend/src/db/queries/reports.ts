@@ -5,17 +5,17 @@ function mapReportRow(r: Record<string, unknown>): WeeklyReport {
   return {
     id: String(r.id),
     userId: String(r.user_id),
-    periodStart: r.period_start instanceof Date
-      ? r.period_start.toISOString().split('T')[0]
-      : String(r.period_start),
-    periodEnd: r.period_end instanceof Date
-      ? r.period_end.toISOString().split('T')[0]
-      : String(r.period_end),
+    periodStart:
+      r.period_start instanceof Date
+        ? r.period_start.toISOString().split('T')[0]
+        : String(r.period_start),
+    periodEnd:
+      r.period_end instanceof Date
+        ? r.period_end.toISOString().split('T')[0]
+        : String(r.period_end),
     summary: String(r.summary),
     insights: typeof r.insights === 'string' ? r.insights : String(r.insights ?? ''),
-    actionItems: Array.isArray(r.action_items)
-      ? (r.action_items as ActionItem[])
-      : [],
+    actionItems: Array.isArray(r.action_items) ? (r.action_items as ActionItem[]) : [],
     dataCoverage: (r.data_coverage as WeeklyReport['dataCoverage']) ?? {
       nutritionDays: 0,
       workoutDays: 0,
@@ -23,16 +23,11 @@ function mapReportRow(r: Record<string, unknown>): WeeklyReport {
     },
     aiProvider: String(r.ai_provider),
     aiModel: String(r.ai_model),
-    createdAt: r.created_at instanceof Date
-      ? r.created_at.toISOString()
-      : String(r.created_at),
+    createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
   };
 }
 
-export async function getReportById(
-  pool: pg.Pool,
-  id: string,
-): Promise<WeeklyReport | null> {
+export async function getReportById(pool: pg.Pool, id: string): Promise<WeeklyReport | null> {
   const { rows } = await pool.query(
     `SELECT id, user_id, period_start, period_end, summary, insights,
        action_items, data_coverage, ai_provider, ai_model, created_at
@@ -42,10 +37,7 @@ export async function getReportById(
   return rows.length === 0 ? null : mapReportRow(rows[0] as Record<string, unknown>);
 }
 
-export async function getLatestReport(
-  pool: pg.Pool,
-  userId: string,
-): Promise<WeeklyReport | null> {
+export async function getLatestReport(pool: pg.Pool, userId: string): Promise<WeeklyReport | null> {
   const { rows } = await pool.query(
     `SELECT id, user_id, period_start, period_end, summary, insights,
        action_items, data_coverage, ai_provider, ai_model, created_at
@@ -121,10 +113,7 @@ export interface AiGenerationLog {
   purpose: string;
 }
 
-export async function logAiGeneration(
-  pool: pg.Pool,
-  gen: AiGenerationLog,
-): Promise<void> {
+export async function logAiGeneration(pool: pg.Pool, gen: AiGenerationLog): Promise<void> {
   await pool.query(
     `INSERT INTO ai_generations
        (user_id, provider, model, prompt_tokens, completion_tokens, total_tokens, purpose)

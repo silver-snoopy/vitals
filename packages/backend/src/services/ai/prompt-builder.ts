@@ -1,4 +1,11 @@
-import type { AIMessage, WeeklyDataBundle, DailyNutritionSummary, WorkoutSession, BiometricReading, WeeklyReport } from '@vitals/shared';
+import type {
+  AIMessage,
+  WeeklyDataBundle,
+  DailyNutritionSummary,
+  WorkoutSession,
+  BiometricReading,
+  WeeklyReport,
+} from '@vitals/shared';
 
 function avg(nums: number[]): number {
   if (nums.length === 0) return 0;

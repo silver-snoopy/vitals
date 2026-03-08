@@ -33,8 +33,8 @@ class CookieJar {
       typeof anyHeaders.getSetCookie === 'function'
         ? anyHeaders.getSetCookie()
         : headers.get('set-cookie')
-        ? [headers.get('set-cookie') as string]
-        : [];
+          ? [headers.get('set-cookie') as string]
+          : [];
 
     for (const entry of setCookies) {
       if (!entry) continue;
@@ -187,7 +187,8 @@ export class CronometerAuthSession {
   }
 
   private buildGwtAuthPayload(): string {
-    if (!this.config.gwtHeader) throw new Error('Missing Cronometer GWT header (CRONOMETER_GWT_HEADER)');
+    if (!this.config.gwtHeader)
+      throw new Error('Missing Cronometer GWT header (CRONOMETER_GWT_HEADER)');
     return (
       `7|0|5|${this.config.gwtModuleBase}|${this.config.gwtHeader}|` +
       'com.cronometer.shared.rpc.CronometerService|authenticate|' +

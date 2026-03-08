@@ -93,17 +93,20 @@ describe('HevyProvider', () => {
   it('preserves lastSuccessfulFetch from previous metadata on error', async () => {
     const previousDate = new Date('2026-02-28T10:00:00.000Z');
     const pool = {
-      query: vi.fn()
+      query: vi
+        .fn()
         .mockResolvedValueOnce({
-          rows: [{
-            user_id: userId,
-            provider_name: 'hevy',
-            last_successful_fetch: previousDate,
-            last_attempted_fetch: new Date(),
-            record_count: 5,
-            status: 'success',
-            error_message: null,
-          }],
+          rows: [
+            {
+              user_id: userId,
+              provider_name: 'hevy',
+              last_successful_fetch: previousDate,
+              last_attempted_fetch: new Date(),
+              record_count: 5,
+              status: 'success',
+              error_message: null,
+            },
+          ],
         })
         .mockResolvedValue({ rows: [] }),
       connect: vi.fn().mockResolvedValue({
@@ -122,7 +125,7 @@ describe('HevyProvider', () => {
 
     // The error-path metadata save should include the preserved date, not null
     const calls = (pool.query as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
-    const errorSaveCall = calls.find(call => {
+    const errorSaveCall = calls.find((call) => {
       const params = call[1] as unknown[];
       return Array.isArray(params) && params.includes('error');
     });
@@ -138,9 +141,9 @@ describe('HevyApiClient', () => {
   });
 
   it('builds correct request URL', async () => {
-    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ workouts: [] }), { status: 200 }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ workouts: [] }), { status: 200 }));
     const client = new HevyApiClient('test-key', 'https://api.hevyapp.com/v1');
     await client.fetchWorkouts(new Date('2026-03-01'), new Date('2026-03-07'));
 

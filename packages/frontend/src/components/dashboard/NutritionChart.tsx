@@ -1,5 +1,12 @@
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import type { DailyNutritionSummary } from '@vitals/shared';
@@ -26,9 +33,9 @@ export function NutritionChart({ data }: { data: DailyNutritionSummary[] }) {
             <Tooltip />
             <Legend />
             <Line type="monotone" dataKey="calories" stroke={CHART_COLORS.calories} dot={false} />
-            <Line type="monotone" dataKey="protein"  stroke={CHART_COLORS.protein}  dot={false} />
-            <Line type="monotone" dataKey="carbs"    stroke={CHART_COLORS.carbs}    dot={false} />
-            <Line type="monotone" dataKey="fat"      stroke={CHART_COLORS.fat}      dot={false} />
+            <Line type="monotone" dataKey="protein" stroke={CHART_COLORS.protein} dot={false} />
+            <Line type="monotone" dataKey="carbs" stroke={CHART_COLORS.carbs} dot={false} />
+            <Line type="monotone" dataKey="fat" stroke={CHART_COLORS.fat} dot={false} />
           </LineChart>
         </ResponsiveContainer>
       </CardContent>

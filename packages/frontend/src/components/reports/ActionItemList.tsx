@@ -2,9 +2,9 @@ import type { ActionItem } from '@vitals/shared';
 import { Badge } from '@/components/ui/badge';
 
 const priorityVariant: Record<ActionItem['priority'], 'destructive' | 'secondary' | 'outline'> = {
-  high:   'destructive',
+  high: 'destructive',
   medium: 'secondary',
-  low:    'outline',
+  low: 'outline',
 };
 
 export function ActionItemList({ items }: { items: ActionItem[] }) {
@@ -14,7 +14,10 @@ export function ActionItemList({ items }: { items: ActionItem[] }) {
     <ul className="space-y-2">
       {items.map((item, i) => (
         <li key={i} className="flex items-start gap-2 text-sm">
-          <Badge variant={priorityVariant[item.priority]} className="mt-0.5 shrink-0 capitalize text-xs">
+          <Badge
+            variant={priorityVariant[item.priority]}
+            className="mt-0.5 shrink-0 capitalize text-xs"
+          >
             {item.priority}
           </Badge>
           <span>{item.text}</span>

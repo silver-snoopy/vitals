@@ -42,26 +42,24 @@ describe('createAIProvider', () => {
   });
 
   it('throws when aiApiKey is empty', () => {
-    expect(() =>
-      createAIProvider({ ...baseEnv, aiApiKey: '' }),
-    ).toThrow('AI_API_KEY is required');
+    expect(() => createAIProvider({ ...baseEnv, aiApiKey: '' })).toThrow('AI_API_KEY is required');
   });
 
   it('throws for unknown AI provider', () => {
-    expect(() =>
-      createAIProvider({ ...baseEnv, aiProvider: 'openai' as 'claude' }),
-    ).toThrow('Unknown AI provider');
+    expect(() => createAIProvider({ ...baseEnv, aiProvider: 'openai' as 'claude' })).toThrow(
+      'Unknown AI provider',
+    );
   });
 
   it('error message includes the unknown provider name', () => {
-    expect(() =>
-      createAIProvider({ ...baseEnv, aiProvider: 'openai' as 'claude' }),
-    ).toThrow('openai');
+    expect(() => createAIProvider({ ...baseEnv, aiProvider: 'openai' as 'claude' })).toThrow(
+      'openai',
+    );
   });
 
   it('error message includes list of supported providers', () => {
-    expect(() =>
-      createAIProvider({ ...baseEnv, aiProvider: 'unknown' as 'claude' }),
-    ).toThrow('"claude", "gemini"');
+    expect(() => createAIProvider({ ...baseEnv, aiProvider: 'unknown' as 'claude' })).toThrow(
+      '"claude", "gemini"',
+    );
   });
 });

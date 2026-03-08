@@ -1,6 +1,4 @@
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import type { WorkoutSession } from '@vitals/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

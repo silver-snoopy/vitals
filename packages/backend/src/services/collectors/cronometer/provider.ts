@@ -42,7 +42,7 @@ export class CronometerNutritionProvider implements DataProvider {
       const csvText = await this.client.exportDailyNutrition(startDate, endDate);
       const rawRows = parseCsv(csvText);
 
-      const measurementRows = rawRows.flatMap(row =>
+      const measurementRows = rawRows.flatMap((row) =>
         normalizeNutritionRow(row, this.userId, 'cronometer'),
       );
 
@@ -114,7 +114,7 @@ export class CronometerBiometricsProvider implements DataProvider {
       const csvText = await this.client.exportBiometrics(startDate, endDate);
       const rawRows = parseCsv(csvText);
 
-      const measurementRows = rawRows.flatMap(row => {
+      const measurementRows = rawRows.flatMap((row) => {
         try {
           return [normalizeBiometricsRow(row, this.userId, 'cronometer')];
         } catch {

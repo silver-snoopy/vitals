@@ -21,7 +21,7 @@ describe('normalizeNutritionRow', () => {
 
     const rows = normalizeNutritionRow(raw, userId, 'cronometer');
     expect(rows).toHaveLength(5);
-    expect(rows.map(r => r.metric)).toEqual(
+    expect(rows.map((r) => r.metric)).toEqual(
       expect.arrayContaining(['calories', 'protein_g', 'carbs_g', 'fat_g', 'fiber_g']),
     );
     expect(rows[0].userId).toBe(userId);
@@ -70,7 +70,7 @@ describe('normalizeNutritionRow', () => {
       'Sodium (mg)': '1635',
     };
     const rows = normalizeNutritionRow(raw, 'user-1', 'cronometer');
-    const carbs = rows.find(r => r.metric === 'carbs_g');
+    const carbs = rows.find((r) => r.metric === 'carbs_g');
     expect(carbs).toBeDefined();
     expect(carbs!.value).toBe(263);
   });
@@ -160,13 +160,9 @@ describe('normalizeBiometricsRow', () => {
 
 describe('validateNormalizedRows', () => {
   it('separates valid rows from rows with errors', () => {
-    const rows = [
-      { value: 10 },
-      { value: -1 },
-      { value: 5 },
-    ];
+    const rows = [{ value: 10 }, { value: -1 }, { value: 5 }];
 
-    const { valid, errors } = validateNormalizedRows(rows, row =>
+    const { valid, errors } = validateNormalizedRows(rows, (row) =>
       row.value < 0 ? [`Value ${row.value} is negative`] : [],
     );
 

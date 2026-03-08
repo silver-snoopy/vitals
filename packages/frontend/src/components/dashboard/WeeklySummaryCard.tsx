@@ -21,8 +21,8 @@ export function WeeklySummaryCard({ nutrition, sessions, biometrics }: Props) {
 
   const stats = [
     { label: 'Avg Daily Calories', value: avgCalories ? `${avgCalories} kcal` : '—' },
-    { label: 'Workout Sessions',   value: sessions.length.toString() },
-    { label: 'Avg Weight',         value: avgWeight ? `${avgWeight} kg` : '—' },
+    { label: 'Workout Sessions', value: sessions.length.toString() },
+    { label: 'Avg Weight', value: avgWeight ? `${avgWeight} kg` : '—' },
   ];
 
   return (

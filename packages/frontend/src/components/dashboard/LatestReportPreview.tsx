@@ -5,11 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { useLatestReport } from '@/api/hooks/useReports';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 
-const priorityVariant: Record<'high' | 'medium' | 'low', 'destructive' | 'secondary' | 'outline'> = {
-  high:   'destructive',
-  medium: 'secondary',
-  low:    'outline',
-};
+const priorityVariant: Record<'high' | 'medium' | 'low', 'destructive' | 'secondary' | 'outline'> =
+  {
+    high: 'destructive',
+    medium: 'secondary',
+    low: 'outline',
+  };
 
 export function LatestReportPreview() {
   const { data, isLoading } = useLatestReport();
@@ -30,8 +31,7 @@ export function LatestReportPreview() {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">
-          Latest AI Report —{' '}
-          {format(parseISO(report.periodStart), 'MMM d')} to{' '}
+          Latest AI Report — {format(parseISO(report.periodStart), 'MMM d')} to{' '}
           {format(parseISO(report.periodEnd), 'MMM d, yyyy')}
         </CardTitle>
       </CardHeader>

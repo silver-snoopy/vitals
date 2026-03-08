@@ -24,7 +24,7 @@ describe('useUpload', () => {
 
     expect(client.apiFetch).toHaveBeenCalledWith(
       '/api/upload/apple-health',
-      expect.objectContaining({ method: 'POST' })
+      expect.objectContaining({ method: 'POST' }),
     );
   });
 });

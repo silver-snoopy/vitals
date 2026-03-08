@@ -35,7 +35,7 @@ export class HevyProvider implements DataProvider {
       });
 
       const rawRows = await this.client.fetchWorkouts(startDate, endDate);
-      const setRows = rawRows.map(row => normalizeHevyRow(row, this.userId));
+      const setRows = rawRows.map((row) => normalizeHevyRow(row, this.userId));
 
       const result = await ingestWorkoutSets(this.pool, setRows);
       recordCount = result.inserted;

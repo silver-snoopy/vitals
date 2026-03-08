@@ -59,10 +59,7 @@ describe('queryMeasurementsByMetric', () => {
     const start = new Date('2026-03-01');
     const end = new Date('2026-03-07');
     await queryMeasurementsByMetric(pool, 'user-id', 'steps', start, end);
-    expect(pool.query).toHaveBeenCalledWith(
-      expect.any(String),
-      ['user-id', 'steps', start, end],
-    );
+    expect(pool.query).toHaveBeenCalledWith(expect.any(String), ['user-id', 'steps', start, end]);
   });
 
   it('converts numeric string values to numbers', async () => {

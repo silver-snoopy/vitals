@@ -1,10 +1,22 @@
 import { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import { format, parseISO } from 'date-fns';
 import type { WorkoutSession } from '@vitals/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { useExerciseProgress } from '@/api/hooks/useWorkouts';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -31,7 +43,12 @@ export function ExerciseProgressChart({ sessions }: { sessions: WorkoutSession[]
       <CardHeader>
         <div className="flex items-center justify-between gap-4">
           <CardTitle className="text-base">Exercise Progress</CardTitle>
-          <Select value={selected} onValueChange={(v) => { if (v !== null) setSelected(v); }}>
+          <Select
+            value={selected}
+            onValueChange={(v) => {
+              if (v !== null) setSelected(v);
+            }}
+          >
             <SelectTrigger className="w-52">
               <SelectValue placeholder="Select exercise" />
             </SelectTrigger>

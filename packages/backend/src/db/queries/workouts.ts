@@ -58,9 +58,10 @@ function groupIntoSessions(rows: WorkoutSetDbRow[], userId: string): WorkoutSess
       if (collected < minCollectedAt) minCollectedAt = collected;
     }
 
-    const durationSeconds = minStartedAt && maxEndedAt
-      ? Math.round((maxEndedAt.getTime() - minStartedAt.getTime()) / 1000)
-      : 0;
+    const durationSeconds =
+      minStartedAt && maxEndedAt
+        ? Math.round((maxEndedAt.getTime() - minStartedAt.getTime()) / 1000)
+        : 0;
 
     const sets: WorkoutSet[] = group.rows.map((r) => ({
       id: String(r.id),
@@ -69,12 +70,14 @@ function groupIntoSessions(rows: WorkoutSetDbRow[], userId: string): WorkoutSess
       setIndex: Number(r.set_index),
       weightKg: r.weight_kg !== null && r.weight_kg !== undefined ? Number(r.weight_kg) : null,
       reps: r.reps !== null && r.reps !== undefined ? Number(r.reps) : null,
-      durationSeconds: r.duration_seconds !== null && r.duration_seconds !== undefined
-        ? Number(r.duration_seconds)
-        : null,
-      distanceMeters: r.distance_meters !== null && r.distance_meters !== undefined
-        ? Number(r.distance_meters)
-        : null,
+      durationSeconds:
+        r.duration_seconds !== null && r.duration_seconds !== undefined
+          ? Number(r.duration_seconds)
+          : null,
+      distanceMeters:
+        r.distance_meters !== null && r.distance_meters !== undefined
+          ? Number(r.distance_meters)
+          : null,
       rpe: r.rpe !== null && r.rpe !== undefined ? Number(r.rpe) : null,
     }));
 
@@ -135,9 +138,7 @@ export async function queryExerciseProgress(
   return {
     exerciseName,
     dataPoints: rows.map((r) => ({
-      date: r.day instanceof Date
-        ? r.day.toISOString().split('T')[0]
-        : String(r.day),
+      date: r.day instanceof Date ? r.day.toISOString().split('T')[0] : String(r.day),
       maxWeight: Number(r.max_weight ?? 0),
       totalVolume: Number(r.total_volume ?? 0),
       totalSets: Number(r.total_sets),

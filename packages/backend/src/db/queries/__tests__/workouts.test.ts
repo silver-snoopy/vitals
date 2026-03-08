@@ -62,8 +62,18 @@ describe('queryWorkoutSessions', () => {
 
   it('creates separate sessions for different dates', async () => {
     const pool = makeMockPool([
-      { ...baseRow, id: 'set-1', started_at: new Date('2026-03-01T10:00:00Z'), ended_at: new Date('2026-03-01T11:00:00Z') },
-      { ...baseRow, id: 'set-2', started_at: new Date('2026-03-03T10:00:00Z'), ended_at: new Date('2026-03-03T11:00:00Z') },
+      {
+        ...baseRow,
+        id: 'set-1',
+        started_at: new Date('2026-03-01T10:00:00Z'),
+        ended_at: new Date('2026-03-01T11:00:00Z'),
+      },
+      {
+        ...baseRow,
+        id: 'set-2',
+        started_at: new Date('2026-03-03T10:00:00Z'),
+        ended_at: new Date('2026-03-03T11:00:00Z'),
+      },
     ]);
 
     const result = await queryWorkoutSessions(

@@ -17,9 +17,7 @@ export async function buildApp(env: EnvConfig) {
   const app = Fastify({ logger: true });
 
   await app.register(cors, {
-    origin: env.nodeEnv === 'production'
-      ? process.env.FRONTEND_URL || ''
-      : true,
+    origin: env.nodeEnv === 'production' ? process.env.FRONTEND_URL || '' : true,
   });
 
   await app.register(multipart);

@@ -1,5 +1,5 @@
 import { useReports } from '@/api/hooks/useReports';
-import { ReportCard }  from './ReportCard';
+import { ReportCard } from './ReportCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 
 export function ReportsPage() {

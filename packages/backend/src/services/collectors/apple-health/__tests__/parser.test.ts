@@ -139,7 +139,10 @@ describe('parseAppleHealthExport', () => {
   });
 
   it('returns empty arrays for empty XML', () => {
-    const { measurements, workoutSets } = parseAppleHealthExport('<HealthData></HealthData>', 'user-uuid');
+    const { measurements, workoutSets } = parseAppleHealthExport(
+      '<HealthData></HealthData>',
+      'user-uuid',
+    );
     expect(measurements).toEqual([]);
     expect(workoutSets).toEqual([]);
   });

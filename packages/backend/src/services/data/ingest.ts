@@ -41,8 +41,15 @@ export async function ingestMeasurements(
     const values: unknown[] = [];
     for (const r of batch) {
       values.push(
-        r.userId, r.source, r.category, r.metric,
-        r.value, r.unit, r.measuredAt, r.tags, new Date(),
+        r.userId,
+        r.source,
+        r.category,
+        r.metric,
+        r.value,
+        r.unit,
+        r.measuredAt,
+        r.tags,
+        new Date(),
       );
     }
 
@@ -90,9 +97,19 @@ export async function ingestWorkoutSets(
     const values: unknown[] = [];
     for (const r of batch) {
       values.push(
-        r.userId, r.source, r.exerciseName, r.setIndex,
-        r.weightKg, r.reps, r.durationSeconds, r.distanceMeters,
-        r.rpe, r.startedAt, r.endedAt, r.tags, new Date(),
+        r.userId,
+        r.source,
+        r.exerciseName,
+        r.setIndex,
+        r.weightKg,
+        r.reps,
+        r.durationSeconds,
+        r.distanceMeters,
+        r.rpe,
+        r.startedAt,
+        r.endedAt,
+        r.tags,
+        new Date(),
       );
     }
 

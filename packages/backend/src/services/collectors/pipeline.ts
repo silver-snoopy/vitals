@@ -23,9 +23,7 @@ export async function runCollection(
   const start = Date.now();
   const { userId, startDate, endDate } = options;
 
-  const providerNames = options.providers?.length
-    ? options.providers
-    : registry.names();
+  const providerNames = options.providers?.length ? options.providers : registry.names();
 
   const results: CollectionResult[] = [];
 
@@ -49,12 +47,15 @@ export async function runCollection(
     results.push(result);
   }
 
-  if (results.some(r => r.recordCount > 0)) {
+  if (results.some((r) => r.recordCount > 0)) {
     try {
       await refreshDailyAggregates(pool);
     } catch (err) {
       // non-fatal — aggregates will be stale until next successful run
-      console.warn('refreshDailyAggregates failed (non-fatal):', err instanceof Error ? err.message : err);
+      console.warn(
+        'refreshDailyAggregates failed (non-fatal):',
+        err instanceof Error ? err.message : err,
+      );
     }
   }
 
