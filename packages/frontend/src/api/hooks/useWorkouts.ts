@@ -10,7 +10,7 @@ export function useWorkoutSessions() {
     queryKey: QUERY_KEYS.workouts.sessions(startDate, endDate),
     queryFn: () =>
       apiFetch<ApiResponse<WorkoutSession[]>>(
-        `/api/workouts?startDate=${startDate}&endDate=${endDate}`
+        `/api/workouts?startDate=${startDate}&endDate=${endDate}`,
       ),
   });
 }
@@ -20,7 +20,7 @@ export function useExerciseProgress(exerciseName: string | null) {
     queryKey: QUERY_KEYS.workouts.progress(exerciseName ?? ''),
     queryFn: () =>
       apiFetch<ApiResponse<ExerciseProgress>>(
-        `/api/workouts/progress/${encodeURIComponent(exerciseName!)}`
+        `/api/workouts/progress/${encodeURIComponent(exerciseName!)}`,
       ),
     enabled: !!exerciseName,
   });

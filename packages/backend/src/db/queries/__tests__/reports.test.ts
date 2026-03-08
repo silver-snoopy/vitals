@@ -110,7 +110,9 @@ describe('saveReport', () => {
       periodEnd: '2026-03-07',
       summary: 'Great week!',
       insights: 'Strength is improving.',
-      actionItems: [{ category: 'workout' as const, priority: 'medium' as const, text: 'Add more volume.' }],
+      actionItems: [
+        { category: 'workout' as const, priority: 'medium' as const, text: 'Add more volume.' },
+      ],
       dataCoverage: { nutritionDays: 7, workoutDays: 5, biometricDays: 7 },
       aiProvider: 'claude' as const,
       aiModel: 'claude-sonnet-4-20250514',

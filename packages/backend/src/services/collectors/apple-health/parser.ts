@@ -3,19 +3,51 @@ import type { MeasurementRow, WorkoutSetRow } from '../../data/normalizers.js';
 // Map Apple Health HKQuantityType identifiers to our metric names
 const METRIC_MAP: Record<string, { metric: string; category: string; unit: string }> = {
   HKQuantityTypeIdentifierBodyMass: { metric: 'weight_kg', category: 'biometric', unit: 'kg' },
-  HKQuantityTypeIdentifierBodyFatPercentage: { metric: 'body_fat_pct', category: 'biometric', unit: '%' },
+  HKQuantityTypeIdentifierBodyFatPercentage: {
+    metric: 'body_fat_pct',
+    category: 'biometric',
+    unit: '%',
+  },
   HKQuantityTypeIdentifierStepCount: { metric: 'steps', category: 'biometric', unit: 'count' },
   HKQuantityTypeIdentifierHeartRate: { metric: 'resting_hr', category: 'biometric', unit: 'bpm' },
-  HKQuantityTypeIdentifierDietaryEnergyConsumed: { metric: 'calories', category: 'nutrition', unit: 'kcal' },
+  HKQuantityTypeIdentifierDietaryEnergyConsumed: {
+    metric: 'calories',
+    category: 'nutrition',
+    unit: 'kcal',
+  },
   HKQuantityTypeIdentifierDietaryProtein: { metric: 'protein_g', category: 'nutrition', unit: 'g' },
-  HKQuantityTypeIdentifierDietaryCarbohydrates: { metric: 'carbs_g', category: 'nutrition', unit: 'g' },
+  HKQuantityTypeIdentifierDietaryCarbohydrates: {
+    metric: 'carbs_g',
+    category: 'nutrition',
+    unit: 'g',
+  },
   HKQuantityTypeIdentifierDietaryFatTotal: { metric: 'fat_g', category: 'nutrition', unit: 'g' },
   HKQuantityTypeIdentifierDietaryFiber: { metric: 'fiber_g', category: 'nutrition', unit: 'g' },
-  HKQuantityTypeIdentifierDistanceWalkingRunning: { metric: 'distance_meters', category: 'biometric', unit: 'm' },
-  HKQuantityTypeIdentifierFlightsClimbed: { metric: 'flights_climbed', category: 'biometric', unit: 'count' },
-  HKQuantityTypeIdentifierActiveEnergyBurned: { metric: 'active_calories', category: 'biometric', unit: 'kcal' },
-  HKQuantityTypeIdentifierBasalEnergyBurned: { metric: 'basal_calories', category: 'biometric', unit: 'kcal' },
-  HKQuantityTypeIdentifierSleepAnalysis: { metric: 'sleep_hours', category: 'biometric', unit: 'h' },
+  HKQuantityTypeIdentifierDistanceWalkingRunning: {
+    metric: 'distance_meters',
+    category: 'biometric',
+    unit: 'm',
+  },
+  HKQuantityTypeIdentifierFlightsClimbed: {
+    metric: 'flights_climbed',
+    category: 'biometric',
+    unit: 'count',
+  },
+  HKQuantityTypeIdentifierActiveEnergyBurned: {
+    metric: 'active_calories',
+    category: 'biometric',
+    unit: 'kcal',
+  },
+  HKQuantityTypeIdentifierBasalEnergyBurned: {
+    metric: 'basal_calories',
+    category: 'biometric',
+    unit: 'kcal',
+  },
+  HKQuantityTypeIdentifierSleepAnalysis: {
+    metric: 'sleep_hours',
+    category: 'biometric',
+    unit: 'h',
+  },
 };
 
 // Unit conversions needed for Apple Health exports

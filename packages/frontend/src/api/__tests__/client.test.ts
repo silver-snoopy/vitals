@@ -17,10 +17,7 @@ describe('apiFetch', () => {
 
     await apiFetch('/api/test');
 
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/test'),
-      undefined
-    );
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/api/test'), undefined);
   });
 
   it('returns parsed JSON on success', async () => {

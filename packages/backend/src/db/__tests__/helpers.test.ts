@@ -19,23 +19,22 @@ describe('loadCollectionMetadata', () => {
     const pool = mockPool([]);
     const result = await loadCollectionMetadata(pool, userId, 'hevy');
     expect(result).toBeNull();
-    expect(pool.query).toHaveBeenCalledWith(
-      expect.stringContaining('SELECT'),
-      [userId, 'hevy'],
-    );
+    expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('SELECT'), [userId, 'hevy']);
   });
 
   it('returns mapped metadata when row exists', async () => {
     const now = new Date();
-    const pool = mockPool([{
-      user_id: userId,
-      provider_name: 'hevy',
-      last_successful_fetch: now,
-      last_attempted_fetch: now,
-      record_count: 42,
-      status: 'success',
-      error_message: null,
-    }]);
+    const pool = mockPool([
+      {
+        user_id: userId,
+        provider_name: 'hevy',
+        last_successful_fetch: now,
+        last_attempted_fetch: now,
+        record_count: 42,
+        status: 'success',
+        error_message: null,
+      },
+    ]);
 
     const result = await loadCollectionMetadata(pool, userId, 'hevy');
     expect(result).toEqual({
@@ -64,18 +63,15 @@ describe('saveCollectionMetadata', () => {
     };
 
     await saveCollectionMetadata(pool, meta);
-    expect(pool.query).toHaveBeenCalledWith(
-      expect.stringContaining('ON CONFLICT'),
-      [
-        userId,
-        'cronometer-nutrition',
-        meta.lastSuccessfulFetch,
-        meta.lastAttemptedFetch,
-        100,
-        'success',
-        null,
-      ],
-    );
+    expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT'), [
+      userId,
+      'cronometer-nutrition',
+      meta.lastSuccessfulFetch,
+      meta.lastAttemptedFetch,
+      100,
+      'success',
+      null,
+    ]);
   });
 });
 

@@ -1,8 +1,8 @@
 import { useNutritionDaily } from '@/api/hooks/useNutrition';
 import { DailyNutritionTable } from './DailyNutritionTable';
-import { MacroBreakdown }      from './MacroBreakdown';
+import { MacroBreakdown } from './MacroBreakdown';
 import { TableSkeleton, ChartSkeleton } from '@/components/ui/LoadingSkeleton';
-import { Card, CardContent }   from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 
 export function NutritionPage() {
   const { data, isLoading, error } = useNutritionDaily();

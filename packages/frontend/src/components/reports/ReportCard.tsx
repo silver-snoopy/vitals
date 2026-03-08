@@ -5,16 +5,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { AIInsights }     from './AIInsights';
+import { AIInsights } from './AIInsights';
 import { ActionItemList } from './ActionItemList';
 
 export function ReportCard({ report }: { report: WeeklyReport }) {
   const [expanded, setExpanded] = useState(false);
 
   const coverageBadges = [
-    { label: `${report.dataCoverage.nutritionDays}d nutrition`,   ok: report.dataCoverage.nutritionDays > 0 },
-    { label: `${report.dataCoverage.workoutDays}d workouts`,     ok: report.dataCoverage.workoutDays > 0 },
-    { label: `${report.dataCoverage.biometricDays}d biometrics`, ok: report.dataCoverage.biometricDays > 0 },
+    {
+      label: `${report.dataCoverage.nutritionDays}d nutrition`,
+      ok: report.dataCoverage.nutritionDays > 0,
+    },
+    {
+      label: `${report.dataCoverage.workoutDays}d workouts`,
+      ok: report.dataCoverage.workoutDays > 0,
+    },
+    {
+      label: `${report.dataCoverage.biometricDays}d biometrics`,
+      ok: report.dataCoverage.biometricDays > 0,
+    },
   ];
 
   return (

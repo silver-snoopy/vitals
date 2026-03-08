@@ -10,7 +10,7 @@ export function useMeasurements(metric: string) {
     queryKey: [...QUERY_KEYS.measurements.byMetric(metric), startDate, endDate],
     queryFn: () =>
       apiFetch<ApiResponse<BiometricReading[]>>(
-        `/api/measurements?metric=${metric}&startDate=${startDate}&endDate=${endDate}`
+        `/api/measurements?metric=${metric}&startDate=${startDate}&endDate=${endDate}`,
       ),
   });
 }

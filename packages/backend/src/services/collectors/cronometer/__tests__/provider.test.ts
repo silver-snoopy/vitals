@@ -78,17 +78,20 @@ describe('CronometerNutritionProvider', () => {
   it('preserves lastSuccessfulFetch from previous metadata on error', async () => {
     const previousDate = new Date('2026-02-28T10:00:00.000Z');
     const pool = {
-      query: vi.fn()
+      query: vi
+        .fn()
         .mockResolvedValueOnce({
-          rows: [{
-            user_id: userId,
-            provider_name: 'cronometer-nutrition',
-            last_successful_fetch: previousDate,
-            last_attempted_fetch: new Date(),
-            record_count: 10,
-            status: 'success',
-            error_message: null,
-          }],
+          rows: [
+            {
+              user_id: userId,
+              provider_name: 'cronometer-nutrition',
+              last_successful_fetch: previousDate,
+              last_attempted_fetch: new Date(),
+              record_count: 10,
+              status: 'success',
+              error_message: null,
+            },
+          ],
         })
         .mockResolvedValue({ rows: [] }),
       connect: vi.fn().mockResolvedValue({
@@ -107,7 +110,7 @@ describe('CronometerNutritionProvider', () => {
 
     // The error-path metadata save should include the preserved date, not null
     const calls = (pool.query as ReturnType<typeof vi.fn>).mock.calls as unknown[][];
-    const errorSaveCall = calls.find(call => {
+    const errorSaveCall = calls.find((call) => {
       const params = call[1] as unknown[];
       return Array.isArray(params) && params.includes('error');
     });

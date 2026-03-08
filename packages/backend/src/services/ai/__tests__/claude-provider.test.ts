@@ -27,9 +27,7 @@ describe('ClaudeProvider', () => {
   });
 
   it('maps response content and usage to AICompletionResult', async () => {
-    const result = await provider.complete([
-      { role: 'user', content: 'Hello' },
-    ]);
+    const result = await provider.complete([{ role: 'user', content: 'Hello' }]);
 
     expect(result.content).toBe('The AI response.');
     expect(result.model).toBe('claude-sonnet-4-20250514');
@@ -73,10 +71,10 @@ describe('ClaudeProvider', () => {
     const mockCreate = instance.messages.create as ReturnType<typeof vi.fn>;
     mockCreate.mockClear();
 
-    await provider.complete(
-      [{ role: 'user', content: 'Hi' }],
-      { model: 'claude-opus-4-6', maxTokens: 1024 },
-    );
+    await provider.complete([{ role: 'user', content: 'Hi' }], {
+      model: 'claude-opus-4-6',
+      maxTokens: 1024,
+    });
 
     const call = mockCreate.mock.calls[0][0];
     expect(call.model).toBe('claude-opus-4-6');

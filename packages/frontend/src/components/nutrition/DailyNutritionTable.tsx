@@ -1,7 +1,12 @@
 import { format, parseISO } from 'date-fns';
 import type { DailyNutritionSummary } from '@vitals/shared';
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 
 export function DailyNutritionTable({ data }: { data: DailyNutritionSummary[] }) {

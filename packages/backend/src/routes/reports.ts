@@ -7,10 +7,7 @@ import { getReportById, listReports } from '../db/queries/reports.js';
 import { generateWeeklyReport } from '../services/ai/report-generator.js';
 import { createAIProvider } from '../services/ai/ai-service.js';
 
-export async function reportRoutes(
-  app: FastifyInstance,
-  opts: { env: EnvConfig },
-): Promise<void> {
+export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   app.post<{ Body: GenerateReportRequest }>(
     '/api/reports/generate',
     { preHandler: apiKeyMiddleware(opts.env.n8nApiKey) },
@@ -54,20 +51,17 @@ export async function reportRoutes(
     return reply.code(200).send({ data: reports });
   });
 
-  app.get<{ Params: { id: string } }>(
-    '/api/reports/:id',
-    async (request, reply) => {
-      const report = await getReportById(app.db, request.params.id);
+  app.get<{ Params: { id: string } }>('/api/reports/:id', async (request, reply) => {
+    const report = await getReportById(app.db, request.params.id);
 
-      if (!report) {
-        return reply.code(404).send({
-          error: 'Not Found',
-          message: `Report with id "${request.params.id}" not found`,
-          statusCode: 404,
-        });
-      }
+    if (!report) {
+      return reply.code(404).send({
+        error: 'Not Found',
+        message: `Report with id "${request.params.id}" not found`,
+        statusCode: 404,
+      });
+    }
 
-      return reply.code(200).send({ data: report });
-    },
-  );
+    return reply.code(200).send({ data: report });
+  });
 }

@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import type { ApiResponse, DailyNutritionSummary, WorkoutSession, BiometricReading } from '@vitals/shared';
+import type {
+  ApiResponse,
+  DailyNutritionSummary,
+  WorkoutSession,
+  BiometricReading,
+} from '@vitals/shared';
 import { QUERY_KEYS } from '@vitals/shared';
 import { apiFetch } from '../client';
 import { useDateRangeStore } from '@/store/useDateRangeStore';
@@ -16,7 +21,7 @@ export function useDashboard() {
     queryKey: QUERY_KEYS.dashboard.weekly(startDate, endDate),
     queryFn: () =>
       apiFetch<ApiResponse<DashboardData>>(
-        `/api/dashboard/weekly?startDate=${startDate}&endDate=${endDate}`
+        `/api/dashboard/weekly?startDate=${startDate}&endDate=${endDate}`,
       ),
   });
 }

@@ -19,16 +19,13 @@ export async function queryMeasurementsByMetric(
   return rows.map((r) => ({
     id: String(r.id),
     userId: String(r.user_id),
-    date: r.measured_at instanceof Date
-      ? r.measured_at.toISOString()
-      : String(r.measured_at),
+    date: r.measured_at instanceof Date ? r.measured_at.toISOString() : String(r.measured_at),
     metric: String(r.metric),
     value: Number(r.value),
     unit: String(r.unit),
     source: String(r.source),
-    collectedAt: r.collected_at instanceof Date
-      ? r.collected_at.toISOString()
-      : String(r.collected_at),
+    collectedAt:
+      r.collected_at instanceof Date ? r.collected_at.toISOString() : String(r.collected_at),
   }));
 }
 
@@ -53,9 +50,7 @@ export async function queryDailyNutritionSummary(
   );
 
   return rows.map((r) => ({
-    date: r.day instanceof Date
-      ? r.day.toISOString().split('T')[0]
-      : String(r.day),
+    date: r.day instanceof Date ? r.day.toISOString().split('T')[0] : String(r.day),
     calories: Number(r.calories),
     protein: Number(r.protein),
     carbs: Number(r.carbs),

@@ -2,7 +2,10 @@ import type pg from 'pg';
 import type { EnvConfig } from '../../config/env.js';
 import { registry } from './provider-registry.js';
 import { CronometerGwtClient } from './cronometer/client.js';
-import { CronometerNutritionProvider, CronometerBiometricsProvider } from './cronometer/provider.js';
+import {
+  CronometerNutritionProvider,
+  CronometerBiometricsProvider,
+} from './cronometer/provider.js';
 import { HevyApiClient } from './hevy/client.js';
 import { HevyProvider } from './hevy/provider.js';
 

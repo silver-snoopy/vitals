@@ -1,0 +1,8 @@
+dist
+node_modules
+*.tsbuildinfo
+packages/workflows
+# Docs and markdown are prose — don't reformat
+*.md
+# Docker/CI configs
+docker-compose.yml

@@ -7,9 +7,7 @@ export function createAIProvider(env: EnvConfig): AIProvider {
   const provider = env.aiProvider;
 
   if (!env.aiApiKey) {
-    throw new Error(
-      'AI_API_KEY is required. Set it in your environment variables.',
-    );
+    throw new Error('AI_API_KEY is required. Set it in your environment variables.');
   }
 
   if (provider === 'claude') {
@@ -22,7 +20,7 @@ export function createAIProvider(env: EnvConfig): AIProvider {
 
   throw new Error(
     `Unknown AI provider: "${provider}". ` +
-    'Supported providers: "claude", "gemini". ' +
-    'Set AI_PROVIDER in your environment variables.',
+      'Supported providers: "claude", "gemini". ' +
+      'Set AI_PROVIDER in your environment variables.',
   );
 }

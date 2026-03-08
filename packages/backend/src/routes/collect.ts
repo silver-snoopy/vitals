@@ -5,10 +5,7 @@ import { apiKeyMiddleware } from '../middleware/api-key.js';
 import { runCollection } from '../services/collectors/pipeline.js';
 import { validateDateRange, isDateRangeError } from '../utils/validate-dates.js';
 
-export async function collectRoutes(
-  app: FastifyInstance,
-  opts: { env: EnvConfig },
-): Promise<void> {
+export async function collectRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   app.post<{ Body: CollectRequest }>(
     '/api/collect',
     { preHandler: apiKeyMiddleware(opts.env.n8nApiKey) },

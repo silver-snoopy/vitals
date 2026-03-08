@@ -1,6 +1,9 @@
 import type pg from 'pg';
 import type { AIProvider, WeeklyReport, ActionItem } from '@vitals/shared';
-import { queryDailyNutritionSummary, queryMeasurementsByMetric } from '../../db/queries/measurements.js';
+import {
+  queryDailyNutritionSummary,
+  queryMeasurementsByMetric,
+} from '../../db/queries/measurements.js';
 import { queryWorkoutSessions } from '../../db/queries/workouts.js';
 import { getLatestReport, saveReport, logAiGeneration } from '../../db/queries/reports.js';
 import { buildReportPrompt } from './prompt-builder.js';
@@ -14,14 +17,15 @@ interface ParsedAIReport {
 function parseAIResponse(content: string): ParsedAIReport {
   try {
     // Strip markdown code fences if present
-    const cleaned = content.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
+    const cleaned = content
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```\s*$/i, '')
+      .trim();
     const parsed = JSON.parse(cleaned) as Record<string, unknown>;
     return {
       summary: typeof parsed.summary === 'string' ? parsed.summary : 'Weekly health summary.',
       insights: typeof parsed.insights === 'string' ? parsed.insights : '',
-      actionItems: Array.isArray(parsed.actionItems)
-        ? (parsed.actionItems as ActionItem[])
-        : [],
+      actionItems: Array.isArray(parsed.actionItems) ? (parsed.actionItems as ActionItem[]) : [],
     };
   } catch {
     return {

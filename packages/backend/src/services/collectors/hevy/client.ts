@@ -25,7 +25,9 @@ function flattenWorkouts(workouts: Array<Record<string, unknown>>): Record<strin
 
   for (const workout of workouts) {
     const title = (workout.title ?? workout.name) as string | undefined;
-    const startTime = formatHevyDatetime(workout.start_time ?? workout.startTime ?? workout.startedAt);
+    const startTime = formatHevyDatetime(
+      workout.start_time ?? workout.startTime ?? workout.startedAt,
+    );
     const endTime = formatHevyDatetime(workout.end_time ?? workout.endTime ?? workout.endedAt);
     const description = (workout.description ?? '') as string;
     const exercises = (workout.exercises ?? []) as Array<Record<string, unknown>>;
@@ -45,11 +47,12 @@ function flattenWorkouts(workouts: Array<Record<string, unknown>>): Record<strin
           set_index: setIndex,
           weight_kg: set.weight_kg ?? set.weight,
           reps: set.reps,
-          distance_meters: set.distance_km != null
-            ? Number(set.distance_km) * 1000
-            : set.distance_meters != null
-            ? Number(set.distance_meters)
-            : null,
+          distance_meters:
+            set.distance_km != null
+              ? Number(set.distance_km) * 1000
+              : set.distance_meters != null
+                ? Number(set.distance_meters)
+                : null,
           duration_seconds: set.duration_seconds ?? set.duration,
           rpe: set.rpe,
         });

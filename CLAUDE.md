@@ -35,6 +35,15 @@
 - **Ingest:** 500-row batch INSERT with `ON CONFLICT DO UPDATE` for idempotent upserts
 - **Providers:** Implement `DataProvider` from `@vitals/shared`, registered via `register.ts`
 
+## Linting & Formatting
+- **Prettier:** Enforced via `.prettierrc` — single quotes, semicolons, 100-char print width, trailing commas
+- **ESLint:** Flat config (`eslint.config.js`) — typescript-eslint recommended + React/React Hooks for frontend
+- **Run lint:** `npm run lint` (ESLint), `npm run format:check` (Prettier)
+- **Auto-fix:** `npm run lint:fix` (ESLint), `npm run format` (Prettier)
+- **Key rules:** `consistent-type-imports` (use `import type`), `no-unused-vars` (prefix unused with `_`), `no-explicit-any` (warn in src, off in tests)
+- **React rules:** `react-hooks/rules-of-hooks`, `react-hooks/exhaustive-deps`, `react-refresh/only-export-components`
+- **Before committing:** Run `npm run lint` and `npm run format:check` — both must pass
+
 ## Testing Conventions
 - Framework: Vitest
 - Mock database: `vi.mock('../../plugins/database.js', () => ({ databasePlugin: async (app) => { app.decorate('db', {}); } }))`

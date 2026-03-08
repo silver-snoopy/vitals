@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { buildApp } from '../../app.js';
 import type { EnvConfig } from '../../config/env.js';
 
@@ -13,9 +13,11 @@ vi.mock('../../services/collectors/register.js', () => ({
 }));
 
 vi.mock('../../db/queries/measurements.js', () => ({
-  queryDailyNutritionSummary: vi.fn().mockResolvedValue([
-    { date: '2026-03-01', calories: 2100, protein: 150, carbs: 220, fat: 70, fiber: 25 },
-  ]),
+  queryDailyNutritionSummary: vi
+    .fn()
+    .mockResolvedValue([
+      { date: '2026-03-01', calories: 2100, protein: 150, carbs: 220, fat: 70, fiber: 25 },
+    ]),
   queryMeasurementsByMetric: vi.fn().mockResolvedValue([]),
 }));
 

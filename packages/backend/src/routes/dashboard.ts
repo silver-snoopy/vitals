@@ -1,7 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import type { EnvConfig } from '../config/env.js';
 import { validateDateRange, isDateRangeError } from '../utils/validate-dates.js';
-import { queryDailyNutritionSummary, queryMeasurementsByMetric } from '../db/queries/measurements.js';
+import {
+  queryDailyNutritionSummary,
+  queryMeasurementsByMetric,
+} from '../db/queries/measurements.js';
 import { queryWorkoutSessions } from '../db/queries/workouts.js';
 
 export async function dashboardRoutes(

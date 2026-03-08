@@ -58,7 +58,11 @@ export function normalizeNutritionRow(
   const macros: Array<{ metric: string; unit: string; keys: string[] }> = [
     { metric: 'calories', unit: 'kcal', keys: ['energy_kcal', 'Energy (kcal)', 'calories'] },
     { metric: 'protein_g', unit: 'g', keys: ['protein_g', 'Protein (g)', 'protein'] },
-    { metric: 'carbs_g', unit: 'g', keys: ['carbs_g', 'Carbs (g)', 'Carbohydrates (g)', 'carbs', 'carbohydrates_g'] },
+    {
+      metric: 'carbs_g',
+      unit: 'g',
+      keys: ['carbs_g', 'Carbs (g)', 'Carbohydrates (g)', 'carbs', 'carbohydrates_g'],
+    },
     { metric: 'fat_g', unit: 'g', keys: ['fat_g', 'Fat (g)', 'fat'] },
     { metric: 'fiber_g', unit: 'g', keys: ['fiber_g', 'Fiber (g)', 'fiber'] },
     { metric: 'sugar_g', unit: 'g', keys: ['sugar_g', 'Sugar (g)', 'sugar'] },
@@ -85,13 +89,8 @@ export function normalizeNutritionRow(
  * Expects fields: exercise_name/title, set_index/set_order, weight_kg,
  * reps, duration_seconds, distance_meters, rpe, start_time, end_time.
  */
-export function normalizeHevyRow(
-  raw: Record<string, unknown>,
-  userId: string,
-): WorkoutSetRow {
-  const exerciseName = String(
-    raw['exercise_name'] ?? raw['title'] ?? raw['exercise_title'] ?? '',
-  );
+export function normalizeHevyRow(raw: Record<string, unknown>, userId: string): WorkoutSetRow {
+  const exerciseName = String(raw['exercise_name'] ?? raw['title'] ?? raw['exercise_title'] ?? '');
   const setIndex = Number(raw['set_index'] ?? raw['set_order'] ?? raw['index'] ?? 0);
 
   return {

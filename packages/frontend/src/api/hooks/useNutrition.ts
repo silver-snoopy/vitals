@@ -10,7 +10,7 @@ export function useNutritionDaily() {
     queryKey: QUERY_KEYS.nutrition.daily(startDate, endDate),
     queryFn: () =>
       apiFetch<ApiResponse<DailyNutritionSummary[]>>(
-        `/api/nutrition/daily?startDate=${startDate}&endDate=${endDate}`
+        `/api/nutrition/daily?startDate=${startDate}&endDate=${endDate}`,
       ),
   });
 }

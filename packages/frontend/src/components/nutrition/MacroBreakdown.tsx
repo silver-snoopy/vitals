@@ -7,12 +7,12 @@ export function MacroBreakdown({ data }: { data: DailyNutritionSummary[] }) {
   if (data.length === 0) return null;
 
   const avg = (key: keyof DailyNutritionSummary) =>
-    (data.reduce((sum, d) => sum + (d[key] as number), 0) / data.length);
+    data.reduce((sum, d) => sum + (d[key] as number), 0) / data.length;
 
   const pieData = [
     { name: 'Protein', value: Math.round(avg('protein') * 4), color: CHART_COLORS.protein },
-    { name: 'Carbs',   value: Math.round(avg('carbs')   * 4), color: CHART_COLORS.carbs },
-    { name: 'Fat',     value: Math.round(avg('fat')     * 9), color: CHART_COLORS.fat },
+    { name: 'Carbs', value: Math.round(avg('carbs') * 4), color: CHART_COLORS.carbs },
+    { name: 'Fat', value: Math.round(avg('fat') * 9), color: CHART_COLORS.fat },
   ];
 
   return (

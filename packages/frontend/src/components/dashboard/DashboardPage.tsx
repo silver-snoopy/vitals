@@ -1,10 +1,10 @@
 import { useDashboard } from '@/api/hooks/useDashboard';
-import { WeeklySummaryCard }   from './WeeklySummaryCard';
-import { NutritionChart }      from './NutritionChart';
-import { WorkoutVolumeChart }  from './WorkoutVolumeChart';
-import { WeightChart }         from './WeightChart';
+import { WeeklySummaryCard } from './WeeklySummaryCard';
+import { NutritionChart } from './NutritionChart';
+import { WorkoutVolumeChart } from './WorkoutVolumeChart';
+import { WeightChart } from './WeightChart';
 import { LatestReportPreview } from './LatestReportPreview';
-import { ChartSkeleton }       from '@/components/ui/LoadingSkeleton';
+import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 
 export function DashboardPage() {
   const { data, isLoading, error } = useDashboard();

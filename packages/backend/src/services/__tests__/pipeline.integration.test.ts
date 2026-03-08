@@ -77,8 +77,10 @@ describe.skipIf(SKIP)('Collection pipeline integration', () => {
     registry.register({
       name: 'mock-workouts',
       collect: async (s, e) => ({
-        provider: 'mock-workouts', recordCount: 0,
-        dateRange: { start: s, end: e }, errors: [],
+        provider: 'mock-workouts',
+        recordCount: 0,
+        dateRange: { start: s, end: e },
+        errors: [],
       }),
     });
 
@@ -106,36 +108,36 @@ describe.skipIf(SKIP)('Collection pipeline integration', () => {
   });
 
   it('database is reachable and migrations are applied', async () => {
-    const { rows } = await pool.query(
-      "SELECT name FROM _migrations ORDER BY name"
-    );
+    const { rows } = await pool.query('SELECT name FROM _migrations ORDER BY name');
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].name).toBe('001_initial_schema.sql');
   });
 
   it('measurements table accepts rows', async () => {
-    await pool.query(`
+    await pool.query(
+      `
       INSERT INTO measurements (user_id, source, category, metric, value, unit, measured_at)
       VALUES ($1, 'test', 'nutrition', 'calories', 2000, 'kcal', NOW())
-    `, [userId]);
-
-    const { rows } = await pool.query(
-      'SELECT * FROM measurements WHERE user_id = $1', [userId]
+    `,
+      [userId],
     );
+
+    const { rows } = await pool.query('SELECT * FROM measurements WHERE user_id = $1', [userId]);
     expect(rows).toHaveLength(1);
     expect(rows[0].metric).toBe('calories');
     expect(Number(rows[0].value)).toBe(2000);
   });
 
   it('workout_sets table accepts rows', async () => {
-    await pool.query(`
+    await pool.query(
+      `
       INSERT INTO workout_sets (user_id, source, exercise_name, set_index, weight_kg, reps, started_at)
       VALUES ($1, 'hevy', 'Squat', 0, 100, 5, NOW())
-    `, [userId]);
-
-    const { rows } = await pool.query(
-      'SELECT * FROM workout_sets WHERE user_id = $1', [userId]
+    `,
+      [userId],
     );
+
+    const { rows } = await pool.query('SELECT * FROM workout_sets WHERE user_id = $1', [userId]);
     expect(rows).toHaveLength(1);
     expect(rows[0].exercise_name).toBe('Squat');
   });

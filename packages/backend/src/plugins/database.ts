@@ -11,10 +11,7 @@ declare module 'fastify' {
   }
 }
 
-export const databasePlugin = fp(async function (
-  app: FastifyInstance,
-  opts: { env: EnvConfig },
-) {
+export const databasePlugin = fp(async function (app: FastifyInstance, opts: { env: EnvConfig }) {
   const pool = initPool(opts.env.databaseUrl);
 
   const applied = await runMigrations(pool);

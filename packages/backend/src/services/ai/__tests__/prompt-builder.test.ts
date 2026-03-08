@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { buildReportPrompt } from '../prompt-builder.js';
-import type { WeeklyDataBundle, WeeklyReport, DailyNutritionSummary, WorkoutSession, BiometricReading } from '@vitals/shared';
+import type {
+  WeeklyDataBundle,
+  WeeklyReport,
+  DailyNutritionSummary,
+  WorkoutSession,
+  BiometricReading,
+} from '@vitals/shared';
 
 const emptyBundle: WeeklyDataBundle = {
   nutrition: [],
@@ -25,7 +31,17 @@ const workoutSession: WorkoutSession = {
   title: 'Hevy Workout',
   durationSeconds: 3600,
   sets: [
-    { id: 'set-1', sessionId: 'session-1', exerciseName: 'Bench Press', setIndex: 0, weightKg: 100, reps: 5, durationSeconds: null, distanceMeters: null, rpe: 8 },
+    {
+      id: 'set-1',
+      sessionId: 'session-1',
+      exerciseName: 'Bench Press',
+      setIndex: 0,
+      weightKg: 100,
+      reps: 5,
+      durationSeconds: null,
+      distanceMeters: null,
+      rpe: 8,
+    },
   ],
   source: 'hevy',
   collectedAt: '2026-03-01T12:00:00.000Z',

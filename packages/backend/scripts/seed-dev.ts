@@ -9,12 +9,9 @@ import {
 } from '../src/services/data/normalizers.js';
 import { ingestMeasurements, ingestWorkoutSets } from '../src/services/data/ingest.js';
 
-const DATA_DIR = resolve(
-  process.env.SEED_DATA_DIR ?? join(import.meta.dirname, '../../../data'),
-);
+const DATA_DIR = resolve(process.env.SEED_DATA_DIR ?? join(import.meta.dirname, '../../../data'));
 const USER_ID = process.env.DB_DEFAULT_USER_ID ?? '00000000-0000-0000-0000-000000000001';
-const DATABASE_URL =
-  process.env.DATABASE_URL ?? 'postgresql://vitals:vitals@localhost:5432/vitals';
+const DATABASE_URL = process.env.DATABASE_URL ?? 'postgresql://vitals:vitals@localhost:5432/vitals';
 
 // Maps Cronometer biometric metric names to normalized query-friendly names
 const BIOMETRIC_METRIC_MAP: Record<string, string> = {
@@ -32,7 +29,7 @@ function parseCsv(text: string): Record<string, unknown>[] {
 
 function dedupMeasurements(rows: import('../src/services/data/normalizers.js').MeasurementRow[]) {
   const seen = new Set<string>();
-  return rows.filter(r => {
+  return rows.filter((r) => {
     const key = `${r.userId}|${r.source}|${r.metric}|${r.measuredAt.toISOString()}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -42,7 +39,7 @@ function dedupMeasurements(rows: import('../src/services/data/normalizers.js').M
 
 function dedupWorkoutSets(rows: import('../src/services/data/normalizers.js').WorkoutSetRow[]) {
   const seen = new Set<string>();
-  return rows.filter(r => {
+  return rows.filter((r) => {
     const key = `${r.userId}|${r.source}|${r.exerciseName}|${r.setIndex}|${r.startedAt?.toISOString() ?? ''}`;
     if (seen.has(key)) return false;
     seen.add(key);
@@ -65,16 +62,15 @@ async function main(): Promise<void> {
       const name = basename(file);
 
       if (file.startsWith('cronometer_nutrition_')) {
-        const measurementRows = dedupMeasurements(rows.flatMap(row =>
-          normalizeNutritionRow(row, USER_ID, 'cronometer'),
-        ));
+        const measurementRows = dedupMeasurements(
+          rows.flatMap((row) => normalizeNutritionRow(row, USER_ID, 'cronometer')),
+        );
         const result = await ingestMeasurements(pool, measurementRows);
         totalMeasurements += result.inserted;
         console.log(`[${name}]  nutrition   ${rows.length} rows -> ${result.inserted} inserted`);
         if (result.errors.length) console.warn('  errors:', result.errors);
-
       } else if (file.startsWith('cronometer_biometrics_')) {
-        const measurementRows = rows.flatMap(row => {
+        const measurementRows = rows.flatMap((row) => {
           try {
             const r = normalizeBiometricsRow(row, USER_ID, 'cronometer');
             r.metric = BIOMETRIC_METRIC_MAP[r.metric] ?? r.metric;
@@ -87,14 +83,12 @@ async function main(): Promise<void> {
         totalMeasurements += result.inserted;
         console.log(`[${name}]  biometric   ${rows.length} rows -> ${result.inserted} inserted`);
         if (result.errors.length) console.warn('  errors:', result.errors);
-
       } else if (file.startsWith('hevy_workout')) {
-        const setRows = dedupWorkoutSets(rows.map(row => normalizeHevyRow(row, USER_ID)));
+        const setRows = dedupWorkoutSets(rows.map((row) => normalizeHevyRow(row, USER_ID)));
         const result = await ingestWorkoutSets(pool, setRows);
         totalSets += result.inserted;
         console.log(`[${name}]  workout     ${rows.length} rows -> ${result.inserted} inserted`);
         if (result.errors.length) console.warn('  errors:', result.errors);
-
       } else {
         console.log(`[${name}]  (skipped — unrecognised pattern)`);
       }
@@ -103,14 +97,15 @@ async function main(): Promise<void> {
     // Refresh materialized view
     await pool.query('REFRESH MATERIALIZED VIEW CONCURRENTLY daily_aggregates');
     console.log('\ndaily_aggregates refreshed.');
-    console.log(`\nSeed complete. Total inserted: ${totalMeasurements} measurements, ${totalSets} workout sets.`);
-
+    console.log(
+      `\nSeed complete. Total inserted: ${totalMeasurements} measurements, ${totalSets} workout sets.`,
+    );
   } finally {
     await closePool();
   }
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error('Seed failed:', err);
   process.exit(1);
 });

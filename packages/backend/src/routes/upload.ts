@@ -4,10 +4,7 @@ import { parseAppleHealthExport } from '../services/collectors/apple-health/pars
 import { ingestMeasurements, ingestWorkoutSets } from '../services/data/ingest.js';
 import { refreshDailyAggregates } from '../db/helpers.js';
 
-export async function uploadRoutes(
-  app: FastifyInstance,
-  opts: { env: EnvConfig },
-): Promise<void> {
+export async function uploadRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   app.post('/api/upload/apple-health', async (request, reply) => {
     const userId = opts.env.dbDefaultUserId;
     let importId: string | null = null;
@@ -63,12 +60,14 @@ export async function uploadRoutes(
       });
     } catch (err) {
       if (importId) {
-        await app.db.query(
-          `UPDATE apple_health_imports
+        await app.db
+          .query(
+            `UPDATE apple_health_imports
            SET status = 'failed', error_message = $1
            WHERE id = $2`,
-          [err instanceof Error ? err.message : String(err), importId],
-        ).catch(() => {}); // best-effort update
+            [err instanceof Error ? err.message : String(err), importId],
+          )
+          .catch(() => {}); // best-effort update
       }
       throw err;
     }

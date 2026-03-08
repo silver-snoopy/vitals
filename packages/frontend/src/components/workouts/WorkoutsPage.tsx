@@ -1,7 +1,7 @@
 import { useWorkoutSessions } from '@/api/hooks/useWorkouts';
-import { WorkoutSessionCard }    from './WorkoutSessionCard';
+import { WorkoutSessionCard } from './WorkoutSessionCard';
 import { ExerciseProgressChart } from './ExerciseProgressChart';
-import { CardSkeleton }          from '@/components/ui/LoadingSkeleton';
+import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 
 export function WorkoutsPage() {
   const { data, isLoading, error } = useWorkoutSessions();
