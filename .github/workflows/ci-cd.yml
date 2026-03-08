@@ -51,7 +51,7 @@ jobs:
       (github.ref == 'refs/heads/master' && github.event_name == 'push') ||
       (github.event_name == 'workflow_dispatch' && (inputs.deploy_target == 'backend' || inputs.deploy_target == 'both'))
     runs-on: ubuntu-latest
-    environment: production
+    environment: glistening-serenity / production
     steps:
       - uses: actions/checkout@v4
 
