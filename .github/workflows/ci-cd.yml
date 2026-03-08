@@ -56,7 +56,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Deploy to Railway
-        run: curl -fsSX POST "${{ secrets.RAILWAY_DEPLOY_HOOK_URL }}"
+        run: |
+          curl -fsSX POST https://backboard.railway.app/graphql/v2 \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{"query":"mutation { serviceInstanceRedeploy(serviceId: \"${{ secrets.RAILWAY_SERVICE_ID }}\", environmentId: \"e8e10755-041e-4c37-a0a5-50b86ec85efa\") }"}'
 
   deploy-frontend:
     name: Deploy Frontend (Vercel)
