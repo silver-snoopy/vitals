@@ -33,6 +33,9 @@ RUN npm ci --workspace=@vitals/shared --workspace=@vitals/backend --omit=dev
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/backend/dist ./packages/backend/dist
 
+# Copy SQL migrations (not compiled by tsc, resolved relative to dist/db/migrate.js)
+COPY packages/backend/src/db/migrations ./packages/backend/dist/db/migrations
+
 USER vitals
 EXPOSE 3001
 CMD ["node", "packages/backend/dist/index.js"]
