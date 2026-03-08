@@ -1,4 +1,5 @@
 {
+  "github": { "enabled": false },
   "installCommand": "cd ../.. && npm ci",
   "buildCommand": "cd ../.. && npm run build -w @vitals/shared && npm run build -w @vitals/frontend",
   "outputDirectory": "dist",
