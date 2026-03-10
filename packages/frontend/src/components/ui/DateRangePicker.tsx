@@ -18,10 +18,9 @@ export function DateRangePicker({ compact = false }: { compact?: boolean }) {
   const { startDate, endDate, setRange } = useDateRangeStore();
   const [open, setOpen] = useState(false);
 
-  const selected: DateRange = {
-    from: parseISO(startDate),
-    to: parseISO(endDate),
-  };
+  const fromDate = parseISO(startDate);
+  const toDate = parseISO(endDate);
+  const selected: DateRange = { from: fromDate, to: toDate };
 
   const handleSelect = (range: DateRange | undefined) => {
     if (range?.from && range?.to) {
@@ -47,7 +46,7 @@ export function DateRangePicker({ compact = false }: { compact?: boolean }) {
         )}
       >
         <CalendarIcon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-        {format(parseISO(startDate), dateFmt)} — {format(parseISO(endDate), dateFmt)}
+        {format(fromDate, dateFmt)} — {format(toDate, dateFmt)}
       </PopoverTrigger>
       <PopoverContent
         className={cn('w-auto p-0', compact && 'max-w-[calc(100vw-2rem)]')}

@@ -1,26 +1,26 @@
+import { useCallback } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Moon, Sun, Monitor, Upload } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { UploadModal } from '@/components/upload/UploadModal';
 import { useSidebarStore } from '@/store/useSidebarStore';
-import { useThemeStore } from '@/store/useThemeStore';
-import { navItems } from './nav-items';
+import { useThemeStore, THEME_ICONS } from '@/store/useThemeStore';
+import { navItems, navLinkClassName } from './nav-items';
 
 export function MobileDrawer() {
   const { isOpen, close } = useSidebarStore();
-  const { theme, setTheme } = useThemeStore();
-
-  const cycleTheme = () => {
-    const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system';
-    setTheme(next);
-  };
-
-  const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
+  const { theme, cycleTheme } = useThemeStore();
+  const ThemeIcon = THEME_ICONS[theme];
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) close();
+    },
+    [close],
+  );
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
+    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent>
         <SheetHeader>
           <SheetTitle>Vitals</SheetTitle>
@@ -33,14 +33,7 @@ export function MobileDrawer() {
               to={to}
               end={end}
               onClick={close}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-accent text-accent-foreground'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                )
-              }
+              className={({ isActive }) => navLinkClassName(isActive, 'lg')}
             >
               <Icon className="h-5 w-5" />
               {label}

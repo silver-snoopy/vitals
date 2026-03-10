@@ -3,7 +3,10 @@ import { Button } from '@/components/ui/button';
 import { useWidgetOrderStore, WIDGET_LABELS } from '@/store/useWidgetOrderStore';
 
 export function WidgetOrderSettings() {
-  const { order, moveUp, moveDown, reset } = useWidgetOrderStore();
+  const order = useWidgetOrderStore((s) => s.order);
+  const moveUp = useWidgetOrderStore((s) => s.moveUp);
+  const moveDown = useWidgetOrderStore((s) => s.moveDown);
+  const reset = useWidgetOrderStore((s) => s.reset);
 
   return (
     <div className="space-y-2 rounded-lg border border-border bg-card p-3">

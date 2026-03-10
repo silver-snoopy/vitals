@@ -5,6 +5,7 @@ import type { DashboardData } from '@/api/hooks/useDashboard';
 import { Button } from '@/components/ui/button';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 import { useWidgetOrderStore } from '@/store/useWidgetOrderStore';
+import type { WidgetId } from '@/store/useWidgetOrderStore';
 import { WeeklySummaryCard } from './WeeklySummaryCard';
 import { NutritionChart } from './NutritionChart';
 import { WorkoutVolumeChart } from './WorkoutVolumeChart';
@@ -13,7 +14,7 @@ import { LatestReportPreview } from './LatestReportPreview';
 import { WidgetOrderSettings } from './WidgetOrderSettings';
 
 interface WidgetDef {
-  id: string;
+  id: WidgetId;
   halfWidth?: boolean;
   render: (dashboard: DashboardData) => React.ReactNode;
 }
@@ -45,9 +46,10 @@ const WIDGETS: WidgetDef[] = [
   },
 ];
 
-function renderOrderedWidgets(order: string[], dashboard: DashboardData) {
-  const widgetMap = new Map(WIDGETS.map((w) => [w.id, w]));
-  const ordered = order.map((id) => widgetMap.get(id)).filter(Boolean) as WidgetDef[];
+const WIDGET_MAP = new Map(WIDGETS.map((w) => [w.id, w]));
+
+function renderOrderedWidgets(order: WidgetId[], dashboard: DashboardData) {
+  const ordered = order.map((id) => WIDGET_MAP.get(id)).filter(Boolean) as WidgetDef[];
 
   const elements: React.ReactNode[] = [];
   let i = 0;

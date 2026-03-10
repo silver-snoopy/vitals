@@ -1,15 +1,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export const DEFAULT_WIDGET_ORDER = [
+export const WIDGET_IDS = [
   'nutrition-chart',
   'workout-volume-chart',
   'weight-chart',
   'weekly-summary',
   'latest-report',
-];
+] as const;
 
-export const WIDGET_LABELS: Record<string, string> = {
+export type WidgetId = (typeof WIDGET_IDS)[number];
+
+export const DEFAULT_WIDGET_ORDER: WidgetId[] = [...WIDGET_IDS];
+
+export const WIDGET_LABELS: Record<WidgetId, string> = {
   'nutrition-chart': 'Nutrition Trends',
   'workout-volume-chart': 'Workout Volume',
   'weight-chart': 'Body Weight',
@@ -18,10 +22,10 @@ export const WIDGET_LABELS: Record<string, string> = {
 };
 
 interface WidgetOrderState {
-  order: string[];
-  setOrder: (order: string[]) => void;
-  moveUp: (id: string) => void;
-  moveDown: (id: string) => void;
+  order: WidgetId[];
+  setOrder: (order: WidgetId[]) => void;
+  moveUp: (id: WidgetId) => void;
+  moveDown: (id: WidgetId) => void;
   reset: () => void;
 }
 
