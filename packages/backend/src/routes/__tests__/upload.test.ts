@@ -46,6 +46,7 @@ const testEnv: EnvConfig = {
   cronometerGwtPermutation: '',
   hevyApiKey: '',
   hevyApiBase: 'https://api.hevyapp.com/v1',
+  frontendUrl: '',
 };
 
 describe('POST /api/upload/apple-health', () => {

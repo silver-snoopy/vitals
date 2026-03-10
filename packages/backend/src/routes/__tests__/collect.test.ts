@@ -37,6 +37,7 @@ const testEnv: EnvConfig = {
   cronometerGwtPermutation: '',
   hevyApiKey: '',
   hevyApiBase: 'https://api.hevyapp.com/v1',
+  frontendUrl: '',
 };
 
 async function buildTestApp(env: EnvConfig = testEnv) {

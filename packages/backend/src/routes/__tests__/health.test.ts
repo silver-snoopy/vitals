@@ -22,6 +22,7 @@ const testEnv = {
   cronometerGwtPermutation: '',
   hevyApiKey: '',
   hevyApiBase: 'https://api.hevyapp.com/v1',
+  frontendUrl: '',
 };
 
 describe('GET /health', () => {

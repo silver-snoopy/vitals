@@ -28,6 +28,7 @@ const baseEnv: EnvConfig = {
   cronometerGwtPermutation: '',
   hevyApiKey: '',
   hevyApiBase: 'https://api.hevyapp.com/v1',
+  frontendUrl: '',
 };
 
 describe('createAIProvider', () => {
