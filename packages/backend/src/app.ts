@@ -16,6 +16,10 @@ import type { EnvConfig } from './config/env.js';
 export async function buildApp(env: EnvConfig) {
   const app = Fastify({ logger: true });
 
+  if (env.nodeEnv === 'production' && !env.frontendUrl) {
+    app.log.error('FRONTEND_URL must be set in production environment');
+    throw new Error('Missing FRONTEND_URL environment variable in production');
+  }
   await app.register(cors, {
     origin: env.nodeEnv === 'production' ? env.frontendUrl || false : true,
   });
