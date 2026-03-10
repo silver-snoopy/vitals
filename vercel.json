@@ -1,0 +1,7 @@
+{
+  "buildCommand": "npm run build -w @vitals/shared && npm run build -w @vitals/frontend",
+  "outputDirectory": "packages/frontend/dist",
+  "installCommand": "npm ci",
+  "framework": null,
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
