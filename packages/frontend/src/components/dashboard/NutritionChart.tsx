@@ -25,19 +25,21 @@ export function NutritionChart({ data }: { data: DailyNutritionSummary[] }) {
         <CardTitle className="text-base">Nutrition Trends</CardTitle>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip />
-            <Legend />
-            <Line type="monotone" dataKey="calories" stroke={CHART_COLORS.calories} dot={false} />
-            <Line type="monotone" dataKey="protein" stroke={CHART_COLORS.protein} dot={false} />
-            <Line type="monotone" dataKey="carbs" stroke={CHART_COLORS.carbs} dot={false} />
-            <Line type="monotone" dataKey="fat" stroke={CHART_COLORS.fat} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="h-[220px] md:h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="calories" stroke={CHART_COLORS.calories} dot={false} />
+              <Line type="monotone" dataKey="protein" stroke={CHART_COLORS.protein} dot={false} />
+              <Line type="monotone" dataKey="carbs" stroke={CHART_COLORS.carbs} dot={false} />
+              <Line type="monotone" dataKey="fat" stroke={CHART_COLORS.fat} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

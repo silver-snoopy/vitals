@@ -1,15 +1,9 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Salad, Dumbbell, FileText, Upload } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { UploadModal } from '@/components/upload/UploadModal';
-
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/nutrition', label: 'Nutrition', icon: Salad, end: false },
-  { to: '/workouts', label: 'Workouts', icon: Dumbbell, end: false },
-  { to: '/reports', label: 'Reports', icon: FileText, end: false },
-];
+import { navItems } from './nav-items';
 
 export function Sidebar() {
   return (

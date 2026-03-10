@@ -1,9 +1,10 @@
 import { Moon, Sun, Monitor } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useThemeStore } from '@/store/useThemeStore';
 import { DateRangePicker } from '@/components/ui/DateRangePicker';
 
-export function Topbar() {
+export function Topbar({ className }: { className?: string }) {
   const { theme, setTheme } = useThemeStore();
 
   const cycleTheme = () => {
@@ -14,7 +15,12 @@ export function Topbar() {
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
 
   return (
-    <header className="flex h-14 items-center justify-end gap-3 border-b border-border px-6">
+    <header
+      className={cn(
+        'flex h-14 items-center justify-end gap-3 border-b border-border px-6',
+        className,
+      )}
+    >
       <DateRangePicker />
       <Button variant="ghost" size="icon" onClick={cycleTheme} title={`Theme: ${theme}`}>
         <ThemeIcon className="h-4 w-4" />
