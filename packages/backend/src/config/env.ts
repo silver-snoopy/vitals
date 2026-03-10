@@ -11,6 +11,24 @@ function validateAiProvider(value: string): 'claude' | 'gemini' {
   return value as 'claude' | 'gemini';
 }
 
+/**
+ * Normalizes a frontend URL to a bare origin (protocol + host + optional port).
+ * Trims whitespace, strips any path/query/hash components, and removes trailing slashes
+ * so it can be used for exact CORS origin matching.
+ * Returns an empty string if the value is empty or not a valid absolute URL.
+ */
+export function normalizeFrontendUrl(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  try {
+    const { origin } = new URL(trimmed);
+    // URL.origin is 'null' for opaque origins (e.g. file://)
+    return origin === 'null' ? '' : origin;
+  } catch {
+    return '';
+  }
+}
+
 export interface EnvConfig {
   port: number;
   databaseUrl: string;
@@ -39,7 +57,7 @@ export function loadEnv(): EnvConfig {
     n8nApiKey: process.env.N8N_API_KEY || '',
     dbDefaultUserId: process.env.DB_DEFAULT_USER_ID || '00000000-0000-0000-0000-000000000001',
     nodeEnv: process.env.NODE_ENV || 'development',
-    frontendUrl: process.env.FRONTEND_URL || '',
+    frontendUrl: normalizeFrontendUrl(process.env.FRONTEND_URL || ''),
     cronometerUsername: process.env.CRONOMETER_USERNAME || process.env.CRON_USERNAME || '',
     cronometerPassword: process.env.CRONOMETER_PASSWORD || process.env.CRON_PASSWORD || '',
     cronometerGwtHeader: process.env.CRONOMETER_GWT_HEADER || '',
