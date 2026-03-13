@@ -194,9 +194,16 @@ In `packages/backend/package.json`:
 
 ## Success Criteria
 
-- [ ] `looksLikeLoginFailure()` catches "too many attempts" and "try again later"
-- [ ] `parseLoginResponse()` extracts JSON error messages from login endpoint
-- [ ] `ensureLogin()` throws with specific error on rate-limit JSON response
-- [ ] All new and existing unit tests pass
-- [ ] Smoke test script runs successfully with real credentials
+- [x] `looksLikeLoginFailure()` catches "too many attempts" and "try again later"
+- [x] `parseLoginResponse()` extracts JSON error messages from login endpoint
+- [x] `ensureLogin()` throws with specific error on rate-limit JSON response
+- [x] All new and existing unit tests pass (156 passing)
+- [x] Smoke test script runs successfully with real credentials (2026-03-12: 2212 kcal)
 - [ ] Daily Collection workflow executes successfully in n8n after local validation
+
+## Implementation Notes
+
+### Trailing-slash CSRF fix (not in original plan)
+During smoke-test execution, `GET /login` returned an empty body (`content-length: 0`).
+Cronometer's site changed — the login page HTML (and CSRF token) is only served at `GET /login/` (trailing slash).
+Fixed `getCsrfToken()` to try both URLs, matching the legacy project's approach.

@@ -129,6 +129,14 @@ export class CronometerAuthSession {
       }
     } else if (response.status === 200) {
       const text = await response.text();
+      const loginResponse = parseLoginResponse(response.headers.get('content-type'), text);
+      if (loginResponse?.error) {
+        const msg = String(loginResponse.error).replace(/[\r\n]/g, ' ').slice(0, 200);
+        throw new Error(`Cronometer login failed: ${msg}`);
+      }
+      if (loginResponse && loginResponse.success === false) {
+        throw new Error('Cronometer login failed: unknown response');
+      }
       if (looksLikeLoginFailure(text)) {
         throw new Error('Cronometer login failed (invalid credentials or MFA required)');
       }
@@ -141,15 +149,26 @@ export class CronometerAuthSession {
   }
 
   private async getCsrfToken(): Promise<string> {
-    const headers = new Headers();
-    this.jar.applyToRequest(headers);
-    const response = await fetch(this.config.loginUrl, { headers });
-    this.jar.updateFromResponse(response.headers);
-    if (!response.ok) throw new Error(`Cronometer login page failed: ${response.status}`);
-    const text = await response.text();
-    const token = this.extractCsrf(text);
-    if (!token) throw new Error('Cronometer CSRF token not found on login page');
-    return token;
+    const urls = this.config.loginUrl.endsWith('/')
+      ? [this.config.loginUrl]
+      : [this.config.loginUrl, `${this.config.loginUrl}/`];
+
+    let lastStatus: number | null = null;
+    for (const url of urls) {
+      const headers = new Headers();
+      this.jar.applyToRequest(headers);
+      const response = await fetch(url, { headers });
+      this.jar.updateFromResponse(response.headers);
+      lastStatus = response.status;
+      if (!response.ok) continue;
+      const text = await response.text();
+      const token = this.extractCsrf(text);
+      if (token) return token;
+    }
+    if (lastStatus && lastStatus >= 400) {
+      throw new Error(`Cronometer login page failed: ${lastStatus}`);
+    }
+    throw new Error('Cronometer CSRF token not found on login page');
   }
 
   private extractCsrf(html: string): string | null {
@@ -223,12 +242,28 @@ export class CronometerAuthSession {
   }
 }
 
+function parseLoginResponse(
+  contentType: string | null,
+  body: string,
+): { success?: boolean; error?: string } | null {
+  const isJson = (contentType ?? '').toLowerCase().includes('application/json');
+  const trimmed = body.trim();
+  if (!isJson && !trimmed.startsWith('{')) return null;
+  try {
+    return JSON.parse(trimmed) as { success?: boolean; error?: string };
+  } catch {
+    return null;
+  }
+}
+
 function looksLikeLoginFailure(text: string): boolean {
   const lower = text.toLowerCase();
   return (
     lower.includes('invalid') ||
     lower.includes('incorrect') ||
     lower.includes('authentication failed') ||
+    lower.includes('too many attempts') ||
+    lower.includes('try again later') ||
     lower.includes('two-factor') ||
     lower.includes('mfa')
   );

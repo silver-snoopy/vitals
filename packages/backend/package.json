@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "seed": "tsx scripts/seed-dev.ts",
+    "test:cronometer": "tsx scripts/test-cronometer.ts",
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
