@@ -178,7 +178,14 @@ Query Layer (parallel)
 - **n8n webhooks:** `X-API-Key` header (compared against `N8N_API_KEY` env var)
 - **Frontend:** CORS-based (no auth token — single-user app)
 - **AI API:** Anthropic API key (`ANTHROPIC_API_KEY` env var)
-- **Cronometer:** Cookie-based GWT session auth (username/password + CSRF)
+- **Cronometer:** Cookie-based GWT session auth (username/password + CSRF). Auth flow:
+  1. `GET /login/` (trailing slash required — `/login` returns empty body) → extract `anticsrf` CSRF token from HTML
+  2. `POST /login` with credentials + CSRF → 302 redirect on success, JSON `{"error":"..."}` on failure
+  3. `POST /cronometer/app` GWT RPC → `authenticate` call returns numeric `userId`
+  4. `POST /cronometer/app` GWT RPC → `generateAuthorizationToken` call returns export token
+  5. `GET /export?nonce=<token>&generate=dailySummary` → CSV download
+
+  Rate-limit detection: login endpoint returns `{"error":"Too Many Attempts..."}` JSON or HTML containing "too many attempts"/"try again later" — both are caught and thrown before any retry.
 - **Hevy:** REST API key in `api-key` header
 
 ## Deployment
