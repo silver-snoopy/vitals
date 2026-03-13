@@ -21,7 +21,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.VITALS_API_URL }}/health",
+        "url": "https://vitals-production-ee31.up.railway.app/health",
         "options": {
           "response": {
             "response": {
@@ -100,9 +100,7 @@
       ]
     }
   },
-  "active": false,
   "settings": {
     "executionOrder": "v1"
-  },
-  "tags": [{ "name": "vitals" }]
+  }
 }
