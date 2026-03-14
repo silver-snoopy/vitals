@@ -10,7 +10,7 @@ import { createAIProvider } from '../services/ai/ai-service.js';
 export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   app.post<{ Body: GenerateReportRequest }>(
     '/api/reports/generate',
-    { preHandler: apiKeyMiddleware(opts.env.n8nApiKey) },
+    { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (request, reply) => {
       const { startDate, endDate } = request.body ?? {};
       const range = validateDateRange(startDate, endDate);

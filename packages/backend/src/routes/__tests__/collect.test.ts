@@ -28,7 +28,7 @@ const testEnv: EnvConfig = {
   databaseUrl: 'postgresql://test:test@localhost:5432/test',
   aiProvider: 'claude' as const,
   aiApiKey: '',
-  n8nApiKey: 'test-api-key',
+  xApiKey: 'test-api-key',
   dbDefaultUserId: '00000000-0000-0000-0000-000000000001',
   nodeEnv: 'test',
   cronometerUsername: '',
@@ -122,7 +122,7 @@ describe('POST /api/collect', () => {
   });
 
   it('allows request when no API key is configured (dev mode)', async () => {
-    const openEnv = { ...testEnv, n8nApiKey: '' };
+    const openEnv = { ...testEnv, xApiKey: '' };
     const app = await buildTestApp(openEnv);
     const response = await app.inject({
       method: 'POST',

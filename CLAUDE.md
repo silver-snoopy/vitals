@@ -29,7 +29,7 @@
 - **Route registration:** In `app.ts` via `await app.register(routes, { env })`
 - **DB access:** `app.db` (pg.Pool decorated via `plugins/database.ts`)
 - **DB queries:** Direct parameterized SQL via pg Pool — no ORM
-- **Protected routes:** `preHandler: apiKeyMiddleware(opts.env.n8nApiKey)`
+- **Protected routes:** `preHandler: apiKeyMiddleware(opts.env.xApiKey)`
 - **Env config:** All env vars in `EnvConfig` interface (`config/env.ts`), loaded via `loadEnv()`
 - **Normalizers:** Input `Record<string, unknown>` → output typed Row (`MeasurementRow`, `WorkoutSetRow`)
 - **Ingest:** 500-row batch INSERT with `ON CONFLICT DO UPDATE` for idempotent upserts
