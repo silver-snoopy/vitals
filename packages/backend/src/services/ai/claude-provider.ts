@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { AIProvider, AIMessage, AICompletionResult, AIProviderConfig } from '@vitals/shared';
 
-const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
+const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 const DEFAULT_MAX_TOKENS = 4096;
 
 export class ClaudeProvider implements AIProvider {
