@@ -8,7 +8,7 @@ import { validateDateRange, isDateRangeError } from '../utils/validate-dates.js'
 export async function collectRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   app.post<{ Body: CollectRequest }>(
     '/api/collect',
-    { preHandler: apiKeyMiddleware(opts.env.n8nApiKey) },
+    { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (request, reply) => {
       const { startDate, endDate, providers } = request.body ?? {};
       const range = validateDateRange(startDate, endDate);

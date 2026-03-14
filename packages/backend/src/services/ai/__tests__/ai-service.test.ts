@@ -19,7 +19,7 @@ const baseEnv: EnvConfig = {
   databaseUrl: 'postgresql://test:test@localhost:5432/test',
   aiProvider: 'claude' as const,
   aiApiKey: 'test-api-key',
-  n8nApiKey: '',
+  xApiKey: '',
   dbDefaultUserId: '00000000-0000-0000-0000-000000000001',
   nodeEnv: 'test',
   cronometerUsername: '',
