@@ -50,8 +50,14 @@
 - Route tests: Fastify `app.inject()` with `testEnv` object matching `EnvConfig`
 - Integration tests: `*.integration.test.ts` — excluded from default run via `vitest.config.ts`
 - Run integration tests: `npm run test:integration -w @vitals/backend`
+- **E2E tests:** Playwright — `npm run test:e2e` (auto-starts frontend dev server)
+- **E2E convention:** New user-facing features that add or change interactive behavior (buttons, forms, flows) must include E2E tests
+- **E2E pattern:** Page Object Model — page objects in `e2e/pages/`, fixtures in `e2e/fixtures/`, specs in `e2e/`
+- **E2E API mocking:** Route interception with deterministic fixture data — no real backend needed
 
 ## Documentation
 - Architecture: `docs/architecture.md`
+- Product capabilities: `docs/product-capabilities.md` (living document — use-case catalog with E2E traceability)
 - Implementation plans: `docs/plans/` (dated, versioned by phase)
 - Decision records: `docs/research/` (dated ADR-style documents)
+- **New features must be added to `docs/product-capabilities.md`** with a use-case ID (e.g., UC-RPT-05), user story, behavior description, and E2E coverage reference
