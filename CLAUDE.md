@@ -61,3 +61,13 @@
 - Implementation plans: `docs/plans/` (dated, versioned by phase)
 - Decision records: `docs/research/` (dated ADR-style documents)
 - **New features must be added to `docs/product-capabilities.md`** with a use-case ID (e.g., UC-RPT-05), user story, behavior description, and E2E coverage reference
+- Feature spec template: `.claude/skills/dev-pipeline/templates/feature-spec.md`
+
+## Development Pipeline
+- **Full pipeline:** `/dev-pipeline <spec-file-or-description>` — orchestrated 9-phase workflow
+- **Phases:** Read Spec → QA Verify (bugs) → Research → User Gate → Analyze & Plan → Implement → Code Review → QA Test → Update Docs → Commit & PR
+- **Skill location:** `.claude/skills/dev-pipeline/` with phase reference docs in `phases/`
+- **Hooks:** `.claude/settings.json` — auto-format with Prettier on every Edit/Write (PostToolUse hook)
+- **User gate:** Agent MUST stop after Phase 3 (Research) to get user approval before writing code
+- **Plan gate:** Phase 4 writes implementation plan to `docs/plans/` before any code is written
+- **Documentation gate:** Phase 8 requires updating `docs/product-capabilities.md` for all user-facing changes
