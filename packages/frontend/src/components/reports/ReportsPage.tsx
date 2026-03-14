@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { RefreshCw, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import type { ApiError } from '@vitals/shared';
 import { useReports, useGenerateReport } from '@/api/hooks/useReports';
 import { ReportCard } from './ReportCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -28,8 +29,17 @@ export function ReportsPage() {
         toast.success('Report generated successfully');
         setConfirmOpen(false);
       },
-      onError: () => {
-        toast.error('Failed to generate report. Check that the AI service is configured.');
+      onError: (err: unknown) => {
+        const status = (err as Partial<ApiError>)?.statusCode;
+        if (status === 429) {
+          toast.error('AI service is rate limited. Please try again in a few minutes.');
+        } else if (status === 502) {
+          toast.error('AI service is temporarily unavailable. Please try again later.');
+        } else if (status === 503) {
+          toast.error('AI service is not configured. Set AI_API_KEY and AI_PROVIDER.');
+        } else {
+          toast.error('Failed to generate report.');
+        }
         setConfirmOpen(false);
       },
     });
