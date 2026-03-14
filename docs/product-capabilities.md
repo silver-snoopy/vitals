@@ -82,6 +82,8 @@ and biometrics (Apple Health) in a single unified dashboard.
 - Clicking triggers POST to `/api/reports/generate` immediately (no confirmation needed)
 - Report always covers the **last 7 days** — computed at call time, independent of the date range picker
 - Button shows spinner while generating; toast on success/error
+- Error toasts are context-specific: rate limit (429), AI unavailable (502), not configured (503), or generic failure
+- Backend sanitizes all AI provider errors — no internal API details are exposed to the client
 - Generated report card appears in the list after completion
 
 **Design decision:** Reports are a snapshot of the user's current week, not a historical trend query.

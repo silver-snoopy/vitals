@@ -34,13 +34,36 @@ export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig 
         });
       }
 
-      const report = await generateWeeklyReport(
-        app.db,
-        aiProvider,
-        opts.env.dbDefaultUserId,
-        range.start,
-        range.end,
-      );
+      let report;
+      try {
+        report = await generateWeeklyReport(
+          app.db,
+          aiProvider,
+          opts.env.dbDefaultUserId,
+          range.start,
+          range.end,
+        );
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        const isRateLimit = /\b429\b|rate[_ -]?limit|too many requests|quota exceeded/i.test(
+          message,
+        );
+
+        if (isRateLimit) {
+          return reply.code(429).send({
+            error: 'Too Many Requests',
+            message: 'AI service is rate limited. Please try again later.',
+            statusCode: 429,
+          });
+        }
+
+        request.log.error({ err }, 'Report generation failed');
+        return reply.code(502).send({
+          error: 'Bad Gateway',
+          message: 'AI service failed to generate the report. Please try again later.',
+          statusCode: 502,
+        });
+      }
 
       return reply.code(200).send({ success: true, data: report });
     },

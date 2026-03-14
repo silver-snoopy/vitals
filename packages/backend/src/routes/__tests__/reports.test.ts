@@ -148,6 +148,46 @@ describe('POST /api/reports/generate', () => {
     await app.close();
   });
 
+  it('returns 429 with safe message on rate limit error', async () => {
+    const { generateWeeklyReport } = await import('../../services/ai/report-generator.js');
+    (generateWeeklyReport as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('429 Too Many Requests: quota exceeded'),
+    );
+
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/reports/generate',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
+    });
+    expect(response.statusCode).toBe(429);
+    const body = JSON.parse(response.body);
+    expect(body.message).toBe('AI service is rate limited. Please try again later.');
+    expect(body.message).not.toContain('quota');
+    await app.close();
+  });
+
+  it('returns 502 with safe message on AI provider error', async () => {
+    const { generateWeeklyReport } = await import('../../services/ai/report-generator.js');
+    (generateWeeklyReport as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('Connection refused to generativelanguage.googleapis.com'),
+    );
+
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/reports/generate',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
+    });
+    expect(response.statusCode).toBe(502);
+    const body = JSON.parse(response.body);
+    expect(body.message).toBe('AI service failed to generate the report. Please try again later.');
+    expect(body.message).not.toContain('googleapis');
+    await app.close();
+  });
+
   it('returns 200 with generated report for valid request', async () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
