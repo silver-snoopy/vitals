@@ -28,7 +28,7 @@ export async function collectRoutes(app: FastifyInstance, opts: { env: EnvConfig
         endDate: range.end,
       });
 
-      return reply.code(200).send({ data: result });
+      return reply.code(200).send({ success: true, data: result });
     },
   );
 }

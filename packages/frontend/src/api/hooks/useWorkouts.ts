@@ -16,11 +16,12 @@ export function useWorkoutSessions() {
 }
 
 export function useExerciseProgress(exerciseName: string | null) {
+  const { startDate, endDate } = useDateRangeStore();
   return useQuery({
-    queryKey: QUERY_KEYS.workouts.progress(exerciseName ?? ''),
+    queryKey: [...QUERY_KEYS.workouts.progress(exerciseName ?? ''), startDate, endDate],
     queryFn: () =>
       apiFetch<ApiResponse<ExerciseProgress>>(
-        `/api/workouts/progress/${encodeURIComponent(exerciseName!)}`,
+        `/api/workouts/progress/${encodeURIComponent(exerciseName!)}?startDate=${startDate}&endDate=${endDate}`,
       ),
     enabled: !!exerciseName,
   });

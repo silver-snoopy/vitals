@@ -8,6 +8,13 @@ export interface IngestResult {
 
 const BATCH_SIZE = 500;
 
+/** Remove duplicate rows within an array, keeping the last occurrence (latest wins). */
+function dedup<T>(rows: T[], keyFn: (r: T) => string): T[] {
+  const map = new Map<string, T>();
+  for (const r of rows) map.set(keyFn(r), r);
+  return Array.from(map.values());
+}
+
 function chunk<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < arr.length; i += size) {
@@ -33,11 +40,12 @@ export async function ingestMeasurements(
 ): Promise<IngestResult> {
   if (rows.length === 0) return { inserted: 0, errors: [] };
 
+  const unique = dedup(rows, (r) => `${r.userId}|${r.source}|${r.metric}|${r.measuredAt}`);
   const COL_COUNT = 9;
   let inserted = 0;
   const errors: string[] = [];
 
-  for (const batch of chunk(rows, BATCH_SIZE)) {
+  for (const batch of chunk(unique, BATCH_SIZE)) {
     const values: unknown[] = [];
     for (const r of batch) {
       values.push(
@@ -89,11 +97,15 @@ export async function ingestWorkoutSets(
 ): Promise<IngestResult> {
   if (rows.length === 0) return { inserted: 0, errors: [] };
 
+  const unique = dedup(
+    rows,
+    (r) => `${r.userId}|${r.source}|${r.exerciseName}|${r.setIndex}|${r.startedAt ?? ''}`,
+  );
   const COL_COUNT = 13;
   let inserted = 0;
   const errors: string[] = [];
 
-  for (const batch of chunk(rows, BATCH_SIZE)) {
+  for (const batch of chunk(unique, BATCH_SIZE)) {
     const values: unknown[] = [];
     for (const r of batch) {
       values.push(

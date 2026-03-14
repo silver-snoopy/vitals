@@ -29,7 +29,7 @@ export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig 
       } catch {
         return reply.code(503).send({
           error: 'Service Unavailable',
-          message: 'AI service is not configured. Set ANTHROPIC_API_KEY.',
+          message: 'AI service is not configured. Set AI_API_KEY and AI_PROVIDER.',
           statusCode: 503,
         });
       }
@@ -42,7 +42,7 @@ export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig 
         range.end,
       );
 
-      return reply.code(200).send({ data: report });
+      return reply.code(200).send({ success: true, data: report });
     },
   );
 

@@ -151,6 +151,31 @@ describe('normalizeBiometricsRow', () => {
     expect(row.value).toBe(18.5);
   });
 
+  it('normalizes vendor-specific metric names to standard names', () => {
+    const raw = { date: '2026-03-01', metric: 'Weight (Withings)', value: '82.5', unit: 'kg' };
+    const row = normalizeBiometricsRow(raw, userId, 'cronometer');
+    expect(row.metric).toBe('weight_kg');
+    expect(row.unit).toBe('kg');
+  });
+
+  it('normalizes Heart Rate (Apple Health) to heart_rate_bpm', () => {
+    const raw = {
+      date: '2026-03-01',
+      metric: 'Heart Rate (Apple Health)',
+      value: '72',
+      unit: 'bpm',
+    };
+    const row = normalizeBiometricsRow(raw, userId, 'cronometer');
+    expect(row.metric).toBe('heart_rate_bpm');
+  });
+
+  it('passes through unknown metrics unchanged', () => {
+    const raw = { date: '2026-03-01', metric: 'Blood Glucose', value: '5.5', unit: 'mmol/L' };
+    const row = normalizeBiometricsRow(raw, userId, 'cronometer');
+    expect(row.metric).toBe('Blood Glucose');
+    expect(row.unit).toBe('mmol/L');
+  });
+
   it('throws when value is missing', () => {
     expect(() =>
       normalizeBiometricsRow({ date: '2026-03-01', metric: 'weight_kg' }, userId, 'cronometer'),

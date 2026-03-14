@@ -114,6 +114,26 @@ export function normalizeHevyRow(raw: Record<string, unknown>, userId: string): 
 }
 
 /**
+ * Map vendor-specific biometric metric names to standardized names.
+ * Keys are lowercased for case-insensitive matching.
+ */
+const BIOMETRIC_METRIC_MAP: Record<string, { metric: string; unit: string }> = {
+  'weight (withings)': { metric: 'weight_kg', unit: 'kg' },
+  weight: { metric: 'weight_kg', unit: 'kg' },
+  'body fat (withings)': { metric: 'body_fat_pct', unit: '%' },
+  'body fat': { metric: 'body_fat_pct', unit: '%' },
+  'heart rate (apple health)': { metric: 'heart_rate_bpm', unit: 'bpm' },
+  'resting heart rate (apple health)': { metric: 'resting_heart_rate_bpm', unit: 'bpm' },
+  'heart rate variability (hrv) (apple health)': { metric: 'hrv_ms', unit: 'ms' },
+  'oxygen saturation (spo2) (apple health)': { metric: 'spo2_pct', unit: '%' },
+  'respiration rate (apple health)': { metric: 'respiration_rate_brpm', unit: 'brpm' },
+};
+
+function normalizeBiometricMetric(raw: string, rawUnit: string): { metric: string; unit: string } {
+  return BIOMETRIC_METRIC_MAP[raw.toLowerCase()] ?? { metric: raw, unit: rawUnit };
+}
+
+/**
  * Normalize a raw biometric reading into a single MeasurementRow.
  * Expects fields: date/Day, metric/Metric, value/Amount, unit.
  */
@@ -125,11 +145,12 @@ export function normalizeBiometricsRow(
   const dateStr = raw['date'] ?? raw['Day'] ?? raw['Date'];
   const measuredAt = requiredDate(dateStr, 'date');
 
-  const metric = String(raw['metric'] ?? raw['Metric'] ?? '');
-  const unit = String(raw['unit'] ?? raw['Unit'] ?? '');
+  const rawMetric = String(raw['metric'] ?? raw['Metric'] ?? '');
+  const rawUnit = String(raw['unit'] ?? raw['Unit'] ?? '');
+  const { metric, unit } = normalizeBiometricMetric(rawMetric, rawUnit);
   const value = toNum(raw['value'] ?? raw['Amount']);
 
-  if (value === null) throw new Error(`Missing value for biometric metric '${metric}'`);
+  if (value === null) throw new Error(`Missing value for biometric metric '${rawMetric}'`);
 
   return { userId, source, category: 'biometric', metric, value, unit, measuredAt, tags: {} };
 }
