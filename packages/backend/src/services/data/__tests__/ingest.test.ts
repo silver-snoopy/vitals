@@ -57,7 +57,11 @@ describe('ingestMeasurements', () => {
 
   it('inserts a single batch and returns row count', async () => {
     const pool = makePool(3);
-    const rows = [makeMeasurementRow(), makeMeasurementRow(), makeMeasurementRow()];
+    const rows = [
+      makeMeasurementRow({ metric: 'calories' }),
+      makeMeasurementRow({ metric: 'protein' }),
+      makeMeasurementRow({ metric: 'fat' }),
+    ];
     const result = await ingestMeasurements(pool, rows);
     expect(result.inserted).toBe(3);
     expect(result.errors).toHaveLength(0);
@@ -96,7 +100,12 @@ describe('ingestMeasurements', () => {
     };
     const pool = { connect: vi.fn().mockResolvedValue(client) } as unknown as pg.Pool;
 
-    const rows = Array.from({ length: 1050 }, () => makeMeasurementRow());
+    const rows = Array.from({ length: 1050 }, (_, i) =>
+      makeMeasurementRow({
+        measuredAt: new Date(`2026-01-01T00:00:${String(i % 60).padStart(2, '0')}Z`),
+        metric: `m${i}`,
+      }),
+    );
     await ingestMeasurements(pool, rows);
     // 1050 rows → 3 batches (500, 500, 50)
     expect(batchCount).toBe(3);
@@ -116,7 +125,7 @@ describe('ingestMeasurements', () => {
     };
     const pool = { connect: vi.fn().mockResolvedValue(client) } as unknown as pg.Pool;
 
-    const rows = Array.from({ length: 600 }, () => makeMeasurementRow());
+    const rows = Array.from({ length: 600 }, (_, i) => makeMeasurementRow({ metric: `m${i}` }));
     const result = await ingestMeasurements(pool, rows);
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toContain('DB error on batch 1');
