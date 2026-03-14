@@ -40,6 +40,31 @@ function countDistinctDays(dates: string[]): number {
   return new Set(dates.map((d) => d.split('T')[0])).size;
 }
 
+async function completeWithRetry(
+  aiProvider: AIProvider,
+  messages: Parameters<AIProvider['complete']>[0],
+  maxRetries = 3,
+): ReturnType<AIProvider['complete']> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await aiProvider.complete(messages);
+    } catch (err: unknown) {
+      const isRateLimit =
+        (err instanceof Error && /429|rate.limit|too many requests/i.test(err.message)) ||
+        (typeof err === 'object' &&
+          err !== null &&
+          'status' in err &&
+          (err as { status: number }).status === 429);
+
+      if (!isRateLimit || attempt === maxRetries) throw err;
+
+      const delay = Math.min(1000 * 2 ** attempt, 30_000);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  throw new Error('Unreachable');
+}
+
 export async function generateWeeklyReport(
   pool: pg.Pool,
   aiProvider: AIProvider,
@@ -64,7 +89,7 @@ export async function generateWeeklyReport(
 
   // 3. Build and send prompt
   const messages = buildReportPrompt({ nutrition, workouts, biometrics, previousReport });
-  const result = await aiProvider.complete(messages);
+  const result = await completeWithRetry(aiProvider, messages);
 
   // 4. Parse response
   const parsed = parseAIResponse(result.content);

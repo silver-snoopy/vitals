@@ -93,7 +93,7 @@ describe('GET /api/workouts/progress/:exerciseName', () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'GET',
-      url: '/api/workouts/progress/Bench%20Press',
+      url: '/api/workouts/progress/Bench%20Press?startDate=2026-03-01&endDate=2026-03-07',
     });
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
@@ -106,7 +106,7 @@ describe('GET /api/workouts/progress/:exerciseName', () => {
     const app = await buildApp(testEnv);
     await app.inject({
       method: 'GET',
-      url: '/api/workouts/progress/Bench%20Press',
+      url: '/api/workouts/progress/Bench%20Press?startDate=2026-03-01&endDate=2026-03-07',
     });
     const calls = (workoutQueries.queryExerciseProgress as ReturnType<typeof vi.fn>).mock.calls;
     expect(calls).toHaveLength(1);

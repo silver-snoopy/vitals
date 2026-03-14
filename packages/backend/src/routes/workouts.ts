@@ -29,14 +29,30 @@ export async function workoutRoutes(app: FastifyInstance, opts: { env: EnvConfig
     },
   );
 
-  app.get<{ Params: { exerciseName: string } }>(
-    '/api/workouts/progress/:exerciseName',
-    async (request, reply) => {
-      const exerciseName = decodeURIComponent(request.params.exerciseName);
+  app.get<{
+    Params: { exerciseName: string };
+    Querystring: { startDate?: string; endDate?: string };
+  }>('/api/workouts/progress/:exerciseName', async (request, reply) => {
+    const exerciseName = decodeURIComponent(request.params.exerciseName);
+    const { startDate, endDate } = request.query;
+    const range = validateDateRange(startDate, endDate);
 
-      const data = await queryExerciseProgress(app.db, opts.env.dbDefaultUserId, exerciseName);
+    if (isDateRangeError(range)) {
+      return reply.code(400).send({
+        error: 'Bad Request',
+        message: range.error,
+        statusCode: 400,
+      });
+    }
 
-      return reply.code(200).send({ data });
-    },
-  );
+    const data = await queryExerciseProgress(
+      app.db,
+      opts.env.dbDefaultUserId,
+      exerciseName,
+      range.start,
+      range.end,
+    );
+
+    return reply.code(200).send({ data });
+  });
 }

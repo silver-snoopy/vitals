@@ -122,7 +122,10 @@ export async function queryExerciseProgress(
   pool: pg.Pool,
   userId: string,
   exerciseName: string,
+  startDate?: Date,
+  endDate?: Date,
 ): Promise<ExerciseProgress> {
+  const hasDateRange = startDate && endDate;
   const { rows } = await pool.query(
     `SELECT DATE(started_at) AS day,
        MAX(weight_kg) AS max_weight,
@@ -130,9 +133,10 @@ export async function queryExerciseProgress(
        COUNT(*) AS total_sets
      FROM workout_sets
      WHERE user_id = $1 AND exercise_name = $2
+       ${hasDateRange ? 'AND started_at BETWEEN $3 AND $4' : ''}
      GROUP BY DATE(started_at)
      ORDER BY day`,
-    [userId, exerciseName],
+    hasDateRange ? [userId, exerciseName, startDate, endDate] : [userId, exerciseName],
   );
 
   return {
