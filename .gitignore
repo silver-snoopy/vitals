@@ -49,6 +49,10 @@ dist/
 # Git worktrees
 .worktrees/
 
+# Playwright
+playwright-report/
+test-results/
+
 # OS
 .DS_Store
 Thumbs.db
