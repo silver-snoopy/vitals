@@ -1,4 +1,4 @@
-# Phase 6: QA Test
+# Phase 7: QA Test
 
 ## Purpose
 Verify all changes work correctly through automated tests and, when applicable, live environment verification.

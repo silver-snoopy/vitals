@@ -16,8 +16,9 @@ Do NOT skip phases. Each phase has explicit exit criteria that must be met befor
 
 ```
 Phase 1: Read Spec → Phase 2: QA Verify → Phase 3: Research
-    → USER GATE → Phase 4: Implement → Phase 5: Code Review
-    → Phase 6: QA Test → Phase 7: Update Docs → Phase 8: Commit & PR
+    → USER GATE → Phase 4: Analyze & Plan → Phase 5: Implement
+    → Phase 6: Code Review → Phase 7: QA Test → Phase 8: Update Docs
+    → Phase 9: Commit & PR
 ```
 
 ---
@@ -82,17 +83,41 @@ Include in your presentation:
 
 ---
 
-## Phase 4: Implement
+## Phase 4: Analyze & Plan
 
-Write the code following project conventions from CLAUDE.md.
+Write a detailed implementation plan based on the approved approach from the user gate.
 
-For detailed instructions, see [phases/04-implement.md](phases/04-implement.md).
+Launch a Plan agent to design the implementation:
+- Provide all research context from Phase 3 (file paths, code traces, patterns found)
+- Include the approved approach and any user feedback from the gate
+- Request a step-by-step implementation plan with file-level granularity
+
+The plan should include:
+1. **Ordered task list** — What to build and in what sequence (respecting build order: shared → backend → frontend)
+2. **Files to create/modify** — Exact paths with description of changes per file
+3. **Dependencies** — New packages needed (if any)
+4. **Test strategy** — What unit tests and E2E tests to write
+5. **Risk areas** — Anything that could go wrong or needs extra care
+
+Write the plan to a file: `docs/plans/<date>-<feature-slug>.md`
+
+For detailed instructions, see [phases/04-analyze-plan.md](phases/04-analyze-plan.md).
+
+**Exit criteria:** Implementation plan is written to a plan file. Each task is specific enough to execute without ambiguity.
+
+---
+
+## Phase 5: Implement
+
+Write the code following the plan from Phase 4 and project conventions from CLAUDE.md.
+
+For detailed instructions, see [phases/05-implement.md](phases/05-implement.md).
 
 **Exit criteria:** All code changes compile (`npm run build` passes).
 
 ---
 
-## Phase 5: Code Review
+## Phase 6: Code Review
 
 Spawn 3 review agents IN PARALLEL using the `superpowers:requesting-code-review` skill or the `feature-dev:code-reviewer` agent:
 
@@ -102,17 +127,17 @@ Spawn 3 review agents IN PARALLEL using the `superpowers:requesting-code-review`
 
 Fix any HIGH or MEDIUM findings before proceeding.
 
-For detailed instructions, see [phases/05-code-review.md](phases/05-code-review.md).
+For detailed instructions, see [phases/06-code-review.md](phases/06-code-review.md).
 
 **Exit criteria:** No unresolved HIGH/MEDIUM findings. Build still passes.
 
 ---
 
-## Phase 6: QA Test
+## Phase 7: QA Test
 
 Run the full test suite and verify changes work end-to-end.
 
-For detailed instructions, see [phases/06-qa-test.md](phases/06-qa-test.md).
+For detailed instructions, see [phases/07-qa-test.md](phases/07-qa-test.md).
 
 Steps:
 1. Run `npm run lint` — must pass with 0 errors
@@ -126,11 +151,11 @@ Steps:
 
 ---
 
-## Phase 7: Update Documentation
+## Phase 8: Update Documentation
 
 Update project documentation to reflect the changes.
 
-For detailed instructions, see [phases/07-update-docs.md](phases/07-update-docs.md).
+For detailed instructions, see [phases/08-update-docs.md](phases/08-update-docs.md).
 
 **Required updates:**
 1. **`docs/product-capabilities.md`** — Add new use cases or update existing ones with UC IDs, user stories, behavior specs, and E2E coverage references
@@ -141,11 +166,11 @@ For detailed instructions, see [phases/07-update-docs.md](phases/07-update-docs.
 
 ---
 
-## Phase 8: Commit & PR
+## Phase 9: Commit & PR
 
 Create a clean commit and open a pull request.
 
-For detailed instructions, see [phases/08-commit-pr.md](phases/08-commit-pr.md).
+For detailed instructions, see [phases/09-commit-pr.md](phases/09-commit-pr.md).
 
 Steps:
 1. Stage relevant files (not .env, credentials, or unrelated changes)

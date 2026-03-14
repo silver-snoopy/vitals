@@ -64,9 +64,10 @@
 - Feature spec template: `.claude/skills/dev-pipeline/templates/feature-spec.md`
 
 ## Development Pipeline
-- **Full pipeline:** `/dev-pipeline <spec-file-or-description>` — orchestrated 8-phase workflow
-- **Phases:** Read Spec → QA Verify (bugs) → Research → User Gate → Implement → Code Review → QA Test → Update Docs → Commit & PR
+- **Full pipeline:** `/dev-pipeline <spec-file-or-description>` — orchestrated 9-phase workflow
+- **Phases:** Read Spec → QA Verify (bugs) → Research → User Gate → Analyze & Plan → Implement → Code Review → QA Test → Update Docs → Commit & PR
 - **Skill location:** `.claude/skills/dev-pipeline/` with phase reference docs in `phases/`
 - **Hooks:** `.claude/settings.json` — auto-format with Prettier on every Edit/Write (PostToolUse hook)
 - **User gate:** Agent MUST stop after Phase 3 (Research) to get user approval before writing code
-- **Documentation gate:** Phase 7 requires updating `docs/product-capabilities.md` for all user-facing changes
+- **Plan gate:** Phase 4 writes implementation plan to `docs/plans/` before any code is written
+- **Documentation gate:** Phase 8 requires updating `docs/product-capabilities.md` for all user-facing changes
