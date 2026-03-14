@@ -1,5 +1,10 @@
 import pg from 'pg';
 
+// Return DATE columns as plain strings (YYYY-MM-DD) instead of Date objects.
+// pg constructs Date at midnight local time, so toISOString() shifts the date
+// back by the UTC offset — causing off-by-one day bugs in non-UTC timezones.
+pg.types.setTypeParser(1082, (val) => val);
+
 const { Pool } = pg;
 
 let pool: pg.Pool | null = null;
