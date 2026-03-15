@@ -25,6 +25,11 @@ const priorityVariant: Record<'high' | 'medium' | 'low', 'destructive' | 'second
     low: 'outline',
   };
 
+export const REPORT_NOTES_LABEL_TEXT = 'Notes for AI (optional)';
+export const REPORT_NOTES_PLACEHOLDER =
+  "Add any context for your report — goals you're tracking, injuries, diet changes, or anything the AI should consider when analyzing your data.";
+export const REPORT_NOTES_FIELD_ID = 'dashboard-user-notes';
+
 export function LatestReportPreview() {
   const { data, isLoading } = useLatestReport();
   const generateReport = useGenerateReport();
@@ -140,14 +145,14 @@ export function LatestReportPreview() {
             <DialogDescription>{dialogDescription}</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
-            <label htmlFor="dashboard-user-notes" className="text-sm font-medium">
-              Notes for AI (optional)
+            <label htmlFor={REPORT_NOTES_FIELD_ID} className="text-sm font-medium">
+              {REPORT_NOTES_LABEL_TEXT}
             </label>
             <Textarea
-              id="dashboard-user-notes"
+              id={REPORT_NOTES_FIELD_ID}
               value={userNotes}
               onChange={(e) => setUserNotes(e.target.value)}
-              placeholder="Add any context for your report — goals you're tracking, injuries, diet changes, or anything the AI should consider when analyzing your data."
+              placeholder={REPORT_NOTES_PLACEHOLDER}
               rows={4}
             />
           </div>
