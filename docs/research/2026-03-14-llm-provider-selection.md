@@ -287,6 +287,134 @@ Set billing alerts on the Anthropic dashboard. At these volumes, even a 10x spik
 
 ---
 
+## Amendment: Revised Token Estimates Post-Implementation (2026-03-15)
+
+**Context:** The original workload profile (§ Workload Profile) estimated ~500-1500 input tokens and ~500-800 output tokens per request (~2,000 total). This was based on a simple prompt-and-response model. The implemented report feature (UC-RPT-05) uses a **3-file system prompt** and demands a **structured 8-section JSON response**, both of which substantially increase token usage.
+
+### Actual Token Breakdown
+
+**System prompt (input — fixed cost per request):**
+
+| Component | Characters | Est. Tokens | Content |
+|-----------|-----------|-------------|---------|
+| `persona.md` | 1,652 | ~410 | Role, tone, analysis rules |
+| `analysis-protocol.md` | 2,303 | ~580 | 5-step processing protocol |
+| `output-format.md` | 3,027 | ~760 | JSON schema, scorecard, constraints |
+| **System total** | **6,982** | **~1,750** | |
+
+**User message (input — varies with data volume):**
+
+| Section | Est. Tokens | Notes |
+|---------|-------------|-------|
+| Nutrition table (7 days + 2 avg rows) | ~300 | 9 columns per row |
+| Biometrics summary + daily details | ~400 | 6 key metrics with daily values |
+| Training data (3-5 sessions) | ~500 | Exercise tables with sets, weight, reps, RPE |
+| Workout plan + user notes | ~150 | Optional, varies |
+| Previous report context | ~100 | Truncated to 500 chars |
+| Headings + separators | ~50 | Markdown structure |
+| **User message total** | **~1,500** | Typical week with moderate data |
+
+**Output (structured 8-section JSON):**
+
+| Section | Est. Tokens | Notes |
+|---------|-------------|-------|
+| `summary` | ~30 | 1-2 sentences |
+| `biometricsOverview` | ~300 | Tables + signal indicators + prose |
+| `nutritionAnalysis` | ~300 | Tables + EA calculation |
+| `trainingLoad` | ~250 | Session summaries + volume progression |
+| `crossDomainCorrelation` | ~200 | Multi-domain synthesis |
+| `whatsWorking` | ~100 | 3-5 bullet points |
+| `hazards` | ~150 | Numbered list with mechanisms |
+| `recommendations` | ~200 | 3 subsections (immediate/monitor/medium-term) |
+| `scorecard` (6 entries) | ~120 | Score + justification each |
+| `actionItems` (3-7 items) | ~100 | Category + priority + text |
+| JSON structure overhead | ~50 | Keys, braces, formatting |
+| **Output total** | **~1,800** | |
+
+### Revised Per-Request Totals
+
+| Metric | Original Estimate | Actual (Implemented) | Delta |
+|--------|-------------------|---------------------|-------|
+| Input tokens | 500–1,500 | **~3,250** (1,750 system + 1,500 data) | +2.2–6.5× |
+| Output tokens | 500–800 | **~1,800** | +2.3–3.6× |
+| **Total tokens** | **~2,000** | **~5,050** | **+2.5×** |
+
+The primary driver is the 1,750-token system prompt (not accounted for in the original estimate) and the 8-section output format requiring ~1,800 output tokens (vs the assumed 500-800 for a simpler summary + insights + action items format).
+
+### Revised Monthly Cost Estimates
+
+**Monthly volumes:**
+
+| Scenario | Requests/month | Input tokens/month | Output tokens/month |
+|----------|---------------|-------------------|-------------------|
+| Average (1/day) | 30 | ~97,500 | ~54,000 |
+| Peak (3/day) | 90 | ~292,500 | ~162,000 |
+
+**Revised cost table (all models):**
+
+| Model | Input $/1M | Output $/1M | Avg $/mo | Peak $/mo | Original Peak |
+|-------|-----------|-------------|---------|----------|--------------|
+| **Gemini 2.0 Flash** (free) | $0.00 | $0.00 | $0.000 | $0.000 | $0.000 |
+| **GPT-4o Mini** | $0.15 | $0.60 | $0.047 | $0.141 | $0.016 |
+| **GPT-5 Mini** | $0.25 | $2.00 | $0.132 | $0.397 | $0.043 |
+| **Gemini 2.5 Flash** | $0.30 | $2.50 | $0.164 | $0.493 | $0.058 |
+| **Claude Haiku 4.5** | $1.00 | $5.00 | $0.368 | $1.103 | $0.135 |
+| **Gemini 2.5 Pro** | $1.25 | $10.00 | $0.662 | $1.986 | $0.225 |
+| **GPT-5.2** | $1.75 | $14.00 | $0.928 | $2.783 | $0.284 |
+| **Claude Sonnet 4.6** | $3.00 | $15.00 | $1.108 | $3.323 | $0.338 |
+
+Costs are **~8× higher** than original estimates. The original calculation used a blended tokens/month figure without properly weighting the output-heavy nature of the structured report (output tokens cost 5× more than input for most providers).
+
+### Revised Future Phase Projections
+
+Phase additions from the original analysis remain valid — they are incremental features. The revised baseline shifts all projections upward.
+
+| Phase | Input tokens/req | Output tokens/req | Total tokens/req |
+|-------|-----------------|------------------|-----------------|
+| **Current (implemented)** | 3,250 | 1,800 | **5,050** |
+| **Phase A** (+ correlations, causal chains, TDEE, baselines) | 4,750 | 2,800 | **7,550** |
+| **Phase B** (+ sleep/HRV, CGM, blood work) | 6,250 | 3,900 | **10,150** |
+| **Phase C** (+ periodization, personal model, evidence) | 7,950 | 5,900 | **13,850** |
+
+**Revised projected peak monthly costs (90 req/month):**
+
+| Model | Current | Phase A | Phase B | Phase C |
+|-------|---------|---------|---------|---------|
+| **GPT-4o Mini** | $0.14 | $0.22 | $0.30 | $0.43 |
+| **GPT-5 Mini** | $0.40 | $0.61 | $0.84 | $1.24 |
+| **Gemini 2.5 Flash** | $0.49 | $0.76 | $1.05 | $1.54 |
+| **Claude Haiku 4.5** | $1.10 | $1.69 | $2.33 | $3.38 |
+| **Gemini 2.5 Pro** | $1.99 | $3.05 | $4.23 | $6.23 |
+| **GPT-5.2** | $2.78 | $4.28 | $5.93 | $8.72 |
+| **Claude Sonnet 4.6** | $3.32 | $5.07 | $6.97 | $10.14 |
+
+### Impact on Recommendation
+
+The **phased model strategy remains valid** — Haiku now, Sonnet at Phase B — but cost magnitudes are higher than originally projected:
+
+| Phase | Model | Original Peak $/mo | **Revised Peak $/mo** |
+|-------|-------|--------------------|-----------------------|
+| Current → Phase A | Claude Haiku 4.5 | $0.46 | **$1.69** |
+| Phase B | Claude Sonnet 4.6 | $1.83 | **$6.97** |
+| Phase C | Claude Sonnet 4.6 | $2.79 | **$10.14** |
+
+All costs remain well within acceptable range for a personal health tool. Even the worst-case Phase C Sonnet at ~$10/month is modest. A 10× spike would be ~$100/month — noticeable but not alarming.
+
+### Revised Billing Alerts
+
+| Phase | Original Alert | **Revised Alert** |
+|-------|---------------|-------------------|
+| Current → Phase A (Haiku) | $2/month | **$5/month** |
+| Phase B+ (Sonnet) | $5/month | **$15/month** |
+
+### Cost Reduction Levers (if needed)
+
+1. **Prompt caching** — Anthropic supports prompt caching for system prompts. The 1,750-token system prompt is identical every request; caching would reduce input costs by ~50% ($1.10 → ~$0.65 at current peak).
+2. **Output trimming** — If some sections consistently produce low-value content, they can be made conditional to reduce output tokens.
+3. **Downgrade path** — If Sonnet costs feel excessive at Phase B, GPT-5 Mini at $0.84/mo offers decent reasoning at 88% lower cost. Would require implementing `OpenAIProvider`.
+
+---
+
 ## Sources
 
 - [AI API Pricing Comparison 2026 — IntuitionLabs](https://intuitionlabs.ai/articles/ai-api-pricing-comparison-grok-gemini-openai-claude)
