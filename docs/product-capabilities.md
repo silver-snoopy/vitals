@@ -71,6 +71,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 | UC-RPT-03 | View report list and details | Implemented |
 | UC-RPT-04 | Generate from dashboard widget | Implemented |
 | UC-RPT-05 | Structured 8-section health analysis | Implemented |
+| UC-RPT-06 | Add user notes to report generation | Implemented |
 
 ### UC-RPT-01: Generate weekly insights (first report)
 
@@ -80,7 +81,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 **Behavior:**
 - Reports page shows empty state: "No reports yet. Click the button above to generate your first weekly insights."
 - Refresh icon button next to "Reports" heading with tooltip "Generate Latest Insights"
-- Clicking triggers POST to `/api/reports/generate` immediately (no confirmation needed)
+- Clicking opens a generation dialog with optional notes textarea (same dialog as re-generation)
 - Report always covers the **last 7 days** — computed at call time, independent of the date range picker
 - Button shows spinner while generating; toast on success/error
 - Error toasts are context-specific: rate limit (429), AI unavailable (502), not configured (503), or generic failure
@@ -159,6 +160,22 @@ The date range picker on other pages is irrelevant to report generation.
 - Response includes `sections` object alongside existing `summary`, `insights`, `actionItems`
 
 **E2E Coverage:** `e2e/reports.spec.ts` — UC: View structured 8-section report (UC-RPT-05)
+
+### UC-RPT-06: Add user notes to report generation
+
+**As a** user, **I want to** add notes and context before generating a report,
+**so that** the AI considers my subjective observations (goals, injuries, diet changes) alongside the data.
+
+**Behavior:**
+- Both generate and re-generate flows open a dialog before triggering the API call
+- Dialog includes an optional textarea labeled "Notes for AI (optional)"
+- Placeholder text: "Add any context for your report — goals you're tracking, injuries, diet changes, or anything the AI should consider when analyzing your data."
+- Notes are sent as `userNotes` in the POST body; empty notes are omitted
+- Notes are cleared when the dialog closes (cancel, X, or Escape)
+- Dialog title adapts: "Generate Report" (first time) vs "Re-Generate Report?" (existing reports)
+- Confirm button adapts: "Generate" vs "Re-Generate"
+
+**E2E Coverage:** `e2e/reports.spec.ts` — user notes tests in both generate and re-generate sections
 
 ---
 

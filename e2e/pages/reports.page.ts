@@ -22,18 +22,23 @@ export class ReportsPage {
     await this.page.goto('/reports');
   }
 
-  /** Get the confirmation dialog */
+  /** Get the confirmation dialog (matches both Generate and Re-Generate titles) */
   get confirmDialog() {
-    return this.page.getByText('Re-Generate Report?');
+    return this.page.getByRole('heading', { name: /Generate Report|Re-Generate Report/ });
   }
 
-  /** Click the confirm button inside the regenerate dialog */
-  async confirmRegenerate() {
-    await this.page.getByRole('button', { name: 'Re-Generate' }).click();
+  /** Get the user notes textarea */
+  get notesTextarea() {
+    return this.page.getByRole('textbox', { name: /Notes for AI/i });
   }
 
-  /** Click cancel in the regenerate dialog */
-  async cancelRegenerate() {
+  /** Click the confirm button inside the dialog */
+  async confirmGenerate() {
+    await this.page.getByRole('button', { name: /^(Re-)?Generate$/ }).click();
+  }
+
+  /** Click cancel in the dialog */
+  async cancelGenerate() {
     await this.page.getByRole('button', { name: 'Cancel' }).click();
   }
 }

@@ -6,6 +6,7 @@ import { useReports, useGenerateReport } from '@/api/hooks/useReports';
 import { ReportCard } from './ReportCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -22,9 +23,11 @@ export function ReportsPage() {
   const hasReports = reports.length > 0;
 
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [userNotes, setUserNotes] = useState('');
 
   const handleGenerate = () => {
-    generateReport.mutate(undefined, {
+    const notes = userNotes.trim();
+    generateReport.mutate(notes ? { userNotes: notes } : undefined, {
       onSuccess: () => {
         toast.success('Report generated successfully');
         setConfirmOpen(false);
@@ -46,11 +49,12 @@ export function ReportsPage() {
   };
 
   const handleClick = () => {
-    if (hasReports) {
-      setConfirmOpen(true);
-    } else {
-      handleGenerate();
-    }
+    setConfirmOpen(true);
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setConfirmOpen(open);
+    if (!open) setUserNotes('');
   };
 
   return (
@@ -94,16 +98,30 @@ export function ReportsPage() {
         )}
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog open={confirmOpen} onOpenChange={handleOpenChange}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Re-Generate Report?</DialogTitle>
+            <DialogTitle>{hasReports ? 'Re-Generate Report?' : 'Generate Report'}</DialogTitle>
             <DialogDescription>
-              This will generate a new report for the last 7 days, replacing the most recent one.
+              {hasReports
+                ? 'This will generate a new report for the last 7 days, replacing the most recent one.'
+                : 'Generate a new report analyzing your health data from the last 7 days.'}
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-2">
+            <label htmlFor="user-notes" className="text-sm font-medium">
+              Notes for AI (optional)
+            </label>
+            <Textarea
+              id="user-notes"
+              value={userNotes}
+              onChange={(e) => setUserNotes(e.target.value)}
+              placeholder="Add any context for your report — goals you're tracking, injuries, diet changes, or anything the AI should consider when analyzing your data."
+              rows={4}
+            />
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button onClick={handleGenerate} disabled={generateReport.isPending}>
@@ -112,8 +130,10 @@ export function ReportsPage() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Generating&hellip;
                 </>
-              ) : (
+              ) : hasReports ? (
                 'Re-Generate'
+              ) : (
+                'Generate'
               )}
             </Button>
           </DialogFooter>

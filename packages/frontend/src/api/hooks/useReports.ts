@@ -32,7 +32,7 @@ export function useReport(id: string) {
 export function useGenerateReport() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => {
+    mutationFn: (params?: { userNotes?: string }) => {
       const today = new Date();
       const startDate = format(subDays(today, 6), 'yyyy-MM-dd');
       const endDate = format(today, 'yyyy-MM-dd');
@@ -43,7 +43,7 @@ export function useGenerateReport() {
           'Content-Type': 'application/json',
           'x-api-key': import.meta.env.VITE_X_API_KEY ?? '',
         },
-        body: JSON.stringify({ startDate, endDate }),
+        body: JSON.stringify({ startDate, endDate, userNotes: params?.userNotes }),
       });
     },
     onSuccess: () => {
