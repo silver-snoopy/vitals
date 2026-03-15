@@ -8,6 +8,22 @@ export interface ActionItem {
   text: string;
 }
 
+export interface ScorecardEntry {
+  score: number;
+  notes: string;
+}
+
+export interface ReportSections {
+  biometricsOverview: string;
+  nutritionAnalysis: string;
+  trainingLoad: string;
+  crossDomainCorrelation: string;
+  whatsWorking: string;
+  hazards: string;
+  recommendations: string;
+  scorecard: Record<string, ScorecardEntry>;
+}
+
 export interface WeeklyReport {
   id: string;
   userId: string;
@@ -21,6 +37,7 @@ export interface WeeklyReport {
     workoutDays: number;
     biometricDays: number;
   };
+  sections?: ReportSections;
   aiProvider: string;
   aiModel: string;
   createdAt: string;
@@ -31,4 +48,9 @@ export interface WeeklyDataBundle {
   workouts: WorkoutSession[];
   biometrics: BiometricReading[];
   previousReport: WeeklyReport | null;
+  previousWeekNutrition: DailyNutritionSummary[];
+  previousWeekWorkouts: WorkoutSession[];
+  previousWeekBiometrics: BiometricReading[];
+  userNotes?: string;
+  workoutPlan?: string;
 }

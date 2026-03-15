@@ -22,4 +22,7 @@ export interface CollectRequest extends DateRangeParams {
   providers?: string[];
 }
 
-export type GenerateReportRequest = DateRangeParams;
+export interface GenerateReportRequest extends DateRangeParams {
+  userNotes?: string;
+  workoutPlan?: string;
+}

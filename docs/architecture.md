@@ -69,11 +69,17 @@ src/
     │   ├── cronometer/            Nutrition + biometrics scraper
     │   ├── hevy/                  Workout API client
     │   └── apple-health/          XML upload parser (Phase 3)
-    └── ai/                        (Phase 3)
-        ├── claude-provider.ts     AIProvider implementation
-        ├── ai-service.ts          Provider factory
-        ├── report-generator.ts    Report orchestration
-        └── prompt-builder.ts      Prompt construction
+    └── ai/
+        ├── claude-provider.ts     AIProvider implementation (Claude)
+        ├── gemini-provider.ts     AIProvider implementation (Gemini)
+        ├── ai-service.ts          Provider factory (AI_PROVIDER env)
+        ├── report-generator.ts    Report orchestration (data fetch + AI call + save)
+        ├── prompt-builder.ts      Data formatting + prompt assembly
+        ├── prompt-loader.ts       Loads .md prompt files at startup
+        └── prompts/               3-file prompt architecture
+            ├── persona.md         Role, tone, analytical rules
+            ├── analysis-protocol.md  5-step data processing order
+            └── output-format.md   JSON schema for 8-section report
 ```
 
 ## Data Model
@@ -85,7 +91,7 @@ src/
 | `measurements` | EAV store for nutrition + biometrics | Unique: `(user_id, source, metric, measured_at)` |
 | `workout_sets` | Individual exercise sets (flat, no session ID) | Unique: `(user_id, source, exercise_name, set_index, COALESCE(started_at, epoch))` |
 | `collection_metadata` | Provider sync state | PK: `(user_id, provider_name)` |
-| `weekly_reports` | AI-generated weekly summaries | JSONB: insights, action_items, data_coverage |
+| `weekly_reports` | AI-generated weekly analyses | JSONB: insights, action_items, data_coverage, sections |
 | `ai_generations` | AI call audit trail | Token usage tracking |
 | `apple_health_imports` | File upload tracking | Status: pending → processing → completed/failed |
 | `daily_aggregates` | Materialized view for dashboard | Refreshed after each collection run |

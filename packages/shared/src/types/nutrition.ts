@@ -20,6 +20,8 @@ export interface DailyNutritionSummary {
   carbs: number;
   fat: number;
   fiber: number;
+  sodium?: number;
+  sugar?: number;
   goalCalories?: number;
   goalProtein?: number;
   goalCarbs?: number;
