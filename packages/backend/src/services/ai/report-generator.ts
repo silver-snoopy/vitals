@@ -47,13 +47,65 @@ function isValidScorecard(obj: unknown): obj is Record<string, ScorecardEntry> {
   return true;
 }
 
+/**
+ * Extract the first complete JSON object from a string using brace-matching.
+ * Handles cases where AI responses contain multiple concatenated JSON objects
+ * or trailing text after the JSON.
+ */
+function extractFirstJson(text: string): Record<string, unknown> | null {
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (esc) {
+      esc = false;
+      continue;
+    }
+    if (c === '\\') {
+      esc = true;
+      continue;
+    }
+    if (c === '"') {
+      inStr = !inStr;
+      continue;
+    }
+    if (inStr) continue;
+    if (c === '{') depth++;
+    if (c === '}') {
+      depth--;
+      if (depth === 0) {
+        try {
+          return JSON.parse(text.substring(start, i + 1)) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function parseAIResponse(content: string): ParsedAIReport {
   try {
     const cleaned = content
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```\s*$/i, '')
       .trim();
-    const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+
+    // Try direct parse first, fall back to brace-matching extraction
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(cleaned) as Record<string, unknown>;
+    } catch {
+      const extracted = extractFirstJson(cleaned);
+      if (!extracted) throw new Error('No valid JSON found');
+      parsed = extracted;
+    }
 
     const summary = typeof parsed.summary === 'string' ? parsed.summary : 'Weekly health summary.';
     const actionItems = Array.isArray(parsed.actionItems)

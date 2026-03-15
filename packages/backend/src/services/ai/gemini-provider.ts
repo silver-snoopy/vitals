@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { AIProvider, AIMessage, AICompletionResult, AIProviderConfig } from '@vitals/shared';
 
 const DEFAULT_MODEL = 'gemini-2.0-flash';
-const DEFAULT_MAX_TOKENS = 4096;
+const DEFAULT_MAX_TOKENS = 8192;
 
 export class GeminiProvider implements AIProvider {
   private client: GoogleGenerativeAI;
