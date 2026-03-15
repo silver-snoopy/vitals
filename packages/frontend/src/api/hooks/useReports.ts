@@ -37,13 +37,22 @@ export function useGenerateReport() {
       const startDate = format(subDays(today, 6), 'yyyy-MM-dd');
       const endDate = format(today, 'yyyy-MM-dd');
 
+      const trimmedUserNotes = params?.userNotes?.trim();
+      const payload: { startDate: string; endDate: string; userNotes?: string } = {
+        startDate,
+        endDate,
+      };
+      if (trimmedUserNotes) {
+        payload.userNotes = trimmedUserNotes;
+      }
+
       return apiFetch<ApiResponse<WeeklyReport>>('/api/reports/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': import.meta.env.VITE_X_API_KEY ?? '',
         },
-        body: JSON.stringify({ startDate, endDate, userNotes: params?.userNotes }),
+        body: JSON.stringify(payload),
       });
     },
     onSuccess: () => {
