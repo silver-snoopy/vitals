@@ -59,7 +59,12 @@ export function LatestReportPreview() {
       <Card>
         <CardContent className="flex flex-col items-center gap-3 py-6 text-center text-sm text-muted-foreground">
           <p>No reports yet. Generate your first weekly insights.</p>
-          <Button variant="outline" size="sm" onClick={handleClick} disabled={generateReport.isPending}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClick}
+            disabled={generateReport.isPending}
+          >
             {generateReport.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

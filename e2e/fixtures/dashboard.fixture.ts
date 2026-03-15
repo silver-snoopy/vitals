@@ -94,9 +94,17 @@ const reportsFixture = {
       summary: 'Great progress this week. Calorie targets met consistently.',
       insights: 'Protein intake is strong. Consider adding more fiber.',
       actionItems: [
-        { category: 'nutrition' as const, priority: 'high' as const, text: 'Increase fiber intake to 30g daily' },
+        {
+          category: 'nutrition' as const,
+          priority: 'high' as const,
+          text: 'Increase fiber intake to 30g daily',
+        },
         { category: 'workout' as const, priority: 'medium' as const, text: 'Add a third leg day' },
-        { category: 'recovery' as const, priority: 'low' as const, text: 'Try foam rolling post-workout' },
+        {
+          category: 'recovery' as const,
+          priority: 'low' as const,
+          text: 'Try foam rolling post-workout',
+        },
       ],
       dataCoverage: { nutritionDays: 7, workoutDays: 3, biometricDays: 4 },
       aiProvider: 'gemini',

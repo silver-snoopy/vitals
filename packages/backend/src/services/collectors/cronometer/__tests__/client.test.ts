@@ -1,11 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { CronometerGwtClient } from '../client.js';
 
-function makeResponse(
-  body: string,
-  status = 200,
-  headers: Record<string, string> = {},
-): Response {
+function makeResponse(body: string, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(body, { status, headers });
 }
 
@@ -33,11 +29,9 @@ function makeClient() {
 // 5. POST GWT app (generateAuthorizationToken) → "export-token"
 // 6. GET /export → CSV content
 function makeHappyPathResponses(): Response[] {
-  const csrf = makeResponse(
-    '<input name="anticsrf" value="testcsrf123">',
-    200,
-    { 'set-cookie': 'session=abc; Path=/' },
-  );
+  const csrf = makeResponse('<input name="anticsrf" value="testcsrf123">', 200, {
+    'set-cookie': 'session=abc; Path=/',
+  });
   const login302 = makeResponse('', 302, {
     location: 'https://cronometer.com/dashboard',
     'set-cookie': 'auth=xyz; Path=/',
@@ -81,7 +75,10 @@ describe('CronometerGwtClient', () => {
   it('throws with JSON error message from login endpoint', async () => {
     const csrf = makeResponse('<input name="anticsrf" value="testcsrf123">', 200);
     const loginJson = makeResponse(
-      JSON.stringify({ success: false, error: 'Too Many Attempts. Please try again in 15 minutes.' }),
+      JSON.stringify({
+        success: false,
+        error: 'Too Many Attempts. Please try again in 15 minutes.',
+      }),
       200,
       { 'content-type': 'application/json' },
     );
@@ -96,15 +93,16 @@ describe('CronometerGwtClient', () => {
     // First GET /login → 200 but empty body (no CSRF token)
     const emptyLogin = makeResponse('', 200);
     // Second GET /login/ → 200 with CSRF token
-    const loginWithCsrf = makeResponse(
-      '<input name="anticsrf" value="testcsrf123">',
-      200,
-      { 'set-cookie': 'session=abc; Path=/' },
-    );
+    const loginWithCsrf = makeResponse('<input name="anticsrf" value="testcsrf123">', 200, {
+      'set-cookie': 'session=abc; Path=/',
+    });
     const rest = makeHappyPathResponses().slice(1); // skip the first CSRF fetch
     mockFetchSequence([emptyLogin, loginWithCsrf, ...rest]);
     const client = makeClient();
-    const result = await client.exportDailyNutrition(new Date('2026-03-12'), new Date('2026-03-12'));
+    const result = await client.exportDailyNutrition(
+      new Date('2026-03-12'),
+      new Date('2026-03-12'),
+    );
     expect(result).toContain('Date,Energy');
     // 7 fetches: 2 CSRF attempts + login POST + redirect follow + GWT auth + GWT token + export
     expect(globalThis.fetch).toHaveBeenCalledTimes(7);
@@ -112,10 +110,7 @@ describe('CronometerGwtClient', () => {
 
   it('throws when login body contains rate-limit text', async () => {
     const csrf = makeResponse('<input name="anticsrf" value="testcsrf123">', 200);
-    const loginHtml = makeResponse(
-      '<html>Error: too many attempts, try again later.</html>',
-      200,
-    );
+    const loginHtml = makeResponse('<html>Error: too many attempts, try again later.</html>', 200);
     mockFetchSequence([csrf, loginHtml]);
     const client = makeClient();
     await expect(client.exportDailyNutrition(new Date(), new Date())).rejects.toThrow(
