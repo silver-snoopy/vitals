@@ -12,7 +12,9 @@ export class ReportsPage {
   constructor(page: Page) {
     this.page = page;
     this.heading = page.getByRole('heading', { name: 'Reports' });
-    this.generateButton = page.getByRole('button', { name: /Generate Latest Insights|Re-Generate Latest Insights/i });
+    this.generateButton = page.getByRole('button', {
+      name: /Generate Latest Insights|Re-Generate Latest Insights/i,
+    });
     this.emptyState = page.getByText('No reports yet');
   }
 

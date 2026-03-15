@@ -2,8 +2,12 @@ import 'dotenv/config';
 import { CronometerGwtClient } from '../src/services/collectors/cronometer/client.js';
 
 async function main() {
-  const { CRONOMETER_USERNAME, CRONOMETER_PASSWORD, CRONOMETER_GWT_HEADER, CRONOMETER_GWT_PERMUTATION } =
-    process.env;
+  const {
+    CRONOMETER_USERNAME,
+    CRONOMETER_PASSWORD,
+    CRONOMETER_GWT_HEADER,
+    CRONOMETER_GWT_PERMUTATION,
+  } = process.env;
 
   if (!CRONOMETER_USERNAME || !CRONOMETER_PASSWORD) {
     console.error('Missing CRONOMETER_USERNAME or CRONOMETER_PASSWORD in .env');

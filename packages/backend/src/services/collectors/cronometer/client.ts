@@ -131,7 +131,9 @@ export class CronometerAuthSession {
       const text = await response.text();
       const loginResponse = parseLoginResponse(response.headers.get('content-type'), text);
       if (loginResponse?.error) {
-        const msg = String(loginResponse.error).replace(/[\r\n]/g, ' ').slice(0, 200);
+        const msg = String(loginResponse.error)
+          .replace(/[\r\n]/g, ' ')
+          .slice(0, 200);
         throw new Error(`Cronometer login failed: ${msg}`);
       }
       if (loginResponse && loginResponse.success === false) {

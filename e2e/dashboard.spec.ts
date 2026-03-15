@@ -48,14 +48,10 @@ test.describe('Dashboard', () => {
       await expect(dashboard.latestReport).toBeVisible();
 
       // Report summary text from fixture
-      await expect(
-        dashboard.page.getByText('Great progress this week'),
-      ).toBeVisible();
+      await expect(dashboard.page.getByText('Great progress this week')).toBeVisible();
 
       // Action items are shown
-      await expect(
-        dashboard.page.getByText('Increase fiber intake'),
-      ).toBeVisible();
+      await expect(dashboard.page.getByText('Increase fiber intake')).toBeVisible();
     });
 
     test('displays all five widget sections on initial load', async () => {
