@@ -43,19 +43,33 @@ Run new tests:
 npx playwright test e2e/<feature>.spec.ts
 ```
 
-## Step 5: Live Environment Verification (Optional)
+## Step 5: Live Environment Verification (Bugfixes: REQUIRED / Features: Optional)
 
-**When applicable:** UI changes that benefit from visual verification beyond E2E tests.
+**Required for bugfixes:** You MUST verify the fix on the live local environment by repeating the same user action from Phase 2 and capturing a **"fix verified" screenshot** showing the corrected behavior.
+
+**Optional for features:** UI changes that benefit from visual verification beyond mocked E2E tests.
 
 ```bash
 # Ensure local environment is running
 docker compose up -d
 npm run dev -w @vitals/backend &
 npm run dev -w @vitals/frontend &
-
-# Use Playwright to capture screenshots or verify visual state
-npx playwright test e2e/<feature>.spec.ts --headed
 ```
+
+Use Playwright to drive the real UI (no mocking) and capture evidence:
+
+```javascript
+const { chromium } = require('playwright');
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage();
+await page.goto('http://localhost:3000/<affected-page>');
+// Perform the same action that triggered the bug in Phase 2
+// ...
+await page.screenshot({ path: 'fix-verified.png', fullPage: true });
+await browser.close();
+```
+
+**The screenshot (`fix-verified.png`) is temporary** — it will be referenced in the PR body (Phase 9) and deleted after the PR is created.
 
 ## Step 6: Bug Regression (Bugfixes Only)
 
@@ -74,3 +88,4 @@ npx playwright test e2e/<renamed-file>.spec.ts
 - [ ] `npx playwright test` — all E2E tests pass
 - [ ] New E2E tests written (if applicable)
 - [ ] New E2E tests pass
+- [ ] **(Bugfixes)** Fix verified on live UI with screenshot saved as `fix-verified.png`

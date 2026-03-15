@@ -46,11 +46,11 @@ For detailed instructions, see [phases/01-read-spec.md](phases/01-read-spec.md).
 
 **Skip this phase for features and refactors.**
 
-For bugs: reproduce the issue in the local environment before writing any fix.
+For bugs: reproduce the issue on the **live local environment** (docker compose + dev servers) by exercising the affected feature through the real UI via Playwright. Mocked E2E tests are NOT sufficient — the bug must be reproduced against the actual running system with a screenshot captured as evidence.
 
 For detailed instructions, see [phases/02-qa-verify.md](phases/02-qa-verify.md).
 
-**Exit criteria:** Bug is reproduced and confirmed, or explicitly marked as not reproducible with explanation.
+**Exit criteria:** Bug is reproduced on the live UI with screenshot evidence, or explicitly marked as not reproducible with explanation of what was tried.
 
 ---
 

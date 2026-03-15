@@ -3,62 +3,90 @@
 **Skip this phase entirely for features and refactors.**
 
 ## Purpose
-Reproduce the reported bug in the local environment before writing any fix.
-This ensures we understand the root cause and can verify the fix later.
+Reproduce the reported bug on the **live local environment** by exercising the feature through the UI.
+Mocked tests are NOT sufficient for bug reproduction — you must see the bug happen in the real running system.
 
 ## Steps
 
-### 1. Start Local Environment
+### 1. Start the Full Local Stack
+
+All three services must be running simultaneously:
+
 ```bash
 # Start database
 docker compose up -d
 
-# Wait for DB to be ready
-until docker compose exec -T db pg_isready; do sleep 1; done
-
-# Start backend (background)
+# Start backend
 npm run dev -w @vitals/backend &
 
-# Start frontend (background)
+# Start frontend
 npm run dev -w @vitals/frontend &
-
-# Wait for servers
-sleep 5
 ```
 
-### 2. Check for Existing Test Coverage
+**Verify all services are healthy before proceeding:**
+- Database: `docker compose exec -T db pg_isready`
+- Backend: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/reports` → 200
+- Frontend: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/` → 200
 
-Before writing a new spec, search the existing test suite for tests that already cover the bug area:
-- Check `e2e/*.spec.ts` for E2E tests covering the affected UI flow
-- Check `packages/backend/src/**/__tests__/` for unit tests covering the affected logic
-- Check `packages/frontend/src/**/__tests__/` for frontend unit tests
+**Port conflict check:** If a service fails to start, check for zombie processes with `netstat -ano | grep ":PORT " | grep LISTEN` and kill them before retrying.
 
-**If a matching test exists:** Use it to reproduce the bug (modify assertions if needed to confirm broken behavior). Skip creating a temporary spec.
+### 2. Reproduce the Bug on the Live UI
 
-### 3. Reproduce the Bug
+Use Playwright (via `node -e 'require("playwright")...'` scripts) to drive the **real running frontend** — no route mocking, no fixture data. The browser must hit the actual backend and database.
 
-**If no matching test exists**, write a temporary Playwright spec:
-- Create `e2e/verify-bug.spec.ts`
-- For **UI bugs:** Mock API data that triggers the bug condition, assert the broken behavior
-- For **backend/API bugs:** Hit the real local backend (no mocking) to observe actual error responses
-- Keep the spec focused — test only the bug scenario, not a full feature
+**Required for every bug:**
+1. Navigate to the affected page in the live UI
+2. Perform the user action that triggers the bug
+3. Capture a **screenshot** of the broken state
+4. Save the screenshot to the project root (e.g., `bug-repro.png`)
 
-```bash
-npx playwright test e2e/verify-bug.spec.ts
+```javascript
+// Example: Playwright script against live local UI
+const { chromium } = require('playwright');
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage();
+
+// Hit the REAL frontend — no mocking
+await page.goto('http://localhost:3000/<affected-page>');
+await page.waitForSelector('<content-selector>', { timeout: 15000 });
+
+// Perform the action that triggers the bug
+// ...
+
+// Capture evidence
+await page.screenshot({ path: 'bug-repro.png', fullPage: true });
+await browser.close();
 ```
 
-**If the bug is backend-only** (no UI involvement), prefer reproducing via `curl` or direct API calls instead of Playwright.
+**Do NOT:**
+- Use `page.route()` to mock API responses during reproduction
+- Run mocked E2E tests (`npx playwright test`) as a substitute for live verification
+- Reproduce via `curl` alone if the bug has any UI component
+- Skip the screenshot
+
+**Backend-only bugs (no UI):** If the bug is purely in API response data (wrong values, missing fields), you may reproduce via `curl` to the live backend. But if the user reports seeing the bug in the UI, you MUST reproduce it through the UI.
+
+### 3. Check Existing Test Coverage
+
+After reproducing the live bug, also check whether existing tests catch it:
+- `e2e/*.spec.ts` — E2E tests with mocked data
+- `packages/backend/src/**/__tests__/` — backend unit tests
+- `packages/frontend/src/**/__tests__/` — frontend unit tests
+
+Note: mocked E2E tests may pass while the live system is broken (wrong mock data, missing integration issues). This is expected and is exactly why live reproduction is required.
 
 ### 4. Document Reproduction
+
 Report to the user:
-- Whether the bug was reproduced (yes/no)
-- Steps to reproduce
-- Expected vs actual behavior
-- Root cause hypothesis
+- **Reproduced:** yes/no
+- **Screenshot:** path to the captured screenshot
+- **Steps to reproduce:** exact user actions
+- **Expected vs actual behavior**
+- **Root cause hypothesis**
 
 ### 5. Cleanup
 
-Delete `e2e/verify-bug.spec.ts` after documenting findings. The temporary spec is **not** kept automatically.
+Delete any temporary screenshots (`bug-repro.png`) after the fix is verified.
 
 At the **User Gate** (Phase 3 → 4 boundary), ask the user:
 > "Should we add a permanent regression test for this bug to the existing test suite?"
@@ -67,5 +95,7 @@ At the **User Gate** (Phase 3 → 4 boundary), ask the user:
 - If no → the existing test coverage is sufficient
 
 ## If Not Reproducible
-- Document why (missing data, environment-specific, timing-dependent)
+- Verify all services are actually running and healthy (re-check step 1)
+- Check for environment issues: wrong `.env` values, stale database, port conflicts
+- Document why reproduction failed (missing data, environment-specific, timing-dependent)
 - Ask the user whether to proceed with a best-effort fix or investigate further
