@@ -70,6 +70,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 | UC-RPT-02 | Re-generate weekly insights (with confirmation) | Implemented |
 | UC-RPT-03 | View report list and details | Implemented |
 | UC-RPT-04 | Generate from dashboard widget | Implemented |
+| UC-RPT-05 | Structured 8-section health analysis | Implemented |
 
 ### UC-RPT-01: Generate weekly insights (first report)
 
@@ -129,6 +130,35 @@ The date range picker on other pages is irrelevant to report generation.
 - Same confirmation dialog and 7-day logic as Reports page (UC-RPT-01/02)
 
 **E2E Coverage:** None (dashboard E2E covers widget visibility only)
+
+### UC-RPT-05: Structured 8-section health analysis
+
+**As a** user, **I want to** receive a comprehensive structured weekly analysis,
+**so that** I can understand cross-domain correlations between my nutrition, training, biometrics, and recovery.
+
+**Behavior:**
+- Report generation produces an 8-section structured analysis:
+  1. **Biometrics Overview** — body composition and cardiac/autonomic markers with week-over-week comparison and signal indicators
+  2. **Nutrition Analysis** — daily macro/micro tables, energy availability calculation (EA = (intake - expenditure) / FFM), micronutrient flags
+  3. **Training Load** — per-session detail with exercise-level volume, frequency check vs prescribed program, strength progression tracking
+  4. **Cross-Domain Correlation** — synthesis of subjective notes with objective data, cause-effect pattern identification
+  5. **What's Working** — 3-5 positive trends worth maintaining
+  6. **Hazards & Red Flags** — severity-ranked concerns with physiological mechanisms
+  7. **Recommendations** — immediate (specific numbers), monitoring priorities (decision thresholds), medium-term trajectory
+  8. **Weekly Scorecard** — 1-10 ratings for nutrition, protein, training adherence, recovery, body composition, and overall risk level
+- Multi-metric biometric support: weight, body fat %, HRV, resting HR, SpO2, respiration rate, sleep hours, active calories, steps
+- Automatic week-over-week comparison (current week vs previous 7 days)
+- Optional user notes input for subjective observations (sleep quality, energy, soreness)
+- Optional workout plan reference for program adherence scoring
+- 3-file prompt architecture (persona, analysis protocol, output format) for maintainable AI instructions
+- Backward compatible: old reports without sections remain readable; `sections` field is nullable
+- Action items extracted with category and priority for frontend display
+
+**API:**
+- `POST /api/reports/generate` accepts optional `userNotes` and `workoutPlan` in request body
+- Response includes `sections` object alongside existing `summary`, `insights`, `actionItems`
+
+**E2E Coverage:** `e2e/reports.spec.ts` — UC: View structured 8-section report (UC-RPT-05)
 
 ---
 

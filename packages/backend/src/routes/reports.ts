@@ -12,7 +12,7 @@ export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig 
     '/api/reports/generate',
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (request, reply) => {
-      const { startDate, endDate } = request.body ?? {};
+      const { startDate, endDate, userNotes, workoutPlan } = request.body ?? {};
       const range = validateDateRange(startDate, endDate);
 
       if (isDateRangeError(range)) {
@@ -42,6 +42,8 @@ export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig 
           opts.env.dbDefaultUserId,
           range.start,
           range.end,
+          userNotes,
+          workoutPlan,
         );
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);

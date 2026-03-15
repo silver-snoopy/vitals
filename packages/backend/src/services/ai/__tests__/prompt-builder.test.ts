@@ -13,6 +13,9 @@ const emptyBundle: WeeklyDataBundle = {
   workouts: [],
   biometrics: [],
   previousReport: null,
+  previousWeekNutrition: [],
+  previousWeekWorkouts: [],
+  previousWeekBiometrics: [],
 };
 
 const nutritionDay: DailyNutritionSummary = {
@@ -22,13 +25,15 @@ const nutritionDay: DailyNutritionSummary = {
   carbs: 230,
   fat: 72,
   fiber: 28,
+  sodium: 2100,
+  sugar: 45,
 };
 
 const workoutSession: WorkoutSession = {
   id: 'session-1',
   userId: 'user-1',
   date: '2026-03-01',
-  title: 'Hevy Workout',
+  title: 'Upper Body',
   durationSeconds: 3600,
   sets: [
     {
@@ -66,27 +71,32 @@ describe('buildReportPrompt', () => {
     expect(messages[1].role).toBe('user');
   });
 
-  it('system message instructs JSON output format', () => {
+  it('system message contains persona, protocol, and output format', () => {
     const messages = buildReportPrompt(emptyBundle);
     const system = messages[0].content;
+    expect(system).toContain('sports-science');
+    expect(system).toContain('Analysis Protocol');
+    expect(system).toContain('Output Format');
     expect(system).toContain('JSON');
-    expect(system).toContain('summary');
-    expect(system).toContain('insights');
     expect(system).toContain('actionItems');
   });
 
-  it('user message includes nutrition data', () => {
+  it('user message includes daily nutrition data with values', () => {
     const messages = buildReportPrompt({ ...emptyBundle, nutrition: [nutritionDay] });
     const user = messages[1].content;
     expect(user).toContain('2200');
     expect(user).toContain('155');
+    expect(user).toContain('2100');
+    expect(user).toContain('2026-03-01');
   });
 
-  it('user message includes workout data', () => {
+  it('user message includes workout exercise detail', () => {
     const messages = buildReportPrompt({ ...emptyBundle, workouts: [workoutSession] });
     const user = messages[1].content;
-    expect(user).toContain('1 sessions');
-    expect(user).toContain('sets');
+    expect(user).toContain('Upper Body');
+    expect(user).toContain('Bench Press');
+    expect(user).toContain('100kg');
+    expect(user).toContain('×5');
   });
 
   it('user message includes biometric data', () => {
@@ -106,24 +116,59 @@ describe('buildReportPrompt', () => {
       insights: '- Good progress',
       actionItems: [],
       dataCoverage: { nutritionDays: 7, workoutDays: 4, biometricDays: 7 },
-      aiProvider: 'claude' as const,
+      aiProvider: 'claude',
       aiModel: 'claude-sonnet-4-20250514',
       createdAt: '2026-03-01T08:00:00.000Z',
     };
     const messages = buildReportPrompt({ ...emptyBundle, previousReport });
     const user = messages[1].content;
+    expect(user).toContain('PREVIOUS REPORT');
     expect(user).toContain('Strong week overall.');
   });
 
-  it('user message notes when no previous report', () => {
-    const messages = buildReportPrompt(emptyBundle);
+  it('user message includes user notes when provided', () => {
+    const messages = buildReportPrompt({
+      ...emptyBundle,
+      userNotes: 'Felt tired all week, minimal sweating during workouts.',
+    });
     const user = messages[1].content;
-    expect(user).toContain('No previous report');
+    expect(user).toContain('USER NOTES');
+    expect(user).toContain('minimal sweating');
   });
 
-  it('user message notes when no nutrition data', () => {
+  it('user message includes workout plan when provided', () => {
+    const messages = buildReportPrompt({
+      ...emptyBundle,
+      workoutPlan: 'Upper/Lower split, 4 days per week, 2 RIR target.',
+    });
+    const user = messages[1].content;
+    expect(user).toContain('WORKOUT PLAN');
+    expect(user).toContain('Upper/Lower split');
+  });
+
+  it('handles empty data gracefully', () => {
     const messages = buildReportPrompt(emptyBundle);
     const user = messages[1].content;
     expect(user).toContain('No nutrition data');
+    expect(user).toContain('No biometric data');
+    expect(user).toContain('No workout data');
+  });
+
+  it('includes previous week comparison data', () => {
+    const prevNutrition: DailyNutritionSummary = {
+      date: '2026-02-22',
+      calories: 2000,
+      protein: 140,
+      carbs: 210,
+      fat: 65,
+      fiber: 24,
+    };
+    const messages = buildReportPrompt({
+      ...emptyBundle,
+      nutrition: [nutritionDay],
+      previousWeekNutrition: [prevNutrition],
+    });
+    const user = messages[1].content;
+    expect(user).toContain('Prev Week Avg');
   });
 });

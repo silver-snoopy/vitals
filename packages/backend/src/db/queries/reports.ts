@@ -1,5 +1,8 @@
 import type pg from 'pg';
-import type { WeeklyReport, ActionItem } from '@vitals/shared';
+import type { WeeklyReport, ActionItem, ReportSections } from '@vitals/shared';
+
+const REPORT_COLUMNS = `id, user_id, period_start, period_end, summary, insights,
+       action_items, data_coverage, sections, ai_provider, ai_model, created_at`;
 
 function mapReportRow(r: Record<string, unknown>): WeeklyReport {
   return {
@@ -21,6 +24,7 @@ function mapReportRow(r: Record<string, unknown>): WeeklyReport {
       workoutDays: 0,
       biometricDays: 0,
     },
+    sections: (r.sections as ReportSections) ?? undefined,
     aiProvider: String(r.ai_provider),
     aiModel: String(r.ai_model),
     createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
@@ -28,20 +32,15 @@ function mapReportRow(r: Record<string, unknown>): WeeklyReport {
 }
 
 export async function getReportById(pool: pg.Pool, id: string): Promise<WeeklyReport | null> {
-  const { rows } = await pool.query(
-    `SELECT id, user_id, period_start, period_end, summary, insights,
-       action_items, data_coverage, ai_provider, ai_model, created_at
-     FROM weekly_reports WHERE id = $1`,
-    [id],
-  );
+  const { rows } = await pool.query(`SELECT ${REPORT_COLUMNS} FROM weekly_reports WHERE id = $1`, [
+    id,
+  ]);
   return rows.length === 0 ? null : mapReportRow(rows[0] as Record<string, unknown>);
 }
 
 export async function getLatestReport(pool: pg.Pool, userId: string): Promise<WeeklyReport | null> {
   const { rows } = await pool.query(
-    `SELECT id, user_id, period_start, period_end, summary, insights,
-       action_items, data_coverage, ai_provider, ai_model, created_at
-     FROM weekly_reports WHERE user_id = $1
+    `SELECT ${REPORT_COLUMNS} FROM weekly_reports WHERE user_id = $1
      ORDER BY period_start DESC LIMIT 1`,
     [userId],
   );
@@ -67,9 +66,7 @@ export async function listReports(
   }
 
   const { rows } = await pool.query(
-    `SELECT id, user_id, period_start, period_end, summary, insights,
-       action_items, data_coverage, ai_provider, ai_model, created_at
-     FROM weekly_reports
+    `SELECT ${REPORT_COLUMNS} FROM weekly_reports
      WHERE ${filters.join(' AND ')}
      ORDER BY period_start DESC`,
     params,
@@ -85,8 +82,8 @@ export async function saveReport(
   const { rows } = await pool.query(
     `INSERT INTO weekly_reports
        (user_id, period_start, period_end, summary, insights,
-        action_items, data_coverage, ai_provider, ai_model)
-     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8, $9)
+        action_items, data_coverage, sections, ai_provider, ai_model)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7::jsonb, $8::jsonb, $9, $10)
      RETURNING id`,
     [
       report.userId,
@@ -96,6 +93,7 @@ export async function saveReport(
       JSON.stringify(report.insights),
       JSON.stringify(report.actionItems),
       JSON.stringify(report.dataCoverage),
+      report.sections ? JSON.stringify(report.sections) : null,
       report.aiProvider,
       report.aiModel,
     ],

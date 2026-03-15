@@ -9,7 +9,7 @@ vi.mock('../../../db/queries/measurements.js', () => ({
     .mockResolvedValue([
       { date: '2026-03-01', calories: 2100, protein: 150, carbs: 220, fat: 70, fiber: 25 },
     ]),
-  queryMeasurementsByMetric: vi.fn().mockResolvedValue([
+  queryMeasurementsByMetrics: vi.fn().mockResolvedValue([
     {
       id: 'bio-1',
       userId: 'user-uuid',
@@ -136,6 +136,46 @@ describe('generateWeeklyReport', () => {
 
     expect(result.summary).toBeTruthy();
     expect(result.actionItems).toEqual([]);
+  });
+
+  it('parses structured sections from AI response', async () => {
+    const sectionsResponse = JSON.stringify({
+      summary: 'Solid week with HRV concerns.',
+      biometricsOverview: '## Body Composition\nWeight stable at 67 kg.',
+      nutritionAnalysis: '## Daily Averages\nCalories: 2200 kcal.',
+      trainingLoad: '## Sessions\n6 sessions this week.',
+      crossDomainCorrelation: 'HRV drop correlates with extra leg day.',
+      whatsWorking: '- Protein at 2.4 g/kg',
+      hazards: '1. HRV down 17%',
+      recommendations: '**Immediate:** Increase to 2350 kcal.',
+      scorecard: {
+        nutritionConsistency: { score: 9, notes: 'Tight adherence' },
+        recovery: { score: 4, notes: 'HRV dropping' },
+      },
+      actionItems: [{ category: 'nutrition', priority: 'high', text: 'Add 150 kcal' }],
+    });
+
+    (mockAIProvider.complete as ReturnType<typeof vi.fn>).mockResolvedValue({
+      content: sectionsResponse,
+      model: 'claude-sonnet-4-20250514',
+      usage: { promptTokens: 1000, completionTokens: 500, totalTokens: 1500 },
+    });
+
+    const result = await generateWeeklyReport(
+      mockPool,
+      mockAIProvider,
+      'user-uuid',
+      new Date('2026-03-01'),
+      new Date('2026-03-07'),
+    );
+
+    expect(result.sections).toBeDefined();
+    expect(result.sections!.biometricsOverview).toContain('Weight stable');
+    expect(result.sections!.scorecard.recovery.score).toBe(4);
+    expect(result.summary).toBe('Solid week with HRV concerns.');
+    // insights should be concatenated markdown for backward compat
+    expect(result.insights).toContain('Body Composition');
+    expect(result.insights).toContain('HRV drop');
   });
 
   it('strips markdown code fences from AI response', async () => {
