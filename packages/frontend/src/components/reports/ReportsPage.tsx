@@ -16,6 +16,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+export const NOTES_LABEL = 'Notes for AI (optional)';
+export const NOTES_PLACEHOLDER =
+  "Add any context for your report — goals you're tracking, injuries, diet changes, or anything the AI should consider when analyzing your data.";
+
 export function ReportsPage() {
   const { data, isLoading, error } = useReports();
   const generateReport = useGenerateReport();
@@ -110,13 +114,13 @@ export function ReportsPage() {
           </DialogHeader>
           <div className="space-y-2">
             <label htmlFor="user-notes" className="text-sm font-medium">
-              Notes for AI (optional)
+              {NOTES_LABEL}
             </label>
             <Textarea
               id="user-notes"
               value={userNotes}
               onChange={(e) => setUserNotes(e.target.value)}
-              placeholder="Add any context for your report — goals you're tracking, injuries, diet changes, or anything the AI should consider when analyzing your data."
+              placeholder={NOTES_PLACEHOLDER}
               rows={4}
             />
           </div>
