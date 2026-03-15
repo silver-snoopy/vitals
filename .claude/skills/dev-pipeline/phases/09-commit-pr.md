@@ -44,6 +44,9 @@ git push -u origin HEAD
 ```
 
 ## Step 4: Open PR
+
+**For bugfixes:** If `fix-verified.png` exists from Phase 7, include a before/after evidence section in the PR body describing what was broken (Phase 2 screenshot) and what it looks like now (Phase 7 screenshot). Since GitHub PRs accept markdown but not local images, describe the screenshots textually (what the user sees) rather than embedding image links.
+
 ```bash
 gh pr create --title "<type>: <concise summary>" --body "$(cat <<'EOF'
 ## Summary
@@ -52,10 +55,15 @@ gh pr create --title "<type>: <concise summary>" --body "$(cat <<'EOF'
 ## Use Cases
 - UC-XXX-NN: <title>
 
+## Verification Evidence (bugfixes only)
+**Before fix:** <describe what the user saw — the broken behavior from Phase 2>
+**After fix:** <describe the corrected behavior verified in Phase 7>
+
 ## Test Plan
 - [ ] Unit tests pass (`npm test`)
 - [ ] E2E tests pass (`npx playwright test`)
 - [ ] Lint + format pass
+- [ ] Live UI verified with fix-verified screenshot
 - [ ] <Feature-specific verification steps>
 
 ## Documentation
@@ -67,7 +75,16 @@ EOF
 )"
 ```
 
-## Step 5: Report to User
+## Step 5: Cleanup Temporary Screenshots
+
+Delete any temporary screenshots created during the pipeline:
+```bash
+rm -f bug-repro.png fix-verified.png
+```
+
+These files are evidence artifacts — they served their purpose during verification and should not be committed to the repository.
+
+## Step 6: Report to User
 Return the PR URL and a summary:
 - What was implemented
 - UC IDs added/updated
@@ -75,8 +92,10 @@ Return the PR URL and a summary:
 - Any follow-up items
 
 ## Checklist
-- [ ] Only intended files staged
+- [ ] Only intended files staged (no screenshots, no `.env`)
 - [ ] Commit message follows conventions
 - [ ] Pushed to feature branch
 - [ ] PR created targeting master
+- [ ] **(Bugfixes)** PR body includes verification evidence section
+- [ ] Temporary screenshots deleted
 - [ ] PR URL returned to user
