@@ -145,9 +145,9 @@ Steps:
 3. Run `npm test` — all unit tests pass
 4. Run `npx playwright test` — all E2E tests pass
 5. **If UI changes:** Write new E2E tests covering the new use cases
-6. **If applicable:** Start local dev environment and verify visually with Playwright
+6. **If UI is affected (MANDATORY):** Start local dev environment, write a temporary Playwright visual test against the live UI (`http://localhost:3000`), capture screenshots at key states, present them to the user as evidence, then clean up the temporary test and screenshots. This applies to frontend changes, new UI features, AND backend changes that extend API responses consumed by the frontend — if a user would see something different on screen, this step is mandatory.
 
-**Exit criteria:** All tests pass. New E2E tests written for new interactive behavior.
+**Exit criteria:** All tests pass. New E2E tests written for new interactive behavior. Any change that affects what users see on screen is verified on live local environment with screenshot evidence presented to user.
 
 ---
 
