@@ -1,22 +1,13 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { RefreshCw, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import type { WeeklyReport } from '@vitals/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { useLatestReport, useGenerateReport } from '@/api/hooks/useReports';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { GenerateReportDialog } from '@/components/reports/GenerateReportDialog';
 
 const priorityVariant: Record<'high' | 'medium' | 'low', 'destructive' | 'secondary' | 'outline'> =
   {
@@ -25,11 +16,6 @@ const priorityVariant: Record<'high' | 'medium' | 'low', 'destructive' | 'second
     low: 'outline',
   };
 
-export const REPORT_NOTES_LABEL_TEXT = 'Notes for AI (optional)';
-export const REPORT_NOTES_PLACEHOLDER =
-  "Add any context for your report — goals you're tracking, injuries, diet changes, or anything the AI should consider when analyzing your data.";
-export const REPORT_NOTES_FIELD_ID = 'dashboard-user-notes';
-
 export function LatestReportPreview() {
   const { data, isLoading } = useLatestReport();
   const generateReport = useGenerateReport();
@@ -37,38 +23,8 @@ export function LatestReportPreview() {
   const hasReport = !!report;
 
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [userNotes, setUserNotes] = useState('');
-
-  const handleGenerate = () => {
-    const notes = userNotes.trim();
-    generateReport.mutate(notes ? { userNotes: notes } : undefined, {
-      onSuccess: () => {
-        toast.success('Report generated successfully');
-        handleOpenChange(false);
-      },
-      onError: () => {
-        toast.error('Failed to generate report. Check that the AI service is configured.');
-        handleOpenChange(false);
-      },
-    });
-  };
-
-  const handleClick = () => {
-    setConfirmOpen(true);
-  };
-
-  const handleOpenChange = (open: boolean) => {
-    setConfirmOpen(open);
-    if (!open) setUserNotes('');
-  };
 
   if (isLoading) return <CardSkeleton />;
-
-  const dialogTitle = hasReport ? 'Re-Generate Report?' : 'Generate Report';
-  const dialogDescription = hasReport
-    ? 'This will generate a new report for the last 7 days, replacing the most recent one.'
-    : 'Generate a new report analyzing your health data from the last 7 days.';
-  const confirmLabel = hasReport ? 'Re-Generate' : 'Generate';
 
   return (
     <>
@@ -79,7 +35,7 @@ export function LatestReportPreview() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleClick}
+              onClick={() => setConfirmOpen(true)}
               disabled={generateReport.isPending}
             >
               {generateReport.isPending ? (
@@ -107,7 +63,7 @@ export function LatestReportPreview() {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                onClick={handleClick}
+                onClick={() => setConfirmOpen(true)}
                 disabled={generateReport.isPending}
                 title="Re-Generate Latest Insights"
               >
@@ -138,41 +94,11 @@ export function LatestReportPreview() {
         </Card>
       )}
 
-      <Dialog open={confirmOpen} onOpenChange={handleOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{dialogTitle}</DialogTitle>
-            <DialogDescription>{dialogDescription}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <label htmlFor={REPORT_NOTES_FIELD_ID} className="text-sm font-medium">
-              {REPORT_NOTES_LABEL_TEXT}
-            </label>
-            <Textarea
-              id={REPORT_NOTES_FIELD_ID}
-              value={userNotes}
-              onChange={(e) => setUserNotes(e.target.value)}
-              placeholder={REPORT_NOTES_PLACEHOLDER}
-              rows={4}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleGenerate} disabled={generateReport.isPending}>
-              {generateReport.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating&hellip;
-                </>
-              ) : (
-                confirmLabel
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GenerateReportDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        hasExistingReport={hasReport}
+      />
     </>
   );
 }
