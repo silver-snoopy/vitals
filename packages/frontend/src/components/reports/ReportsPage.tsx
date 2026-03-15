@@ -30,7 +30,7 @@ export function ReportsPage() {
     generateReport.mutate(notes ? { userNotes: notes } : undefined, {
       onSuccess: () => {
         toast.success('Report generated successfully');
-        setConfirmOpen(false);
+        handleOpenChange(false);
       },
       onError: (err: unknown) => {
         const status = (err as Partial<ApiError>)?.statusCode;
@@ -43,7 +43,7 @@ export function ReportsPage() {
         } else {
           toast.error('Failed to generate report.');
         }
-        setConfirmOpen(false);
+        handleOpenChange(false);
       },
     });
   };
