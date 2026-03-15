@@ -1,19 +1,12 @@
 import { useState } from 'react';
 import { RefreshCw, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import type { ApiError } from '@vitals/shared';
+import { toast } from 'sonner';
 import { useReports, useGenerateReport } from '@/api/hooks/useReports';
 import { ReportCard } from './ReportCard';
+import { GenerateReportDialog } from './GenerateReportDialog';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 export function ReportsPage() {
   const { data, isLoading, error } = useReports();
@@ -23,33 +16,16 @@ export function ReportsPage() {
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleGenerate = () => {
-    generateReport.mutate(undefined, {
-      onSuccess: () => {
-        toast.success('Report generated successfully');
-        setConfirmOpen(false);
-      },
-      onError: (err: unknown) => {
-        const status = (err as Partial<ApiError>)?.statusCode;
-        if (status === 429) {
-          toast.error('AI service is rate limited. Please try again in a few minutes.');
-        } else if (status === 502) {
-          toast.error('AI service is temporarily unavailable. Please try again later.');
-        } else if (status === 503) {
-          toast.error('AI service is not configured. Set AI_API_KEY and AI_PROVIDER.');
-        } else {
-          toast.error('Failed to generate report.');
-        }
-        setConfirmOpen(false);
-      },
-    });
-  };
-
-  const handleClick = () => {
-    if (hasReports) {
-      setConfirmOpen(true);
+  const handleError = (err: unknown) => {
+    const status = (err as Partial<ApiError>)?.statusCode;
+    if (status === 429) {
+      toast.error('AI service is rate limited. Please try again in a few minutes.');
+    } else if (status === 502) {
+      toast.error('AI service is temporarily unavailable. Please try again later.');
+    } else if (status === 503) {
+      toast.error('AI service is not configured. Set AI_API_KEY and AI_PROVIDER.');
     } else {
-      handleGenerate();
+      toast.error('Failed to generate report.');
     }
   };
 
@@ -60,7 +36,7 @@ export function ReportsPage() {
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={handleClick}
+          onClick={() => setConfirmOpen(true)}
           disabled={generateReport.isPending}
           title={hasReports ? 'Re-Generate Latest Insights' : 'Generate Latest Insights'}
         >
@@ -94,31 +70,12 @@ export function ReportsPage() {
         )}
       </div>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Re-Generate Report?</DialogTitle>
-            <DialogDescription>
-              This will generate a new report for the last 7 days, replacing the most recent one.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleGenerate} disabled={generateReport.isPending}>
-              {generateReport.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating&hellip;
-                </>
-              ) : (
-                'Re-Generate'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <GenerateReportDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        hasExistingReport={hasReports}
+        onError={handleError}
+      />
     </div>
   );
 }

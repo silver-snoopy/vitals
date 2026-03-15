@@ -25,18 +25,48 @@ test.describe('Reports', () => {
       await expect(reports.generateButton).toHaveAttribute('title', 'Generate Latest Insights');
     });
 
-    test('clicking generate triggers report creation without confirmation', async ({ page }) => {
+    test('clicking generate opens dialog with notes textarea', async () => {
+      await reports.generateButton.click();
+      await expect(reports.confirmDialog).toBeVisible();
+      await expect(reports.notesTextarea).toBeVisible();
+    });
+
+    test('confirming generation triggers report creation', async ({ page }) => {
       const generateRequest = page.waitForRequest('**/api/reports/generate');
 
       await reports.generateButton.click();
+      await expect(reports.confirmDialog).toBeVisible();
+      await reports.confirmGenerate();
 
-      // Verify the POST was sent
       const req = await generateRequest;
       expect(req.method()).toBe('POST');
 
       // Report card should appear after generation
       await expect(page.getByText('Great progress this week')).toBeVisible();
       await expect(reports.emptyState).not.toBeVisible();
+    });
+
+    test('user notes are included in generate request body', async ({ page }) => {
+      const generateRequest = page.waitForRequest('**/api/reports/generate');
+
+      await reports.generateButton.click();
+      await reports.notesTextarea.fill('Focus on sleep quality and HRV trends');
+      await reports.confirmGenerate();
+
+      const req = await generateRequest;
+      const body = req.postDataJSON();
+      expect(body.userNotes).toBe('Focus on sleep quality and HRV trends');
+    });
+
+    test('empty notes are not sent in request body', async ({ page }) => {
+      const generateRequest = page.waitForRequest('**/api/reports/generate');
+
+      await reports.generateButton.click();
+      await reports.confirmGenerate();
+
+      const req = await generateRequest;
+      const body = req.postDataJSON();
+      expect(body.userNotes).toBeUndefined();
     });
   });
 
@@ -57,9 +87,10 @@ test.describe('Reports', () => {
       await expect(reports.generateButton).toHaveAttribute('title', 'Re-Generate Latest Insights');
     });
 
-    test('clicking re-generate opens confirmation dialog', async () => {
+    test('clicking re-generate opens confirmation dialog with notes', async () => {
       await reports.generateButton.click();
       await expect(reports.confirmDialog).toBeVisible();
+      await expect(reports.notesTextarea).toBeVisible();
     });
 
     test('cancelling confirmation dialog does not trigger generation', async ({ page }) => {
@@ -71,9 +102,19 @@ test.describe('Reports', () => {
       await reports.generateButton.click();
       await expect(reports.confirmDialog).toBeVisible();
 
-      await reports.cancelRegenerate();
+      await reports.cancelGenerate();
       await expect(reports.confirmDialog).not.toBeVisible();
       expect(generateCalled).toBe(false);
+    });
+
+    test('notes are cleared when dialog is reopened', async () => {
+      await reports.generateButton.click();
+      await reports.notesTextarea.fill('Some notes');
+      await reports.cancelGenerate();
+
+      // Reopen
+      await reports.generateButton.click();
+      await expect(reports.notesTextarea).toHaveValue('');
     });
 
     test('confirming regeneration triggers report creation', async ({ page }) => {
@@ -82,7 +123,7 @@ test.describe('Reports', () => {
       await reports.generateButton.click();
       await expect(reports.confirmDialog).toBeVisible();
 
-      await reports.confirmRegenerate();
+      await reports.confirmGenerate();
 
       const req = await generateRequest;
       expect(req.method()).toBe('POST');
@@ -142,7 +183,7 @@ test.describe('Reports', () => {
 
       await reports.generateButton.click();
       await expect(reports.confirmDialog).toBeVisible();
-      await reports.confirmRegenerate();
+      await reports.confirmGenerate();
 
       const req = await generateRequest;
       expect(req.method()).toBe('POST');

@@ -43,33 +43,75 @@ Run new tests:
 npx playwright test e2e/<feature>.spec.ts
 ```
 
-## Step 5: Live Environment Verification (Bugfixes: REQUIRED / Features: Optional)
+## Step 5: Live Environment UI Verification (MANDATORY when UI is affected)
 
-**Required for bugfixes:** You MUST verify the fix on the live local environment by repeating the same user action from Phase 2 and capturing a **"fix verified" screenshot** showing the corrected behavior.
+**Required when ANY of these apply:**
+1. **Frontend UI changes** — new or modified components, dialogs, forms, layout, styling, or interactive behavior
+2. **New frontend features** — any feature that introduces new UI elements or pages
+3. **Backend changes that affect UI rendering** — extended API response fields, new data shapes, or modified payloads that are consumed and displayed by the frontend
 
-**Optional for features:** UI changes that benefit from visual verification beyond mocked E2E tests.
+**The key question:** Will a user see something different on screen as a result of this change? If yes → mandatory.
 
+**Not required for:** Backend-only changes with no UI consumer, type-only changes, config changes, CI/CD changes, or refactors with no visible UI impact.
+
+**Why mandatory:** Mocked E2E tests verify behavior against intercepted routes, but cannot catch rendering issues, styling problems, or integration bugs that only surface against a real running environment. Visual evidence provides confidence that the feature actually works as intended.
+
+### Procedure
+
+1. **Start the local environment:**
 ```bash
-# Ensure local environment is running
 docker compose up -d
 npm run dev -w @vitals/backend &
 npm run dev -w @vitals/frontend &
 ```
 
-Use Playwright to drive the real UI (no mocking) and capture evidence:
+2. **Write a temporary Playwright visual test** at `e2e/visual-test-<feature>.spec.ts`:
+   - Navigate to the affected page(s) on `http://localhost:3000`
+   - Exercise the new/changed UI (open dialogs, fill forms, trigger interactions)
+   - Capture screenshots at key states (initial, interaction, result)
+   - Assert that critical elements are visible
 
-```javascript
-const { chromium } = require('playwright');
-const browser = await chromium.launch({ headless: true });
-const page = await browser.newPage();
-await page.goto('http://localhost:3000/<affected-page>');
-// Perform the same action that triggered the bug in Phase 2
-// ...
-await page.screenshot({ path: 'fix-verified.png', fullPage: true });
-await browser.close();
+```typescript
+import { test, expect } from '@playwright/test';
+
+test.describe('Visual: <Feature Name>', () => {
+  test('<description of what is being verified>', async ({ page }) => {
+    await page.goto('http://localhost:3000/<affected-page>');
+    await page.waitForLoadState('networkidle');
+
+    // Screenshot 1: initial state
+    await page.screenshot({ path: 'e2e/screenshots/01-initial.png', fullPage: true });
+
+    // Interact with the UI
+    // ...
+
+    // Screenshot 2: after interaction
+    await page.screenshot({ path: 'e2e/screenshots/02-interaction.png', fullPage: true });
+
+    // Assert key elements
+    await expect(page.getByRole('...', { name: '...' })).toBeVisible();
+  });
+});
 ```
 
-**The screenshot (`fix-verified.png`) is temporary** — it will be referenced in the PR body (Phase 9) and deleted after the PR is created.
+3. **Run the visual test:**
+```bash
+mkdir -p e2e/screenshots
+npx playwright test e2e/visual-test-<feature>.spec.ts --headed
+```
+
+4. **Present screenshots to the user** using the Read tool on the captured PNG files.
+
+5. **Clean up after verification:**
+```bash
+rm e2e/visual-test-<feature>.spec.ts
+rm -rf e2e/screenshots
+```
+
+The visual test and screenshots are temporary artifacts — they exist only for verification evidence during the pipeline run and must not be committed.
+
+### For bugfixes specifically
+Repeat the same user action from Phase 2 that originally triggered the bug. The screenshot should clearly show the corrected behavior.
 
 ## Step 6: Bug Regression (Bugfixes Only)
 
@@ -88,4 +130,6 @@ npx playwright test e2e/<renamed-file>.spec.ts
 - [ ] `npx playwright test` — all E2E tests pass
 - [ ] New E2E tests written (if applicable)
 - [ ] New E2E tests pass
-- [ ] **(Bugfixes)** Fix verified on live UI with screenshot saved as `fix-verified.png`
+- [ ] **(UI changes)** Live UI verified with Playwright screenshots presented to user
+- [ ] **(UI changes)** Temporary visual test and screenshots cleaned up
+- [ ] **(Bugfixes)** Same bug action from Phase 2 repeated, screenshot shows fix
