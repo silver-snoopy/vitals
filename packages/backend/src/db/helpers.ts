@@ -64,6 +64,30 @@ export async function saveCollectionMetadata(
   );
 }
 
+export async function loadAllCollectionMetadata(
+  pool: pg.Pool,
+  userId: string,
+): Promise<CollectionMetadata[]> {
+  const { rows } = await pool.query(
+    `SELECT user_id, provider_name, last_successful_fetch, last_attempted_fetch,
+            record_count, status, error_message
+     FROM collection_metadata
+     WHERE user_id = $1
+     ORDER BY provider_name`,
+    [userId],
+  );
+
+  return rows.map((r) => ({
+    userId: r.user_id,
+    providerName: r.provider_name,
+    lastSuccessfulFetch: r.last_successful_fetch,
+    lastAttemptedFetch: r.last_attempted_fetch,
+    recordCount: r.record_count,
+    status: r.status,
+    errorMessage: r.error_message,
+  }));
+}
+
 export async function refreshDailyAggregates(pool: pg.Pool): Promise<void> {
   await pool.query('REFRESH MATERIALIZED VIEW CONCURRENTLY daily_aggregates');
 }

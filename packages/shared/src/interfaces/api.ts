@@ -26,3 +26,12 @@ export interface GenerateReportRequest extends DateRangeParams {
   userNotes?: string;
   workoutPlan?: string;
 }
+
+export interface CollectionStatus {
+  providerName: string;
+  lastSuccessfulFetch: string | null;
+  lastAttemptedFetch: string | null;
+  recordCount: number;
+  status: string;
+  errorMessage: string | null;
+}

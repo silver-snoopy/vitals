@@ -45,7 +45,7 @@ src/
 │   └── api-key.ts        X-API-Key header guard
 ├── routes/               Fastify route plugins
 │   ├── health.ts         GET /health
-│   ├── collect.ts        POST /api/collect
+│   ├── collect.ts        POST /api/collect, GET /api/collect/status
 │   ├── nutrition.ts      GET /api/nutrition/daily        (Phase 3)
 │   ├── measurements.ts   GET /api/measurements           (Phase 3)
 │   ├── workouts.ts       GET /api/workouts               (Phase 3)
@@ -169,6 +169,7 @@ Query Layer (parallel)
 |--------|------|------|--------|
 | GET | `/health` | None | Live |
 | POST | `/api/collect` | X-API-Key | Live |
+| GET | `/api/collect/status` | X-API-Key | Live |
 | GET | `/api/nutrition/daily` | None | Phase 3 |
 | GET | `/api/measurements` | None | Phase 3 |
 | GET | `/api/workouts` | None | Phase 3 |

@@ -72,6 +72,8 @@ and biometrics (Apple Health) in a single unified dashboard.
 | UC-RPT-04 | Generate from dashboard widget | Implemented |
 | UC-RPT-05 | Structured 8-section health analysis | Implemented |
 | UC-RPT-06 | Add user notes to report generation | Implemented |
+| UC-RPT-07 | Pre-collection before report generation | Implemented |
+| UC-RPT-08 | Stale data warning on reports page | Implemented |
 
 ### UC-RPT-01: Generate weekly insights (first report)
 
@@ -176,6 +178,28 @@ The date range picker on other pages is irrelevant to report generation.
 - Confirm button adapts: "Generate" vs "Re-Generate"
 
 **E2E Coverage:** `e2e/reports.spec.ts` — user notes tests in both generate and re-generate sections
+
+### UC-RPT-07: Pre-collection before report generation
+
+**As a** user, **I want** report generation to automatically collect fresh data from all providers,
+**so that** my reports aren't empty when the scheduled collection pipeline hasn't run.
+
+**Behavior:**
+- Before querying the database, the report generation endpoint calls `runCollection()` with the report's date range
+- Collection is best-effort: if any provider fails, the error is logged and report generation continues with existing data
+- Collection results (total records, duration) are logged for debugging
+
+### UC-RPT-08: Stale data warning on reports page
+
+**As a** user, **I want to** see a warning when my data sources haven't synced recently,
+**so that** I know reports may contain incomplete data.
+
+**Behavior:**
+- Reports page shows a yellow warning banner when any provider's last successful sync was over 24 hours ago
+- Providers that have never been attempted are not flagged (only attempted-but-failed or stale providers)
+- Warning lists the affected provider names
+- A `GET /api/collect/status` endpoint returns collection metadata per provider
+- Raw error messages are sanitized before being returned to the client
 
 ---
 

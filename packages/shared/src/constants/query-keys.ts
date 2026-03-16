@@ -20,4 +20,7 @@ export const QUERY_KEYS = {
   dashboard: {
     weekly: (start: string, end: string) => ['dashboard', 'weekly', start, end] as const,
   },
+  collection: {
+    status: ['collection', 'status'] as const,
+  },
 } as const;
