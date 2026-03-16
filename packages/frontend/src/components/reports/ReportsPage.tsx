@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useReports, useGenerateReport } from '@/api/hooks/useReports';
 import { ReportCard } from './ReportCard';
 import { GenerateReportDialog } from './GenerateReportDialog';
+import { StaleDataWarning } from './StaleDataWarning';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { Button } from '@/components/ui/button';
 
@@ -47,6 +48,8 @@ export function ReportsPage() {
           )}
         </Button>
       </div>
+
+      <StaleDataWarning />
 
       {error && <p className="text-sm text-destructive">Failed to load reports.</p>}
 

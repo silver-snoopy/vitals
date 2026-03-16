@@ -6,6 +6,7 @@ import { validateDateRange, isDateRangeError } from '../utils/validate-dates.js'
 import { getReportById, listReports } from '../db/queries/reports.js';
 import { generateWeeklyReport } from '../services/ai/report-generator.js';
 import { createAIProvider } from '../services/ai/ai-service.js';
+import { runCollection } from '../services/collectors/pipeline.js';
 
 export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   app.post<{ Body: GenerateReportRequest }>(
@@ -21,6 +22,24 @@ export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig 
           message: range.error,
           statusCode: 400,
         });
+      }
+
+      // Best-effort data collection before report generation
+      try {
+        const collectionResult = await runCollection(app.db, {
+          userId: opts.env.dbDefaultUserId,
+          startDate: range.start,
+          endDate: range.end,
+        });
+        request.log.info(
+          { totalRecords: collectionResult.totalRecords, durationMs: collectionResult.durationMs },
+          'Pre-report data collection completed',
+        );
+      } catch (err: unknown) {
+        request.log.warn(
+          { err },
+          'Pre-report data collection failed (continuing with existing data)',
+        );
       }
 
       let aiProvider;

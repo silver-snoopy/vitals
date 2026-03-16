@@ -12,6 +12,14 @@ vi.mock('../../services/collectors/register.js', () => ({
   registerProviders: vi.fn(),
 }));
 
+vi.mock('../../services/collectors/pipeline.js', () => ({
+  runCollection: vi.fn().mockResolvedValue({
+    results: [],
+    totalRecords: 0,
+    durationMs: 50,
+  }),
+}));
+
 vi.mock('../../db/queries/reports.js', () => ({
   listReports: vi.fn().mockResolvedValue([]),
   getReportById: vi.fn().mockResolvedValue(null),
@@ -196,6 +204,46 @@ describe('POST /api/reports/generate', () => {
       headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
       body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
     });
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body);
+    expect(body.data.summary).toBe('Great week!');
+    await app.close();
+  });
+
+  it('calls runCollection before generating the report', async () => {
+    const { runCollection } = await import('../../services/collectors/pipeline.js');
+    (runCollection as ReturnType<typeof vi.fn>).mockClear();
+
+    const app = await buildApp(testEnv);
+    await app.inject({
+      method: 'POST',
+      url: '/api/reports/generate',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
+    });
+
+    expect(runCollection).toHaveBeenCalledOnce();
+    const callArgs = (runCollection as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(callArgs[1]).toMatchObject({
+      userId: testEnv.dbDefaultUserId,
+    });
+    await app.close();
+  });
+
+  it('still generates report when pre-collection fails', async () => {
+    const { runCollection } = await import('../../services/collectors/pipeline.js');
+    (runCollection as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('Cronometer auth failed'),
+    );
+
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/reports/generate',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
+    });
+
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
     expect(body.data.summary).toBe('Great week!');
