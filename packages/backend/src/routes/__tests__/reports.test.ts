@@ -74,7 +74,7 @@ describe('GET /api/reports', () => {
     await app.close();
   });
 
-  it('returns deduplicated reports (latest per period)', async () => {
+  it('returns reports from listReports', async () => {
     const { listReports } = await import('../../db/queries/reports.js');
     (listReports as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
       {
