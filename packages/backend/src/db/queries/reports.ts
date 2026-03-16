@@ -41,7 +41,7 @@ export async function getReportById(pool: pg.Pool, id: string): Promise<WeeklyRe
 export async function getLatestReport(pool: pg.Pool, userId: string): Promise<WeeklyReport | null> {
   const { rows } = await pool.query(
     `SELECT ${REPORT_COLUMNS} FROM weekly_reports WHERE user_id = $1
-     ORDER BY period_start DESC, created_at DESC LIMIT 1`,
+     ORDER BY period_start DESC, created_at DESC, id DESC LIMIT 1`,
     [userId],
   );
   return rows.length === 0 ? null : mapReportRow(rows[0] as Record<string, unknown>);
@@ -69,7 +69,7 @@ export async function listReports(
     `SELECT DISTINCT ON (period_start, period_end) ${REPORT_COLUMNS}
      FROM weekly_reports
      WHERE ${filters.join(' AND ')}
-     ORDER BY period_start DESC, period_end DESC, created_at DESC`,
+     ORDER BY period_start DESC, period_end DESC, created_at DESC, id DESC`,
     params,
   );
 
