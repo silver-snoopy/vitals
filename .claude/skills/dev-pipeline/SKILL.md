@@ -16,9 +16,9 @@ Do NOT skip phases. Each phase has explicit exit criteria that must be met befor
 
 ```
 Phase 1: Read Spec → Phase 2: QA Verify → Phase 3: Research
-    → USER GATE → Phase 4: Analyze & Plan → Phase 5: Implement
-    → Phase 6: Code Review → Phase 7: QA Test → Phase 8: Update Docs
-    → Phase 9: Commit & PR
+    → USER GATE → Phase 4: Analyze & Plan → PLAN GATE
+    → Phase 5: Implement → Phase 6: Code Review → Phase 7: QA Test
+    → Phase 8: Update Docs → Phase 9: Commit & PR
 ```
 
 ## Execution Policy
@@ -147,6 +147,17 @@ Write the plan to a file: `docs/plans/<date>-<feature-slug>.md`
 For detailed instructions, see [phases/04-analyze-plan.md](phases/04-analyze-plan.md).
 
 **Exit criteria:** Implementation plan is written to a plan file. Each task is specific enough to execute without ambiguity.
+
+---
+
+## ◆ PLAN GATE ◆
+
+**MANDATORY:** Before proceeding to Phase 5, verify:
+1. A plan file exists at `docs/plans/<YYYY-MM-DD>-<feature-slug>.md` — confirm with Glob or `ls`
+2. The plan file contains all 6 required sections (Context, Tasks, Files, Dependencies, Tests, Risks)
+3. Report the plan file path to the user
+
+**If the file is missing or incomplete, return to Phase 4 and complete it. Do NOT proceed to Phase 5 without a verified plan file on disk.**
 
 ---
 

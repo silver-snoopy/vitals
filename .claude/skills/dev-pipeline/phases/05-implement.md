@@ -1,11 +1,5 @@
 # Phase 5: Implement
 
-## Phase Policy
-
-**Hard requirement:** Implement the approved plan while following project conventions, and leave the code compiling successfully.
-**Preferred mechanism:** Follow the plan in dependency order and validate with `npm run build` after significant changes.
-**Allowed fallback:** Adjust the sequence if needed, but preserve the approved intent, follow conventions, and finish with a passing build.
-
 ## Prerequisites
 - User has approved the implementation approach (USER GATE passed)
 - Research findings are available from Phase 3

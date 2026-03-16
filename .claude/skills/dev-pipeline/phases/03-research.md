@@ -1,11 +1,5 @@
 # Phase 3: Research & Understand
 
-## Phase Policy
-
-**Hard requirement:** Research the current implementation, related patterns, and reusable utilities well enough to propose an implementation approach.
-**Preferred mechanism:** Spawn up to 3 parallel explore agents with split responsibilities.
-**Allowed fallback:** If explore agents are unavailable, do the same investigation manually with repo search, file inspection, and targeted notes. Coverage matters more than the mechanism.
-
 ## Purpose
 Understand the affected code deeply before writing anything.
 Actively search for existing functions, utilities, and patterns that can be reused.

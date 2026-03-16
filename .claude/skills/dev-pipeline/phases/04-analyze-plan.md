@@ -1,11 +1,5 @@
 # Phase 4: Analyze & Plan
 
-## Phase Policy
-
-**Hard requirement:** Produce a concrete written implementation plan that is specific enough to execute without ambiguity.
-**Preferred mechanism:** Spawn a plan agent with the approved context and use its output to draft the plan file.
-**Allowed fallback:** If a plan agent is unavailable, write the plan directly. The plan contents and output file are still mandatory.
-
 ## Purpose
 Translate the approved approach into a concrete, step-by-step implementation plan.
 This plan becomes the single source of truth for Phase 5 (Implement).

@@ -1,11 +1,5 @@
 # Phase 9: Commit & PR
 
-## Phase Policy
-
-**Hard requirement:** For full delivery through this pipeline, finish with a clean commit and a pull request that accurately describe the change and verification performed.
-**Preferred mechanism:** Use the standard git workflow and `gh pr create`.
-**Allowed fallback:** If PR tooling is unavailable, prepare the exact commit and PR content manually and report the blocker clearly. Do not claim the phase is complete unless the PR actually exists.
-
 ## Purpose
 Create a clean commit and open a pull request targeting master.
 
@@ -35,7 +29,10 @@ If your shell or team conventions support a multiline commit body, include:
 <Body: what changed and why. Reference UC IDs.>
 
 UC: UC-XXX-NN
+Co-Authored-By: <as required by CLAUDE.md or system prompt conventions>
 ```
+
+**Note:** Always include the `Co-Authored-By` trailer required by the project's commit conventions (see CLAUDE.md).
 
 **Commit types:**
 - `feat:` — new feature

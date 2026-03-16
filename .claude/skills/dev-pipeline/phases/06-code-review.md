@@ -1,11 +1,5 @@
 # Phase 6: Code Review
 
-## Phase Policy
-
-**Hard requirement:** Review the change across logic, conventions, and security, then resolve HIGH and MEDIUM findings before continuing.
-**Preferred mechanism:** Spawn 3 focused review agents in parallel.
-**Allowed fallback:** If review agents or helper skills are unavailable, perform a structured self-review using the same three lenses and document findings before fixing them.
-
 ## Purpose
 Catch bugs, convention violations, and security issues before testing.
 

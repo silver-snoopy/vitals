@@ -1,11 +1,5 @@
 # Phase 7: QA Test
 
-## Phase Policy
-
-**Hard requirement:** Complete the automated validation required by the change, and for any user-visible UI impact, verify the behavior on the live local environment with screenshot evidence.
-**Preferred mechanism:** Use the repo's lint, format, unit, E2E, and Playwright-based live verification workflow.
-**Allowed fallback:** If a named helper or exact temporary test workflow is unavailable, use another method only if it preserves the same validation strength. Mocked tests alone are never sufficient for live UI verification.
-
 ## Purpose
 Verify all changes work correctly through automated tests and, when applicable, live environment verification.
 
@@ -110,7 +104,10 @@ test.describe('Visual: <Feature Name>', () => {
 npx playwright test e2e/visual-test-<feature>.spec.ts --headed
 ```
 
-Create the `e2e/screenshots/` directory first if it does not already exist, using a shell-appropriate command.
+Create the screenshots directory first if needed:
+```bash
+mkdir -p e2e/screenshots
+```
 
 4. **Present screenshots to the user** using whatever image or file-sharing mechanism is available in the current environment.
 

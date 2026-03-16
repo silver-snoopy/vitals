@@ -2,12 +2,6 @@
 
 **Skip this phase entirely for features and refactors.**
 
-## Phase Policy
-
-**Hard requirement:** Reproduce the bug against the live local system before implementing a fix, and preserve evidence of the broken behavior.
-**Preferred mechanism:** Start the full local stack and drive the real UI with Playwright when the bug is visible in the UI.
-**Allowed fallback:** If the preferred automation path is unavailable, use another method that still exercises the live local system and preserves equivalent evidence quality. Mocked tests are never a substitute for this phase.
-
 ## Purpose
 Reproduce the reported bug on the **live local environment** by exercising the feature through the UI.
 Mocked tests are NOT sufficient for bug reproduction — you must see the bug happen in the real running system.
