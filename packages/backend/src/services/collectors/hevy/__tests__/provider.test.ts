@@ -140,7 +140,7 @@ describe('HevyApiClient', () => {
     await expect(client.fetchWorkouts(start, end)).rejects.toThrow('Missing HEVY_API_KEY');
   });
 
-  it('builds correct request URL', async () => {
+  it('builds correct request URL with pagination params', async () => {
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response(JSON.stringify({ workouts: [] }), { status: 200 }));
@@ -148,9 +148,40 @@ describe('HevyApiClient', () => {
     await client.fetchWorkouts(new Date('2026-03-01'), new Date('2026-03-07'));
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      expect.stringContaining('workouts?from=2026-03-01&to=2026-03-07'),
+      expect.stringContaining('workouts?page=1&pageSize=10'),
       expect.objectContaining({ headers: expect.objectContaining({ 'api-key': 'test-key' }) }),
     );
+    fetchSpy.mockRestore();
+  });
+
+  it('paginates through all pages', async () => {
+    const makeWorkout = (title: string, exercise: string) => ({
+      title,
+      exercises: [{ title: exercise, sets: [{ weight_kg: 100, reps: 5, set_index: 0 }] }],
+    });
+    // Page 1 must have exactly pageSize (10) items so partial-page check doesn't fire
+    const page1 = {
+      workouts: Array.from({ length: 10 }, (_, i) =>
+        makeWorkout(`Day ${i + 1}`, `Exercise ${i + 1}`),
+      ),
+      page_count: 2,
+    };
+    const page2 = {
+      workouts: [makeWorkout('Day 11', 'Bench')],
+      page_count: 2,
+    };
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify(page1), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(page2), { status: 200 }));
+
+    const client = new HevyApiClient('test-key', 'https://api.hevyapp.com/v1');
+    const rows = await client.fetchWorkouts(new Date('2026-03-01'), new Date('2026-03-07'));
+
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(rows).toHaveLength(11);
+    expect(rows[0].exercise_title).toBe('Exercise 1');
+    expect(rows[10].exercise_title).toBe('Bench');
     fetchSpy.mockRestore();
   });
 });

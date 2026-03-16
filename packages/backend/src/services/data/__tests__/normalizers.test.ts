@@ -117,6 +117,25 @@ describe('normalizeHevyRow', () => {
     expect(row.durationSeconds).toBe(60);
   });
 
+  it('prefers exercise_title over workout title', () => {
+    const raw = {
+      title: 'Upper Body',
+      exercise_title: 'Bench Press',
+      set_index: 0,
+      weight_kg: '80',
+      reps: '10',
+      start_time: '2026-03-15T10:00:00Z',
+    };
+    const row = normalizeHevyRow(raw, userId);
+    expect(row.exerciseName).toBe('Bench Press');
+  });
+
+  it('falls back to title when exercise_title is missing', () => {
+    const raw = { title: 'Leg Day', set_index: 0, reps: '15' };
+    const row = normalizeHevyRow(raw, userId);
+    expect(row.exerciseName).toBe('Leg Day');
+  });
+
   it('converts distance_km to distance_meters', () => {
     const raw = {
       exercise_title: 'Elliptical Trainer',

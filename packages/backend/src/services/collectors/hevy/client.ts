@@ -82,20 +82,41 @@ export class HevyApiClient implements HevyClient {
     this.apiBase = apiBase.replace(/\/$/, '');
   }
 
-  async fetchWorkouts(startDate: Date, endDate: Date): Promise<Record<string, unknown>[]> {
+  async fetchWorkouts(_startDate: Date, _endDate: Date): Promise<Record<string, unknown>[]> {
     if (!this.apiKey) throw new Error('Missing HEVY_API_KEY');
 
-    const params = new URLSearchParams({
-      from: startDate.toISOString().slice(0, 10),
-      to: endDate.toISOString().slice(0, 10),
-    });
-    const response = await fetch(`${this.apiBase}/workouts?${params}`, {
-      headers: { 'api-key': this.apiKey },
-    });
-    if (!response.ok) throw new Error(`Hevy API request failed: ${response.status}`);
+    const allWorkouts: Array<Record<string, unknown>> = [];
+    let page = 1;
+    const pageSize = 10;
+    const maxPages = 500;
 
-    const payload = await response.json();
-    const workouts = extractWorkouts(payload);
-    return flattenWorkouts(workouts);
+    while (page <= maxPages) {
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      const response = await fetch(`${this.apiBase}/workouts?${params}`, {
+        headers: { 'api-key': this.apiKey },
+      });
+      if (!response.ok) throw new Error(`Hevy API request failed: ${response.status}`);
+
+      const payload = await response.json();
+      const workouts = extractWorkouts(payload);
+      if (workouts.length === 0) break;
+
+      allWorkouts.push(...workouts);
+
+      const rawPageCount =
+        payload && typeof payload === 'object'
+          ? (payload as Record<string, unknown>).page_count
+          : undefined;
+      const pageCount = rawPageCount != null ? Number(rawPageCount) : NaN;
+      if (!isNaN(pageCount) && page >= pageCount) break;
+      if (workouts.length < pageSize) break;
+
+      page++;
+    }
+
+    return flattenWorkouts(allWorkouts);
   }
 }
