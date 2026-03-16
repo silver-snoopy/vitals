@@ -4,7 +4,7 @@
 
 ### File path input
 If the argument looks like a file path (contains `/`, `\`, or ends in `.md`):
-1. Read the file with the Read tool
+1. Read the file
 2. Parse the content for goal, acceptance criteria, and scope
 
 ### Text description input

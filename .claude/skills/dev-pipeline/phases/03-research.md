@@ -4,7 +4,7 @@
 Understand the affected code deeply before writing anything.
 Actively search for existing functions, utilities, and patterns that can be reused.
 
-## Launch Explore Agents
+## Preferred: Launch Explore Agents
 
 Spawn up to 3 Explore agents IN PARALLEL (single message, multiple Agent tool calls):
 
@@ -22,6 +22,19 @@ Spawn up to 3 Explore agents IN PARALLEL (single message, multiple Agent tool ca
 - Check `packages/shared/` for existing types and interfaces
 - Check for existing hooks, components, helpers
 - Check for existing test fixtures and mocks
+
+## Fallback: Manual Research
+
+If explore agents are unavailable, cover the same three scopes manually:
+- Existing implementation
+- Related patterns
+- Reusable utilities
+
+Capture enough detail to support the user gate:
+- Relevant file paths
+- Key functions, routes, services, queries, hooks, or components
+- Reusable patterns to follow
+- Open questions or decisions requiring user approval
 
 ## Key Locations to Search
 
@@ -56,3 +69,8 @@ Present findings to the user including:
 - Existing utilities/patterns to reuse
 - Proposed implementation approach
 - Any design decisions that need user input
+
+## Checklist
+- [ ] Research covers implementation, related patterns, and reusable utilities
+- [ ] Findings are ready for the user gate
+- [ ] Proposed approach is specific enough for user approval
