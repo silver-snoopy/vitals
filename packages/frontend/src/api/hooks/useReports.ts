@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ApiResponse, WeeklyReport } from '@vitals/shared';
+import type { ApiResponse, WeeklyReport, GenerateReportResponse } from '@vitals/shared';
 import { QUERY_KEYS } from '@vitals/shared';
 import { format, subDays } from 'date-fns';
 import { apiFetch } from '../client';
@@ -30,7 +30,6 @@ export function useReport(id: string) {
 }
 
 export function useGenerateReport() {
-  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (params?: { userNotes?: string }) => {
       const today = new Date();
@@ -46,7 +45,7 @@ export function useGenerateReport() {
         payload.userNotes = trimmedUserNotes;
       }
 
-      return apiFetch<ApiResponse<WeeklyReport>>('/api/reports/generate', {
+      return apiFetch<ApiResponse<GenerateReportResponse>>('/api/reports/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,9 +54,14 @@ export function useGenerateReport() {
         body: JSON.stringify(payload),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.all });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.latest });
-    },
+    // No onSuccess invalidation — handled by WebSocket 'completed' event
   });
+}
+
+export function useInvalidateReports() {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.all });
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.latest });
+  };
 }

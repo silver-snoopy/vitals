@@ -196,7 +196,22 @@ async function completeWithRetry(
   throw new Error('Unreachable');
 }
 
-export async function generateWeeklyReport(
+export interface GatherAndGenerateResult {
+  summary: string;
+  insights: string;
+  actionItems: ActionItem[];
+  dataCoverage: WeeklyReport['dataCoverage'];
+  sections?: ReportSections;
+  providerName: string;
+  model: string;
+  usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+}
+
+/**
+ * Gathers data and calls the AI provider to generate report content.
+ * Does NOT write to the database — caller is responsible for persistence.
+ */
+export async function gatherAndGenerate(
   pool: pg.Pool,
   aiProvider: AIProvider,
   userId: string,
@@ -204,7 +219,7 @@ export async function generateWeeklyReport(
   endDate: Date,
   userNotes?: string,
   workoutPlan?: string,
-): Promise<WeeklyReport> {
+): Promise<GatherAndGenerateResult> {
   // Compute previous week date range
   const prevEnd = new Date(startDate);
   prevEnd.setDate(prevEnd.getDate() - 1);
@@ -254,7 +269,41 @@ export async function generateWeeklyReport(
   // 4. Parse response
   const parsed = parseAIResponse(result.content);
 
-  // 5. Save report and log usage
+  return {
+    summary: parsed.summary,
+    insights: parsed.insights,
+    actionItems: parsed.actionItems,
+    dataCoverage,
+    sections: parsed.sections,
+    providerName: aiProvider.name(),
+    model: result.model,
+    usage: result.usage,
+  };
+}
+
+/**
+ * Convenience wrapper: gathers data, generates report, saves to DB, and logs usage.
+ * Used by the synchronous (?sync=true) code path.
+ */
+export async function generateWeeklyReport(
+  pool: pg.Pool,
+  aiProvider: AIProvider,
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+  userNotes?: string,
+  workoutPlan?: string,
+): Promise<WeeklyReport> {
+  const gen = await gatherAndGenerate(
+    pool,
+    aiProvider,
+    userId,
+    startDate,
+    endDate,
+    userNotes,
+    workoutPlan,
+  );
+
   const periodStart = startDate.toISOString().split('T')[0];
   const periodEnd = endDate.toISOString().split('T')[0];
 
@@ -262,22 +311,22 @@ export async function generateWeeklyReport(
     userId,
     periodStart,
     periodEnd,
-    summary: parsed.summary,
-    insights: parsed.insights,
-    actionItems: parsed.actionItems,
-    dataCoverage,
-    sections: parsed.sections,
-    aiProvider: aiProvider.name(),
-    aiModel: result.model,
+    summary: gen.summary,
+    insights: gen.insights,
+    actionItems: gen.actionItems,
+    dataCoverage: gen.dataCoverage,
+    sections: gen.sections,
+    aiProvider: gen.providerName,
+    aiModel: gen.model,
   });
 
   await logAiGeneration(pool, {
     userId,
-    provider: aiProvider.name(),
-    model: result.model,
-    promptTokens: result.usage.promptTokens,
-    completionTokens: result.usage.completionTokens,
-    totalTokens: result.usage.totalTokens,
+    provider: gen.providerName,
+    model: gen.model,
+    promptTokens: gen.usage.promptTokens,
+    completionTokens: gen.usage.completionTokens,
+    totalTokens: gen.usage.totalTokens,
     purpose: 'weekly_report',
   });
 
@@ -286,13 +335,13 @@ export async function generateWeeklyReport(
     userId,
     periodStart,
     periodEnd,
-    summary: parsed.summary,
-    insights: parsed.insights,
-    actionItems: parsed.actionItems,
-    dataCoverage,
-    sections: parsed.sections,
-    aiProvider: aiProvider.name(),
-    aiModel: result.model,
+    summary: gen.summary,
+    insights: gen.insights,
+    actionItems: gen.actionItems,
+    dataCoverage: gen.dataCoverage,
+    sections: gen.sections,
+    aiProvider: gen.providerName,
+    aiModel: gen.model,
     createdAt: new Date().toISOString(),
   };
 }

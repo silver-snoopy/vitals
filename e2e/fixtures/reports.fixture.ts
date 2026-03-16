@@ -25,14 +25,45 @@ const reportFixture = {
     },
   ],
   dataCoverage: { nutritionDays: 7, workoutDays: 3, biometricDays: 4 },
+  status: 'completed',
   aiProvider: 'gemini',
   aiModel: 'gemini-2.0-flash',
   createdAt: fmt(today),
 };
 
 /**
+ * Simulate the WebSocket-driven async report completion via the exposed Zustand store.
+ * In E2E, the real WebSocket won't connect — this bridges that gap.
+ * Fire-and-forget: if the test ends before completion, the error is silently ignored.
+ */
+function simulateAsyncCompletion(page: Page) {
+  void (async () => {
+    try {
+      await page.waitForTimeout(150);
+      await page.evaluate(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const store = (window as any).__reportGenStore__;
+        if (store) {
+          store.getState().updateStatus('collecting_data', 'Collecting latest health data...');
+        }
+      });
+      await page.waitForTimeout(200);
+      await page.evaluate(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const store = (window as any).__reportGenStore__;
+        if (store) {
+          store.getState().updateStatus('completed', 'Report ready');
+        }
+      });
+    } catch {
+      // Test may have ended — safe to ignore
+    }
+  })();
+}
+
+/**
  * Mock the reports API with no existing reports.
- * POST /api/reports/generate returns a new report and subsequent GET returns it.
+ * POST /api/reports/generate returns 202 (async), then simulates completion.
  */
 export async function mockReportsApiEmpty(page: Page) {
   let generated = false;
@@ -52,10 +83,11 @@ export async function mockReportsApiEmpty(page: Page) {
   await page.route('**/api/reports/generate', async (route) => {
     generated = true;
     await route.fulfill({
-      status: 200,
+      status: 202,
       contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: reportFixture }),
+      body: JSON.stringify({ data: { reportId: 'report-1', status: 'pending' } }),
     });
+    simulateAsyncCompletion(page);
   });
 }
 
@@ -115,7 +147,6 @@ const structuredReportFixture = {
 
 /**
  * Mock the reports API with a structured 8-section report.
- * Returns the rich report with sections on both GET and POST.
  */
 export async function mockReportsApiStructured(page: Page) {
   await page.route('**/api/reports', async (route) => {
@@ -132,16 +163,16 @@ export async function mockReportsApiStructured(page: Page) {
 
   await page.route('**/api/reports/generate', async (route) => {
     await route.fulfill({
-      status: 200,
+      status: 202,
       contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: structuredReportFixture }),
+      body: JSON.stringify({ data: { reportId: 'report-structured-1', status: 'pending' } }),
     });
+    simulateAsyncCompletion(page);
   });
 }
 
 /**
  * Mock the reports API with an existing report.
- * POST /api/reports/generate returns a refreshed report.
  */
 export async function mockReportsApiWithReport(page: Page) {
   await page.route('**/api/reports', async (route) => {
@@ -158,9 +189,10 @@ export async function mockReportsApiWithReport(page: Page) {
 
   await page.route('**/api/reports/generate', async (route) => {
     await route.fulfill({
-      status: 200,
+      status: 202,
       contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: { ...reportFixture, id: 'report-2' } }),
+      body: JSON.stringify({ data: { reportId: 'report-2', status: 'pending' } }),
     });
+    simulateAsyncCompletion(page);
   });
 }

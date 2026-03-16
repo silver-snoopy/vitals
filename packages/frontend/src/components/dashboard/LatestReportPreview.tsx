@@ -5,7 +5,8 @@ import type { WeeklyReport } from '@vitals/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useLatestReport, useGenerateReport } from '@/api/hooks/useReports';
+import { useLatestReport } from '@/api/hooks/useReports';
+import { useReportGenerationStore } from '@/store/useReportGenerationStore';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { GenerateReportDialog } from '@/components/reports/GenerateReportDialog';
 
@@ -18,9 +19,11 @@ const priorityVariant: Record<'high' | 'medium' | 'low', 'destructive' | 'second
 
 export function LatestReportPreview() {
   const { data, isLoading } = useLatestReport();
-  const generateReport = useGenerateReport();
   const report: WeeklyReport | null | undefined = data;
   const hasReport = !!report;
+
+  const { pendingReportId, status } = useReportGenerationStore();
+  const isGenerating = pendingReportId !== null && status !== 'completed' && status !== 'failed';
 
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -36,9 +39,9 @@ export function LatestReportPreview() {
               variant="outline"
               size="sm"
               onClick={() => setConfirmOpen(true)}
-              disabled={generateReport.isPending}
+              disabled={isGenerating}
             >
-              {generateReport.isPending ? (
+              {isGenerating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Generating&hellip;
@@ -64,10 +67,10 @@ export function LatestReportPreview() {
                 variant="ghost"
                 size="icon-sm"
                 onClick={() => setConfirmOpen(true)}
-                disabled={generateReport.isPending}
+                disabled={isGenerating}
                 title="Re-Generate Latest Insights"
               >
-                {generateReport.isPending ? (
+                {isGenerating ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <RefreshCw className="h-4 w-4" />
