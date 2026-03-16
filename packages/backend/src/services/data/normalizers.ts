@@ -90,7 +90,7 @@ export function normalizeNutritionRow(
  * reps, duration_seconds, distance_meters, rpe, start_time, end_time.
  */
 export function normalizeHevyRow(raw: Record<string, unknown>, userId: string): WorkoutSetRow {
-  const exerciseName = String(raw['exercise_name'] ?? raw['title'] ?? raw['exercise_title'] ?? '');
+  const exerciseName = String(raw['exercise_title'] ?? raw['exercise_name'] ?? raw['title'] ?? '');
   const setIndex = Number(raw['set_index'] ?? raw['set_order'] ?? raw['index'] ?? 0);
 
   return {
