@@ -1,14 +1,27 @@
 # Phase 4: Analyze & Plan
 
+## Phase Policy
+
+**Hard requirement:** Produce a concrete written implementation plan that is specific enough to execute without ambiguity.
+**Preferred mechanism:** Spawn a plan agent with the approved context and use its output to draft the plan file.
+**Allowed fallback:** If a plan agent is unavailable, write the plan directly. The plan contents and output file are still mandatory.
+
 ## Purpose
 Translate the approved approach into a concrete, step-by-step implementation plan.
 This plan becomes the single source of truth for Phase 5 (Implement).
 
-## Launch Plan Agent
+## Preferred: Launch Plan Agent
 
 Spawn a Plan agent with:
 - All research context from Phase 3 (file paths, code traces, existing patterns)
 - The approved approach and any user feedback from the user gate
+- Acceptance criteria from Phase 1
+
+## Fallback: Write the Plan Directly
+
+If a plan agent is unavailable, draft the plan manually using the same inputs:
+- Research context from Phase 3
+- Approved approach and user feedback
 - Acceptance criteria from Phase 1
 
 ## Plan Structure
@@ -55,7 +68,7 @@ Table format:
 - Performance implications
 
 ## Checklist
-- [ ] Plan agent completed analysis
+- [ ] Plan completed with either the preferred mechanism or fallback
 - [ ] Plan file written to `docs/plans/`
 - [ ] Tasks are ordered by dependency (shared → backend → frontend)
 - [ ] Each task is specific enough to execute without ambiguity

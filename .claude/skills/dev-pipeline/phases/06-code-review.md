@@ -1,9 +1,15 @@
 # Phase 6: Code Review
 
+## Phase Policy
+
+**Hard requirement:** Review the change across logic, conventions, and security, then resolve HIGH and MEDIUM findings before continuing.
+**Preferred mechanism:** Spawn 3 focused review agents in parallel.
+**Allowed fallback:** If review agents or helper skills are unavailable, perform a structured self-review using the same three lenses and document findings before fixing them.
+
 ## Purpose
 Catch bugs, convention violations, and security issues before testing.
 
-## Launch Review Agents
+## Preferred: Launch Review Agents
 
 Spawn 3 review agents IN PARALLEL using the Agent tool with `subagent_type: "feature-dev:code-reviewer"`:
 
@@ -22,6 +28,15 @@ Each agent prompt should include:
 - The diff content (use `git diff`)
 - The goal/spec from Phase 1
 
+## Fallback: Structured Self-Review
+
+If review agents or helper skills are unavailable, review the change manually using the same three scopes:
+- Bugs and logic
+- Conventions and style
+- Security
+
+Use the current diff and Phase 1 goal as the review input, and record any HIGH or MEDIUM findings before fixing them.
+
 ## Handling Findings
 
 ### Fix immediately:
@@ -39,6 +54,6 @@ Each agent prompt should include:
 - Re-check only the specific findings that were fixed (no need to re-run full review)
 
 ## Checklist
-- [ ] 3 review agents completed
+- [ ] Review completed across logic, conventions, and security
 - [ ] HIGH/MEDIUM findings addressed
 - [ ] Build still passes after fixes

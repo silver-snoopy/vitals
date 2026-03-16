@@ -1,6 +1,6 @@
 ---
 name: dev-pipeline
-description: Full development pipeline for features and bugfixes. Orchestrates spec reading, QA verification, research, implementation, code review, testing, documentation, and PR creation.
+description: End-to-end delivery pipeline for the vitals monorepo. Use when the user wants a feature, bugfix, or refactor carried from a spec file or description through research, implementation, live/local verification, documentation updates, and pull request creation.
 disable-model-invocation: true
 argument-hint: <spec-file-or-description>
 ---
@@ -21,13 +21,36 @@ Phase 1: Read Spec → Phase 2: QA Verify → Phase 3: Research
     → Phase 9: Commit & PR
 ```
 
+## Execution Policy
+
+Treat each phase's **exit criteria** as the hard requirement unless the phase explicitly says it is optional.
+Do NOT skip a phase just because a named tool, agent type, or helper skill is unavailable.
+
+For every phase, distinguish between:
+- **Hard requirement** — the outcome that must be achieved before proceeding
+- **Preferred mechanism** — the default tool or workflow to achieve that outcome
+- **Allowed fallback** — the substitute method to use if the preferred mechanism is unavailable
+
+Fallbacks may change *how* the work is done, but they must not lower the quality bar of the phase.
+Examples:
+- If an explore agent is unavailable, do equivalent repo investigation manually
+- If `AskUserQuestion` is unavailable, ask in normal chat and stop until approval is received
+- If a plan agent is unavailable, write the plan directly
+- If review agents are unavailable, perform a structured self-review across logic, conventions, and security
+
+Non-degradable quality gates remain hard requirements:
+- Live local reproduction for bugfixes when the bug is reproducible in the running system
+- Live local verification with screenshot evidence for user-visible UI changes
+- Build, lint, format, unit, and E2E validation required by the phase
+- Documentation updates required by the change
+
 ---
 
 ## Phase 1: Read Spec
 
 Read and parse the input to understand what needs to be done.
 
-**If `$ARGUMENTS` is a file path:** Read it with the Read tool.
+**If `$ARGUMENTS` is a file path:** Read it directly.
 **If `$ARGUMENTS` is a description:** Use it directly.
 
 Extract and present to the user:
@@ -35,6 +58,10 @@ Extract and present to the user:
 - **Goal:** One-sentence summary
 - **Acceptance criteria:** Bullet list of what "done" looks like
 - **Affected areas:** Which packages/features are likely impacted
+
+**Hard requirement:** Understand the request well enough to clearly state goal, acceptance criteria, and affected areas.
+**Preferred mechanism:** Read the spec file directly when `$ARGUMENTS` is a path.
+**Allowed fallback:** If a dedicated read helper is unavailable, use any available file-reading mechanism. The outcome is mandatory; the specific tool is not.
 
 For detailed instructions, see [phases/01-read-spec.md](phases/01-read-spec.md).
 
@@ -48,6 +75,10 @@ For detailed instructions, see [phases/01-read-spec.md](phases/01-read-spec.md).
 
 For bugs: reproduce the issue on the **live local environment** (docker compose + dev servers) by exercising the affected feature through the real UI via Playwright. Mocked E2E tests are NOT sufficient — the bug must be reproduced against the actual running system with a screenshot captured as evidence.
 
+**Hard requirement:** For bugfixes, reproduce the bug against the live local system and capture evidence before implementing a fix. If the bug is visible in the UI, reproduce it through the real UI.
+**Preferred mechanism:** Start the full local stack and use Playwright against the real frontend and backend.
+**Allowed fallback:** If the preferred automation path is unavailable, use another method that still exercises the live local system and preserves evidence quality. For backend-only bugs with no UI component, live API reproduction is acceptable. Mocked tests are never a substitute for this phase.
+
 For detailed instructions, see [phases/02-qa-verify.md](phases/02-qa-verify.md).
 
 **Exit criteria:** Bug is reproduced on the live UI with screenshot evidence, or explicitly marked as not reproducible with explanation of what was tried.
@@ -56,11 +87,15 @@ For detailed instructions, see [phases/02-qa-verify.md](phases/02-qa-verify.md).
 
 ## Phase 3: Research & Understand
 
-Launch up to 3 Explore agents IN PARALLEL to understand the affected code:
+Prefer launching up to 3 Explore agents IN PARALLEL to understand the affected code:
 
 1. **Existing implementation** — Find the files, functions, and patterns involved
 2. **Related patterns** — How similar features are implemented elsewhere in the codebase
 3. **Reusable utilities** — Existing helpers, hooks, components that can be reused
+
+**Hard requirement:** Research the existing implementation, similar patterns, and reusable utilities well enough to propose an implementation approach.
+**Preferred mechanism:** Launch up to 3 parallel explore agents with split responsibilities.
+**Allowed fallback:** If explore agents are unavailable, do the same investigation manually with repo search, file inspection, and targeted notes. Coverage of the research areas is mandatory even if parallelism is unavailable.
 
 For detailed instructions, see [phases/03-research.md](phases/03-research.md).
 
@@ -71,13 +106,17 @@ For detailed instructions, see [phases/03-research.md](phases/03-research.md).
 ## ◆ USER GATE ◆
 
 **STOP HERE.** Present your research findings and implementation plan to the user.
-Use AskUserQuestion to get explicit approval before writing any code.
+Get explicit approval before writing any code. Prefer `AskUserQuestion` when it is available.
 
 Include in your presentation:
 - Summary of research findings
 - Proposed approach (files to create/modify)
 - Any design decisions that need user input
 - Estimated scope (small / medium / large)
+
+**Hard requirement:** Obtain explicit user approval before proceeding to implementation planning and code changes.
+**Preferred mechanism:** Use `AskUserQuestion`.
+**Allowed fallback:** If that tool is unavailable, ask in the normal chat and stop until the user clearly approves. Do not infer approval.
 
 **Do NOT proceed to Phase 4 until the user approves.**
 
@@ -87,7 +126,7 @@ Include in your presentation:
 
 Write a detailed implementation plan based on the approved approach from the user gate.
 
-Launch a Plan agent to design the implementation:
+Prefer launching a Plan agent to design the implementation:
 - Provide all research context from Phase 3 (file paths, code traces, patterns found)
 - Include the approved approach and any user feedback from the gate
 - Request a step-by-step implementation plan with file-level granularity
@@ -101,6 +140,10 @@ The plan should include:
 
 Write the plan to a file: `docs/plans/<date>-<feature-slug>.md`
 
+**Hard requirement:** Produce a concrete written plan that is specific enough to execute without ambiguity.
+**Preferred mechanism:** Use a plan agent to draft the implementation plan.
+**Allowed fallback:** If a plan agent is unavailable, write the plan directly. The required plan contents and output file are still mandatory.
+
 For detailed instructions, see [phases/04-analyze-plan.md](phases/04-analyze-plan.md).
 
 **Exit criteria:** Implementation plan is written to a plan file. Each task is specific enough to execute without ambiguity.
@@ -111,6 +154,10 @@ For detailed instructions, see [phases/04-analyze-plan.md](phases/04-analyze-pla
 
 Write the code following the plan from Phase 4 and project conventions from CLAUDE.md.
 
+**Hard requirement:** Implement the approved plan while following repo conventions, and leave the code compiling successfully.
+**Preferred mechanism:** Follow the written plan in dependency order and run `npm run build` after significant changes.
+**Allowed fallback:** You may adjust the implementation sequence if needed, but you must preserve the approved intent, follow conventions, and finish with a passing build.
+
 For detailed instructions, see [phases/05-implement.md](phases/05-implement.md).
 
 **Exit criteria:** All code changes compile (`npm run build` passes).
@@ -119,13 +166,17 @@ For detailed instructions, see [phases/05-implement.md](phases/05-implement.md).
 
 ## Phase 6: Code Review
 
-Spawn 3 review agents IN PARALLEL using the `superpowers:requesting-code-review` skill or the `feature-dev:code-reviewer` agent:
+Prefer spawning 3 review agents IN PARALLEL using the `superpowers:requesting-code-review` skill or the `feature-dev:code-reviewer` agent:
 
 1. **Bugs & logic** — Logic errors, edge cases, null handling
 2. **Conventions** — Project patterns from CLAUDE.md, naming, structure
 3. **Security** — OWASP top 10, injection, XSS, auth issues
 
 Fix any HIGH or MEDIUM findings before proceeding.
+
+**Hard requirement:** Review the change across logic, conventions, and security; resolve HIGH and MEDIUM findings before moving on.
+**Preferred mechanism:** Run 3 parallel review agents with focused scopes.
+**Allowed fallback:** If review agents or helper skills are unavailable, perform a structured self-review using the same three lenses and document findings before fixing them. The review gate remains mandatory even if the reviewers are manual.
 
 For detailed instructions, see [phases/06-code-review.md](phases/06-code-review.md).
 
@@ -147,6 +198,10 @@ Steps:
 5. **If UI changes:** Write new E2E tests covering the new use cases
 6. **If UI is affected (MANDATORY):** Start local dev environment, write a temporary Playwright visual test against the live UI (`http://localhost:3000`), capture screenshots at key states, present them to the user as evidence, then clean up the temporary test and screenshots. This applies to frontend changes, new UI features, AND backend changes that extend API responses consumed by the frontend — if a user would see something different on screen, this step is mandatory.
 
+**Hard requirement:** Complete the automated validation required by the change, and for any user-visible UI impact, verify behavior on the live local environment with screenshot evidence.
+**Preferred mechanism:** Use the repo's lint, format, unit, E2E, and Playwright-based live verification workflow.
+**Allowed fallback:** If a named helper or exact temporary test workflow is unavailable, use another method only if it preserves the same validation strength. User-visible UI changes must still be verified against the live local environment; mocked tests alone are not sufficient.
+
 **Exit criteria:** All tests pass. New E2E tests written for new interactive behavior. Any change that affects what users see on screen is verified on live local environment with screenshot evidence presented to user.
 
 ---
@@ -161,6 +216,10 @@ For detailed instructions, see [phases/08-update-docs.md](phases/08-update-docs.
 1. **`docs/product-capabilities.md`** — Add new use cases or update existing ones with UC IDs, user stories, behavior specs, and E2E coverage references
 2. **`CLAUDE.md`** — Update if new conventions, patterns, or project structure changes were introduced
 3. **`docs/architecture.md`** — Update if new routes, DB tables, or architectural changes were made
+
+**Hard requirement:** Keep all affected project documentation in sync with the change.
+**Preferred mechanism:** Update the standard project docs listed below.
+**Allowed fallback:** None for the outcome. The exact files are conditional on the type of change, but if the change affects documented behavior, conventions, or architecture, the corresponding docs must be updated before completion.
 
 **Exit criteria:** All affected documentation is updated. New features have UC entries.
 
@@ -179,5 +238,9 @@ Steps:
 4. Open PR with `gh pr create`:
    - Title: concise summary (under 70 chars)
    - Body: Summary bullets, UC IDs affected, test plan, link to spec file if applicable
+
+**Hard requirement:** For full delivery through this pipeline, finish with a clean commit and PR that accurately describe the change and verification performed.
+**Preferred mechanism:** Use the standard git workflow and `gh pr create`.
+**Allowed fallback:** If PR tooling is unavailable, prepare the exact commit and PR content manually and stop at the last reachable step. Do not fabricate a completed PR if one was not actually created.
 
 **Exit criteria:** PR is created and URL is returned to the user.

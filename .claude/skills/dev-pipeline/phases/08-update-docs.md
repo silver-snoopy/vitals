@@ -1,5 +1,11 @@
 # Phase 8: Update Documentation
 
+## Phase Policy
+
+**Hard requirement:** Keep all affected project documentation in sync with the change before considering the work complete.
+**Preferred mechanism:** Update the standard project documentation files listed below.
+**Allowed fallback:** None for the outcome. The exact files are conditional on the type of change, but the relevant docs must still be updated.
+
 ## Purpose
 Keep project documentation in sync with code changes. Every user-facing change must be reflected in documentation.
 

@@ -1,5 +1,11 @@
 # Phase 7: QA Test
 
+## Phase Policy
+
+**Hard requirement:** Complete the automated validation required by the change, and for any user-visible UI impact, verify the behavior on the live local environment with screenshot evidence.
+**Preferred mechanism:** Use the repo's lint, format, unit, E2E, and Playwright-based live verification workflow.
+**Allowed fallback:** If a named helper or exact temporary test workflow is unavailable, use another method only if it preserves the same validation strength. Mocked tests alone are never sufficient for live UI verification.
+
 ## Purpose
 Verify all changes work correctly through automated tests and, when applicable, live environment verification.
 
@@ -61,8 +67,13 @@ npx playwright test e2e/<feature>.spec.ts
 1. **Start the local environment:**
 ```bash
 docker compose up -d
-npm run dev -w @vitals/backend &
-npm run dev -w @vitals/frontend &
+```
+
+Start the backend and frontend in separate terminals, tabs, tmux panes, or shell-appropriate background jobs:
+
+```bash
+npm run dev -w @vitals/backend
+npm run dev -w @vitals/frontend
 ```
 
 2. **Write a temporary Playwright visual test** at `e2e/visual-test-<feature>.spec.ts`:
@@ -96,17 +107,15 @@ test.describe('Visual: <Feature Name>', () => {
 
 3. **Run the visual test:**
 ```bash
-mkdir -p e2e/screenshots
 npx playwright test e2e/visual-test-<feature>.spec.ts --headed
 ```
 
-4. **Present screenshots to the user** using the Read tool on the captured PNG files.
+Create the `e2e/screenshots/` directory first if it does not already exist, using a shell-appropriate command.
+
+4. **Present screenshots to the user** using whatever image or file-sharing mechanism is available in the current environment.
 
 5. **Clean up after verification:**
-```bash
-rm e2e/visual-test-<feature>.spec.ts
-rm -rf e2e/screenshots
-```
+Delete the temporary visual test file and screenshot directory using shell-appropriate commands.
 
 The visual test and screenshots are temporary artifacts — they exist only for verification evidence during the pipeline run and must not be committed.
 

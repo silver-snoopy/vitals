@@ -2,6 +2,12 @@
 
 **Skip this phase entirely for features and refactors.**
 
+## Phase Policy
+
+**Hard requirement:** Reproduce the bug against the live local system before implementing a fix, and preserve evidence of the broken behavior.
+**Preferred mechanism:** Start the full local stack and drive the real UI with Playwright when the bug is visible in the UI.
+**Allowed fallback:** If the preferred automation path is unavailable, use another method that still exercises the live local system and preserves equivalent evidence quality. Mocked tests are never a substitute for this phase.
+
 ## Purpose
 Reproduce the reported bug on the **live local environment** by exercising the feature through the UI.
 Mocked tests are NOT sufficient for bug reproduction — you must see the bug happen in the real running system.
@@ -13,14 +19,14 @@ Mocked tests are NOT sufficient for bug reproduction — you must see the bug ha
 All three services must be running simultaneously:
 
 ```bash
-# Start database
 docker compose up -d
+```
 
-# Start backend
-npm run dev -w @vitals/backend &
+Start the backend and frontend in separate terminals, tabs, tmux panes, or shell-appropriate background jobs:
 
-# Start frontend
-npm run dev -w @vitals/frontend &
+```bash
+npm run dev -w @vitals/backend
+npm run dev -w @vitals/frontend
 ```
 
 **Verify all services are healthy before proceeding:**
@@ -28,7 +34,7 @@ npm run dev -w @vitals/frontend &
 - Backend: `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/reports` → 200
 - Frontend: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/` → 200
 
-**Port conflict check:** If a service fails to start, check for zombie processes with `netstat -ano | grep ":PORT " | grep LISTEN` and kill them before retrying.
+**Port conflict check:** If a service fails to start, use your shell or OS-appropriate process inspection tools to find listeners on the relevant port and stop the conflicting process before retrying.
 
 ### 2. Reproduce the Bug on the Live UI
 
