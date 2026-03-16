@@ -73,6 +73,34 @@ describe('GET /api/reports', () => {
     expect(Array.isArray(body.data)).toBe(true);
     await app.close();
   });
+
+  it('returns reports from listReports', async () => {
+    const { listReports } = await import('../../db/queries/reports.js');
+    (listReports as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
+      {
+        id: 'report-2',
+        userId: 'user-uuid',
+        periodStart: '2026-03-10',
+        periodEnd: '2026-03-16',
+        summary: 'Full data report',
+        insights: '',
+        actionItems: [],
+        dataCoverage: { nutritionDays: 5, workoutDays: 5, biometricDays: 4 },
+        aiProvider: 'gemini',
+        aiModel: 'gemini-2.0-flash',
+        createdAt: '2026-03-16T17:09:10.574Z',
+      },
+    ]);
+
+    const app = await buildApp(testEnv);
+    const response = await app.inject({ method: 'GET', url: '/api/reports' });
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body);
+    expect(body.data).toHaveLength(1);
+    expect(body.data[0].id).toBe('report-2');
+    expect(body.data[0].dataCoverage.nutritionDays).toBe(5);
+    await app.close();
+  });
 });
 
 describe('GET /api/reports/:id', () => {
