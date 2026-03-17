@@ -25,6 +25,7 @@ function makeWorkoutSetRow(overrides: Partial<WorkoutSetRow> = {}): WorkoutSetRo
     source: 'hevy',
     exerciseName: 'Squat',
     setIndex: 0,
+    setType: 'normal',
     weightKg: 100,
     reps: 5,
     durationSeconds: null,
@@ -153,7 +154,7 @@ describe('ingestWorkoutSets', () => {
     const pool = { connect: vi.fn().mockResolvedValue(client) } as unknown as pg.Pool;
 
     await ingestWorkoutSets(pool, [makeWorkoutSetRow()]);
-    // 1 row × 13 columns = 13 params (includes tags)
-    expect(capturedParams).toHaveLength(13);
+    // 1 row × 14 columns = 14 params (includes set_type and tags)
+    expect(capturedParams).toHaveLength(14);
   });
 });

@@ -14,6 +14,7 @@ export interface WorkoutSetRow {
   source: string;
   exerciseName: string;
   setIndex: number;
+  setType: string;
   weightKg: number | null;
   reps: number | null;
   durationSeconds: number | null;
@@ -93,11 +94,14 @@ export function normalizeHevyRow(raw: Record<string, unknown>, userId: string): 
   const exerciseName = String(raw['exercise_title'] ?? raw['exercise_name'] ?? raw['title'] ?? '');
   const setIndex = Number(raw['set_index'] ?? raw['set_order'] ?? raw['index'] ?? 0);
 
+  const setType = String(raw['set_type'] ?? 'normal');
+
   return {
     userId,
     source: 'hevy',
     exerciseName,
     setIndex,
+    setType,
     weightKg: toNum(raw['weight_kg']),
     reps: toNum(raw['reps']),
     durationSeconds: toNum(raw['duration_seconds']),

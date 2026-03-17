@@ -146,6 +146,7 @@ export function parseAppleHealthExport(xml: string, userId: string): AppleHealth
       source: 'apple_health',
       exerciseName: exerciseName || 'Unknown',
       setIndex: 0,
+      setType: 'normal',
       weightKg: null,
       reps: null,
       durationSeconds,

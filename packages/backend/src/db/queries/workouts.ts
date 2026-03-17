@@ -7,6 +7,7 @@ interface WorkoutSetDbRow {
   source: string;
   exercise_name: string;
   set_index: string | number;
+  set_type: string;
   weight_kg: string | null;
   reps: string | null;
   duration_seconds: string | null;
@@ -68,6 +69,7 @@ function groupIntoSessions(rows: WorkoutSetDbRow[], userId: string): WorkoutSess
       sessionId,
       exerciseName: String(r.exercise_name),
       setIndex: Number(r.set_index),
+      setType: String(r.set_type ?? 'normal'),
       weightKg: r.weight_kg !== null && r.weight_kg !== undefined ? Number(r.weight_kg) : null,
       reps: r.reps !== null && r.reps !== undefined ? Number(r.reps) : null,
       durationSeconds:
@@ -106,7 +108,7 @@ export async function queryWorkoutSessions(
   endDate: Date,
 ): Promise<WorkoutSession[]> {
   const { rows } = await pool.query(
-    `SELECT id, user_id, source, exercise_name, set_index,
+    `SELECT id, user_id, source, exercise_name, set_index, set_type,
        weight_kg, reps, duration_seconds, distance_meters, rpe,
        started_at, ended_at, collected_at
      FROM workout_sets
@@ -129,8 +131,8 @@ export async function queryExerciseProgress(
   const { rows } = await pool.query(
     `SELECT DATE(started_at) AS day,
        MAX(weight_kg) AS max_weight,
-       SUM(weight_kg * COALESCE(reps, 0)) AS total_volume,
-       COUNT(*) AS total_sets
+       SUM(CASE WHEN COALESCE(set_type, 'normal') != 'warmup' THEN weight_kg * COALESCE(reps, 0) ELSE 0 END) AS total_volume,
+       COUNT(*) FILTER (WHERE COALESCE(set_type, 'normal') != 'warmup') AS total_sets
      FROM workout_sets
      WHERE user_id = $1 AND exercise_name = $2
        ${hasDateRange ? 'AND started_at BETWEEN $3 AND $4' : ''}

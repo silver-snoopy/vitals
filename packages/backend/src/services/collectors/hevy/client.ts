@@ -55,6 +55,7 @@ function flattenWorkouts(workouts: Array<Record<string, unknown>>): Record<strin
                 : null,
           duration_seconds: set.duration_seconds ?? set.duration,
           rpe: set.rpe,
+          set_type: set.set_type ?? set.type ?? 'normal',
         });
       }
     }

@@ -12,6 +12,7 @@ const baseRow = {
   source: 'hevy',
   exercise_name: 'Bench Press',
   set_index: 0,
+  set_type: 'normal',
   weight_kg: '80',
   reps: '8',
   duration_seconds: null,
