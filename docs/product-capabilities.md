@@ -387,6 +387,27 @@ The date range picker on other pages is irrelevant to report generation.
 - Mobile: drawer navigation, compact date picker (1 month + presets), single-column layout
 - Desktop: sidebar navigation, full topbar, 2-column grid for dashboard widgets
 
+### Mobile Navigation
+
+| ID | Use Case | Status |
+|----|----------|--------|
+| UC-NAV-01 | Bottom tab navigation on mobile | Implemented |
+
+#### UC-NAV-01: Bottom tab navigation on mobile
+
+**As a** mobile user, **I want to** navigate between pages with a single tap,
+**so that** I don't need to open a hamburger menu for every navigation action.
+
+**Behavior:**
+- Fixed bottom tab bar with 4 tabs: Dashboard, Nutrition, Workouts, Reports
+- Active tab highlighted in primary (cyan) color with icon + label
+- Hidden on desktop (md+ breakpoint) — desktop uses sidebar
+- MobileHeader shows branding, date picker, upload, and theme toggle
+- iOS safe-area padding for notch devices via `viewport-fit=cover`
+- Main content has bottom padding to prevent overlap with tab bar
+
+**E2E coverage:** `e2e/mobile-navigation.spec.ts` — 6 tests (render, hide on desktop, navigate, active state, upload, content visibility)
+
 ### Loading & Error States
 - All pages show skeleton placeholders during loading
 - Inline error messages on fetch failure
