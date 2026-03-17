@@ -25,6 +25,9 @@ vi.mock('../../db/queries/reports.js', () => ({
   getReportById: vi.fn().mockResolvedValue(null),
   saveReport: vi.fn().mockResolvedValue('new-uuid'),
   logAiGeneration: vi.fn().mockResolvedValue(undefined),
+  createPendingReport: vi.fn().mockResolvedValue('pending-report-uuid'),
+  updateReportStatus: vi.fn().mockResolvedValue(undefined),
+  completeReport: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('../../services/ai/report-generator.js', () => ({
@@ -45,6 +48,10 @@ vi.mock('../../services/ai/report-generator.js', () => ({
 
 vi.mock('../../services/ai/ai-service.js', () => ({
   createAIProvider: vi.fn().mockReturnValue({ name: () => 'claude', complete: vi.fn() }),
+}));
+
+vi.mock('../../services/report-runner.js', () => ({
+  runReportInBackground: vi.fn(),
 }));
 
 const testEnv: EnvConfig = {
@@ -184,7 +191,38 @@ describe('POST /api/reports/generate', () => {
     await app.close();
   });
 
-  it('returns 429 with safe message on rate limit error', async () => {
+  it('returns 202 with reportId for async request (default)', async () => {
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/reports/generate',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
+    });
+    expect(response.statusCode).toBe(202);
+    const body = JSON.parse(response.body);
+    expect(body.data.reportId).toBe('pending-report-uuid');
+    expect(body.data.status).toBe('pending');
+    await app.close();
+  });
+
+  it('calls runReportInBackground for async request', async () => {
+    const { runReportInBackground } = await import('../../services/report-runner.js');
+    (runReportInBackground as ReturnType<typeof vi.fn>).mockClear();
+
+    const app = await buildApp(testEnv);
+    await app.inject({
+      method: 'POST',
+      url: '/api/reports/generate',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
+    });
+
+    expect(runReportInBackground).toHaveBeenCalledOnce();
+    await app.close();
+  });
+
+  it('returns 429 with safe message on rate limit error (sync)', async () => {
     const { generateWeeklyReport } = await import('../../services/ai/report-generator.js');
     (generateWeeklyReport as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new Error('429 Too Many Requests: quota exceeded'),
@@ -193,7 +231,7 @@ describe('POST /api/reports/generate', () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'POST',
-      url: '/api/reports/generate',
+      url: '/api/reports/generate?sync=true',
       headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
       body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
     });
@@ -204,7 +242,7 @@ describe('POST /api/reports/generate', () => {
     await app.close();
   });
 
-  it('returns 502 with safe message on AI provider error', async () => {
+  it('returns 502 with safe message on AI provider error (sync)', async () => {
     const { generateWeeklyReport } = await import('../../services/ai/report-generator.js');
     (generateWeeklyReport as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new Error('Connection refused to generativelanguage.googleapis.com'),
@@ -213,7 +251,7 @@ describe('POST /api/reports/generate', () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'POST',
-      url: '/api/reports/generate',
+      url: '/api/reports/generate?sync=true',
       headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
       body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
     });
@@ -224,11 +262,11 @@ describe('POST /api/reports/generate', () => {
     await app.close();
   });
 
-  it('returns 200 with generated report for valid request', async () => {
+  it('returns 200 with generated report for sync request', async () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'POST',
-      url: '/api/reports/generate',
+      url: '/api/reports/generate?sync=true',
       headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
       body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
     });
@@ -238,14 +276,14 @@ describe('POST /api/reports/generate', () => {
     await app.close();
   });
 
-  it('calls runCollection before generating the report', async () => {
+  it('calls runCollection before generating the report (sync)', async () => {
     const { runCollection } = await import('../../services/collectors/pipeline.js');
     (runCollection as ReturnType<typeof vi.fn>).mockClear();
 
     const app = await buildApp(testEnv);
     await app.inject({
       method: 'POST',
-      url: '/api/reports/generate',
+      url: '/api/reports/generate?sync=true',
       headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
       body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
     });
@@ -258,7 +296,7 @@ describe('POST /api/reports/generate', () => {
     await app.close();
   });
 
-  it('still generates report when pre-collection fails', async () => {
+  it('still generates report when pre-collection fails (sync)', async () => {
     const { runCollection } = await import('../../services/collectors/pipeline.js');
     (runCollection as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new Error('Cronometer auth failed'),
@@ -267,7 +305,7 @@ describe('POST /api/reports/generate', () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'POST',
-      url: '/api/reports/generate',
+      url: '/api/reports/generate?sync=true',
       headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
       body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
     });

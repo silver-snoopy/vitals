@@ -1,8 +1,8 @@
 import type pg from 'pg';
-import type { WeeklyReport, ActionItem, ReportSections } from '@vitals/shared';
+import type { WeeklyReport, ActionItem, ReportSections, ReportStatus } from '@vitals/shared';
 
 const REPORT_COLUMNS = `id, user_id, period_start, period_end, summary, insights,
-       action_items, data_coverage, sections, ai_provider, ai_model, created_at`;
+       action_items, data_coverage, sections, ai_provider, ai_model, status, error_message, created_at`;
 
 function mapReportRow(r: Record<string, unknown>): WeeklyReport {
   return {
@@ -27,6 +27,8 @@ function mapReportRow(r: Record<string, unknown>): WeeklyReport {
     sections: (r.sections as ReportSections) ?? undefined,
     aiProvider: String(r.ai_provider),
     aiModel: String(r.ai_model),
+    status: (r.status as ReportStatus) ?? 'completed',
+    errorMessage: r.error_message ? String(r.error_message) : undefined,
     createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : String(r.created_at),
   };
 }
@@ -54,7 +56,7 @@ export async function listReports(
   endDate?: string,
 ): Promise<WeeklyReport[]> {
   const params: unknown[] = [userId];
-  const filters: string[] = ['user_id = $1'];
+  const filters: string[] = ['user_id = $1', "status = 'completed'"];
 
   if (startDate) {
     params.push(startDate);
@@ -110,6 +112,63 @@ export interface AiGenerationLog {
   completionTokens: number;
   totalTokens: number;
   purpose: string;
+}
+
+export async function createPendingReport(
+  pool: pg.Pool,
+  params: {
+    userId: string;
+    periodStart: string;
+    periodEnd: string;
+    aiProvider: string;
+  },
+): Promise<string> {
+  const { rows } = await pool.query(
+    `INSERT INTO weekly_reports
+       (user_id, period_start, period_end, summary, insights,
+        action_items, data_coverage, ai_provider, ai_model, status)
+     VALUES ($1, $2, $3, '', '"pending"'::jsonb, '[]'::jsonb, '{}'::jsonb, $4, '', 'pending')
+     RETURNING id`,
+    [params.userId, params.periodStart, params.periodEnd, params.aiProvider],
+  );
+  return String(rows[0].id);
+}
+
+export async function updateReportStatus(
+  pool: pg.Pool,
+  reportId: string,
+  status: ReportStatus,
+  errorMessage?: string,
+): Promise<void> {
+  await pool.query(`UPDATE weekly_reports SET status = $1, error_message = $2 WHERE id = $3`, [
+    status,
+    errorMessage ?? null,
+    reportId,
+  ]);
+}
+
+export async function completeReport(
+  pool: pg.Pool,
+  reportId: string,
+  data: Omit<WeeklyReport, 'id' | 'createdAt' | 'userId' | 'periodStart' | 'periodEnd' | 'status'>,
+): Promise<void> {
+  await pool.query(
+    `UPDATE weekly_reports
+     SET summary = $1, insights = $2::jsonb, action_items = $3::jsonb,
+         data_coverage = $4::jsonb, sections = $5::jsonb,
+         ai_provider = $6, ai_model = $7, status = 'completed', error_message = NULL
+     WHERE id = $8`,
+    [
+      data.summary,
+      JSON.stringify(data.insights),
+      JSON.stringify(data.actionItems),
+      JSON.stringify(data.dataCoverage),
+      data.sections ? JSON.stringify(data.sections) : null,
+      data.aiProvider,
+      data.aiModel,
+      reportId,
+    ],
+  );
 }
 
 export async function logAiGeneration(pool: pg.Pool, gen: AiGenerationLog): Promise<void> {

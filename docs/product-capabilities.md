@@ -74,6 +74,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 | UC-RPT-06 | Add user notes to report generation | Implemented |
 | UC-RPT-07 | Pre-collection before report generation | Implemented |
 | UC-RPT-08 | Stale data warning on reports page | Implemented |
+| UC-RPT-09 | Async report generation with live progress | Implemented |
 
 ### UC-RPT-01: Generate weekly insights (first report)
 
@@ -200,6 +201,33 @@ The date range picker on other pages is irrelevant to report generation.
 - Warning lists the affected provider names
 - A `GET /api/collect/status` endpoint returns collection metadata per provider
 - Raw error messages are sanitized before being returned to the client
+
+### UC-RPT-09: Async report generation with live progress
+
+**As a** user, **I want** report generation to happen asynchronously with real-time progress updates,
+**so that** my action feels immediate and I can see the system working without staring at a spinner.
+
+**Behavior:**
+- Clicking Generate/Re-Generate returns immediately (HTTP 202) with a pending report ID
+- Dialog transitions to "Generating Report..." with a 3-step progress indicator:
+  1. Request accepted (pending)
+  2. Collecting health data (collecting_data)
+  3. Generating AI insights (generating)
+- Steps highlight sequentially as the backend progresses
+- WebSocket connection (`/ws/reports/:reportId`) streams status updates in real time
+- On completion: success toast, dialog auto-closes after 800ms, report list refreshes
+- On failure: error message in dialog with retry button
+- Dialog cannot be dismissed while generation is in progress
+- A skeleton card placeholder appears in the report list during generation
+- Backward compatible: `POST /api/reports/generate?sync=true` preserves blocking behavior for n8n workflows
+
+**Technical:**
+- Backend: `@fastify/websocket` plugin, `ReportEventBus` (EventEmitter pub/sub), `report-runner.ts` (fire-and-forget background worker)
+- Frontend: `useReportWebSocket` hook (reconnect with exponential backoff), `useReportGenerationStore` (Zustand)
+- Race condition prevention: WebSocket handler subscribes to EventBus BEFORE reading DB status
+- DB: `status` and `error_message` columns on `weekly_reports` table (migration 003)
+
+**E2E Coverage:** `e2e/reports.spec.ts` — async generation flow with simulated WebSocket completion via exposed Zustand store
 
 ---
 

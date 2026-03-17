@@ -7,7 +7,7 @@
                          │   Frontend   │  React + Vite + Tailwind
                          │   (Vercel)   │  React Query for data fetching
                          └──────┬──────┘
-                                │ REST API (CORS)
+                                │ REST API (CORS) + WebSocket
                          ┌──────▼──────┐
                          │   Backend    │  Fastify + TypeScript
                          │  (Railway)   │  Port 3001
@@ -51,6 +51,7 @@ src/
 │   ├── workouts.ts       GET /api/workouts               (Phase 3)
 │   ├── dashboard.ts      GET /api/dashboard/weekly       (Phase 3)
 │   ├── reports.ts        GET/POST /api/reports            (Phase 3)
+│   ├── ws-reports.ts     WS /ws/reports/:reportId         (async status)
 │   └── upload.ts         POST /api/upload/apple-health   (Phase 3)
 ├── db/
 │   ├── pool.ts           Singleton pg.Pool
@@ -69,6 +70,8 @@ src/
     │   ├── cronometer/            Nutrition + biometrics scraper
     │   ├── hevy/                  Workout API client
     │   └── apple-health/          XML upload parser (Phase 3)
+    ├── report-event-bus.ts  In-process pub/sub for report status
+    ├── report-runner.ts     Background report orchestrator
     └── ai/
         ├── claude-provider.ts     AIProvider implementation (Claude)
         ├── gemini-provider.ts     AIProvider implementation (Gemini)
@@ -142,26 +145,37 @@ Cronometer/Hevy API
 - Pipeline supports **incremental fetch** via `last_successful_fetch` from collection_metadata
 - Each batch runs in a **transaction** (BEGIN/COMMIT/ROLLBACK)
 
-### Report Generation (Phase 3)
+### Report Generation (Async)
 
 ```
-Query Layer (parallel)
-  ├── queryDailyNutritionSummary()
-  ├── queryWorkoutSessions()
-  └── queryMeasurementsByMetric() × N metrics
+POST /api/reports/generate
         │
         ▼
-  WeeklyDataBundle + previous report
+  createPendingReport() → 202 { reportId, status: 'pending' }
         │
         ▼
-  Prompt Builder → AIMessage[]
+  runReportInBackground() ─── fire-and-forget IIFE
+        │
+        ├── emit('collecting_data') → updateReportStatus()
+        │   └── runCollection() + query data
+        │
+        ├── emit('generating') → updateReportStatus()
+        │   └── gatherAndGenerate() → AI call
+        │
+        ├── emit('completed') → completeReport()
+        │   └── Report saved with full content
+        │
+        └── on error: emit('failed') → updateReportStatus()
+
+  WebSocket /ws/reports/:reportId
         │
         ▼
-  Claude API → structured JSON response
-        │
-        ▼
-  Parse → saveReport() + logAiGeneration()
+  ReportEventBus.subscribe(reportId) → stream updates to client
 ```
+
+**Sync fallback:** `?sync=true` preserves old blocking behavior for n8n workflows.
+
+**Race condition prevention:** WS handler subscribes to EventBus BEFORE reading DB status, ensuring no events are missed between DB read and subscription.
 
 ## API Endpoints
 
@@ -176,6 +190,7 @@ Query Layer (parallel)
 | GET | `/api/workouts/progress/:name` | None | Phase 3 |
 | GET | `/api/dashboard/weekly` | None | Phase 3 |
 | POST | `/api/reports/generate` | X-API-Key | Phase 3 |
+| WS | `/ws/reports/:reportId` | Token query param | Live |
 | GET | `/api/reports` | None | Phase 3 |
 | GET | `/api/reports/:id` | None | Phase 3 |
 | POST | `/api/upload/apple-health` | X-API-Key | Phase 3 |
@@ -219,5 +234,6 @@ Query Layer (parallel)
 | UI components | shadcn/ui | latest |
 | Charts | Recharts | latest |
 | AI SDK | @anthropic-ai/sdk | latest |
+| WebSocket | @fastify/websocket | latest |
 | Testing | Vitest | 3.x |
 | Orchestration | n8n | Cloud |

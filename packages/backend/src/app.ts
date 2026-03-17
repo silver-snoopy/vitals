@@ -7,8 +7,10 @@ import { measurementsRoutes } from './routes/measurements.js';
 import { dashboardRoutes } from './routes/dashboard.js';
 import { workoutRoutes } from './routes/workouts.js';
 import { reportRoutes } from './routes/reports.js';
+import { wsReportRoutes } from './routes/ws-reports.js';
 import { uploadRoutes } from './routes/upload.js';
 import multipart from '@fastify/multipart';
+import websocket from '@fastify/websocket';
 import { databasePlugin } from './plugins/database.js';
 import { registerProviders } from './services/collectors/register.js';
 import type { EnvConfig } from './config/env.js';
@@ -25,6 +27,7 @@ export async function buildApp(env: EnvConfig) {
   });
 
   await app.register(multipart);
+  await app.register(websocket);
   await app.register(databasePlugin, { env });
 
   // Register data providers after DB is ready
@@ -39,6 +42,7 @@ export async function buildApp(env: EnvConfig) {
   await app.register(dashboardRoutes, { env });
   await app.register(workoutRoutes, { env });
   await app.register(reportRoutes, { env });
+  await app.register(wsReportRoutes, { env });
   await app.register(uploadRoutes, { env });
 
   return app;

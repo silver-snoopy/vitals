@@ -24,6 +24,19 @@ export interface ReportSections {
   scorecard: Record<string, ScorecardEntry>;
 }
 
+export type ReportStatus = 'pending' | 'collecting_data' | 'generating' | 'completed' | 'failed';
+
+export interface ReportStatusUpdate {
+  reportId: string;
+  status: ReportStatus;
+  message?: string;
+}
+
+export interface GenerateReportResponse {
+  reportId: string;
+  status: ReportStatus;
+}
+
 export interface WeeklyReport {
   id: string;
   userId: string;
@@ -40,6 +53,8 @@ export interface WeeklyReport {
   sections?: ReportSections;
   aiProvider: string;
   aiModel: string;
+  status?: ReportStatus;
+  errorMessage?: string;
   createdAt: string;
 }
 

@@ -22,9 +22,11 @@ export class ReportsPage {
     await this.page.goto('/reports');
   }
 
-  /** Get the confirmation dialog (matches both Generate and Re-Generate titles) */
+  /** Get the confirmation dialog (matches Generate, Re-Generate, and Generating titles) */
   get confirmDialog() {
-    return this.page.getByRole('heading', { name: /Generate Report|Re-Generate Report/ });
+    return this.page.getByRole('heading', {
+      name: /Generate Report|Re-Generate Report|Generating Report/,
+    });
   }
 
   /** Get the user notes textarea */
