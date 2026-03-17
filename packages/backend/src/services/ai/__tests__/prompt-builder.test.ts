@@ -41,6 +41,7 @@ const workoutSession: WorkoutSession = {
       sessionId: 'session-1',
       exerciseName: 'Bench Press',
       setIndex: 0,
+      setType: 'normal',
       weightKg: 100,
       reps: 5,
       durationSeconds: null,

@@ -101,7 +101,7 @@ export async function ingestWorkoutSets(
     rows,
     (r) => `${r.userId}|${r.source}|${r.exerciseName}|${r.setIndex}|${r.startedAt ?? ''}`,
   );
-  const COL_COUNT = 13;
+  const COL_COUNT = 14;
   let inserted = 0;
   const errors: string[] = [];
 
@@ -113,6 +113,7 @@ export async function ingestWorkoutSets(
         r.source,
         r.exerciseName,
         r.setIndex,
+        r.setType,
         r.weightKg,
         r.reps,
         r.durationSeconds,
@@ -127,13 +128,14 @@ export async function ingestWorkoutSets(
 
     const sql = `
       INSERT INTO workout_sets
-        (user_id, source, exercise_name, set_index,
+        (user_id, source, exercise_name, set_index, set_type,
          weight_kg, reps, duration_seconds, distance_meters,
          rpe, started_at, ended_at, tags, collected_at)
       VALUES ${buildPlaceholders(batch.length, COL_COUNT)}
       ON CONFLICT (user_id, source, exercise_name, set_index,
                    COALESCE(started_at, '1970-01-01'::timestamptz))
       DO UPDATE SET
+        set_type = EXCLUDED.set_type,
         weight_kg = EXCLUDED.weight_kg,
         reps = EXCLUDED.reps,
         duration_seconds = EXCLUDED.duration_seconds,

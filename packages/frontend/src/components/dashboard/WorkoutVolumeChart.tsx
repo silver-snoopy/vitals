@@ -5,7 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CHART_COLORS } from '@/lib/chart-config';
 
 function sessionVolume(session: WorkoutSession): number {
-  return session.sets.reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0);
+  return session.sets
+    .filter((s) => s.setType !== 'warmup')
+    .reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0);
 }
 
 export function WorkoutVolumeChart({ sessions }: { sessions: WorkoutSession[] }) {

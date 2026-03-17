@@ -10,7 +10,11 @@ function formatDuration(seconds: number): string {
 }
 
 function sessionVolume(session: WorkoutSession): number {
-  return Math.round(session.sets.reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0));
+  return Math.round(
+    session.sets
+      .filter((s) => s.setType !== 'warmup')
+      .reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0),
+  );
 }
 
 export function WorkoutSessionCard({ session }: { session: WorkoutSession }) {

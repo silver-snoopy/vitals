@@ -3,6 +3,7 @@ export interface WorkoutSet {
   sessionId: string;
   exerciseName: string;
   setIndex: number;
+  setType: string;
   weightKg: number | null;
   reps: number | null;
   durationSeconds: number | null;

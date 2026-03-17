@@ -123,7 +123,9 @@ function formatWorkoutDetail(current: WorkoutSession[], previous: WorkoutSession
   // Session summary
   lines.push('### Sessions');
   for (const session of current) {
-    const workingSets = session.sets.filter((s) => s.weightKg != null && s.reps != null);
+    const workingSets = session.sets.filter(
+      (s) => s.weightKg != null && s.reps != null && s.setType !== 'warmup',
+    );
     const totalVolume = workingSets.reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0);
     const durationMin = Math.round(session.durationSeconds / 60);
 
@@ -162,7 +164,7 @@ function formatWorkoutDetail(current: WorkoutSession[], previous: WorkoutSession
         (total, s) =>
           total +
           s.sets
-            .filter((set) => set.weightKg != null && set.reps != null)
+            .filter((set) => set.weightKg != null && set.reps != null && set.setType !== 'warmup')
             .reduce((sum, set) => sum + (set.weightKg ?? 0) * (set.reps ?? 0), 0),
         0,
       );
