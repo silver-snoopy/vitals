@@ -8,8 +8,8 @@ function toDateString(d: Date): string {
 }
 
 const today = new Date();
-const thirtyDaysAgo = new Date(today);
-thirtyDaysAgo.setDate(today.getDate() - 30);
+const fourteenDaysAgo = new Date(today);
+fourteenDaysAgo.setDate(today.getDate() - 14);
 
 interface DateRangeState {
   startDate: string;
@@ -18,7 +18,7 @@ interface DateRangeState {
 }
 
 export const useDateRangeStore = create<DateRangeState>((set) => ({
-  startDate: toDateString(thirtyDaysAgo),
+  startDate: toDateString(fourteenDaysAgo),
   endDate: toDateString(today),
   setRange: (startDate, endDate) => set({ startDate, endDate }),
 }));

@@ -3,10 +3,10 @@ import { useDateRangeStore } from '../useDateRangeStore';
 describe('useDateRangeStore', () => {
   beforeEach(() => {
     const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const fourteenDaysAgo = new Date(today);
+    fourteenDaysAgo.setDate(today.getDate() - 14);
     useDateRangeStore.setState({
-      startDate: thirtyDaysAgo.toISOString().split('T')[0],
+      startDate: fourteenDaysAgo.toISOString().split('T')[0],
       endDate: today.toISOString().split('T')[0],
     });
   });
@@ -16,12 +16,12 @@ describe('useDateRangeStore', () => {
     expect(useDateRangeStore.getState().endDate).toBe(today);
   });
 
-  it('defaults startDate to 30 days before endDate', () => {
+  it('defaults startDate to 14 days before endDate', () => {
     const { startDate, endDate } = useDateRangeStore.getState();
     const start = new Date(startDate);
     const end = new Date(endDate);
     const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    expect(diffDays).toBe(30);
+    expect(diffDays).toBe(14);
   });
 
   it('setRange updates startDate and endDate', () => {
