@@ -49,6 +49,9 @@ dist/
 # Git worktrees
 .worktrees/
 
+# Screenshots (generated locally)
+docs/screenshots/current-ui/
+
 # Playwright
 playwright-report/
 test-results/
