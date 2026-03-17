@@ -14,9 +14,13 @@ and biometrics (Apple Health) in a single unified dashboard.
 |----|----------|--------|
 | UC-DASH-01 | Default dashboard view | Implemented |
 | UC-DASH-02 | Custom date range selection | Implemented |
-| UC-DASH-03 | Widget order customization | Implemented |
-| UC-DASH-04 | Two-column dashboard layout | Implemented |
-| UC-DASH-05 | Detailed AI report panel | Implemented |
+| ~~UC-DASH-03~~ | ~~Widget order customization~~ | Removed (Phase C) |
+| UC-DASH-04 | Bento grid layout | Implemented |
+| UC-DASH-05 | Report alert bar | Implemented |
+| UC-DASH-06 | KPI strip with trends | Implemented |
+| UC-DASH-07 | Macro split chart | Implemented |
+| UC-DASH-08 | Activity heatmap | Implemented |
+| UC-DASH-09 | Mobile swipeable charts | Implemented |
 
 ### UC-DASH-01: Default dashboard view
 
@@ -24,12 +28,10 @@ and biometrics (Apple Health) in a single unified dashboard.
 **so that** I can quickly assess my recent trends.
 
 **Behavior:**
-- Dashboard displays five widgets: Nutrition Trends, Workout Volume, Body Weight, Weekly Summary, Latest AI Report
-- Nutrition Trends: line chart with calories, protein, carbs, fat over time
-- Workout Volume: bar chart showing total volume (weight x reps) per session
-- Body Weight: line chart with auto-scaled Y axis
-- Weekly Summary: three stat cards — Avg Daily Calories (kcal), Workout Sessions (count), Avg Weight (kg)
-- AI Report Panel: full report with summary, all action items (colored priority bars), scorecard, and expandable sections
+- Dashboard displays: KPI strip, report alert bar, bento chart grid
+- KPI strip: 5 compact metric cards — Avg Calories, Sessions, Weight, Protein, AI Score
+- Each KPI card shows value, trend arrow (▲/▼/→), and sparkline where applicable
+- Charts: Nutrition Trends, Body Weight, Workout Volume, Macro Split donut, Activity Heatmap
 - Default date range: last 14 days
 - Loading state shows skeleton placeholders; errors display inline message
 
@@ -49,46 +51,83 @@ and biometrics (Apple Health) in a single unified dashboard.
 
 **E2E Coverage:** `e2e/dashboard.spec.ts` — UC2
 
-### UC-DASH-03: Widget order customization
+### UC-DASH-04: Bento grid layout
 
-**As a** user, **I want to** reorder my dashboard widgets,
-**so that** the most important data is at the top.
-
-**Behavior:**
-- Settings gear icon in dashboard header opens widget order panel
-- Move up/down buttons for chart widgets only (summary & report are pinned in left column on wide screens)
-- Reset to default button
-- Order persisted in localStorage
-
-**E2E Coverage:** None
-
-### UC-DASH-04: Two-column dashboard layout
-
-**As a** user on a large screen, **I want** the report and charts side by side,
-**so that** I can cross-reference insights with visual data without scrolling.
+**As a** user, **I want** charts arranged in a dense grid layout,
+**so that** I can see all my health data without excessive scrolling.
 
 **Behavior:**
-- At 1440px+ viewport width, dashboard splits into two columns
-- Left column (380–440px, sticky): Weekly Summary stats + AI Report Panel
-- Right column: charts stacked (Nutrition + Workout Volume paired, Body Weight full-width)
-- Below 1440px: single-column fallback with all widgets stacked vertically
-- Left column scrolls independently with sticky positioning
+- Desktop (≥1440px): 3-column bento grid — Nutrition spans 2 cols, Weight 1 col, then Volume + Macro Split + Heatmap
+- Tablet (768–1439px): 2-column grid — Nutrition full width, rest in pairs
+- Mobile (<768px): swipeable horizontal cards (see UC-DASH-09)
+
+**E2E Coverage:** `e2e/dashboard.spec.ts` — UC-DASH: Bento grid layout
+
+### UC-DASH-05: Report alert bar
+
+**As a** user, **I want** a compact report summary on the dashboard,
+**so that** I can see my latest AI insights without the report dominating the page.
+
+**Behavior:**
+- Single-line bar showing: report summary (truncated to 60 chars), AI score badge, action item count, "View →" link
+- Links to /reports page
+- If no report: "No report yet — Generate →"
+- If generating: spinner with "Generating report…"
 
 **E2E Coverage:** `e2e/dashboard.spec.ts` — UC1
 
-### UC-DASH-05: Detailed AI report panel
+### UC-DASH-06: KPI strip with trends
 
-**As a** user, **I want** the AI report to prominently show action items and expandable detail sections,
-**so that** I can quickly see what to act on and dive deeper when needed.
+**As a** user, **I want to** see key metrics with trend indicators at a glance,
+**so that** I can quickly assess whether my health data is trending up or down.
 
 **Behavior:**
-- Always visible: summary paragraph + all action items with colored left-border (red=high, amber=medium, blue=low), category label, and priority badge
-- Scorecard: 2×2 grid of score rings (green ≥7, amber ≥5, red <5) when report sections include scorecard data
-- Expandable sections: What's Working, Hazards, Recommendations, Nutrition Analysis, Training Load, Biometrics Overview, Cross-Domain Correlation — rendered as markdown, collapsed by default
-- Regenerate button in header with loading spinner state
-- Graceful degradation: if no report sections exist, only summary + action items are shown
+- 5 KPI cards: Avg Calories, Sessions, Weight, Protein, AI Score
+- Trend arrows: compare first half vs second half of date range (▲ up, ▼ down, → stable within ±1%)
+- Sparklines for continuous metrics (calories, weight, protein) — not for discrete values (sessions, AI score)
+- Desktop: 5 cards in a row; Tablet: 3+2; Mobile: horizontal scroll with snap
 
 **E2E Coverage:** `e2e/dashboard.spec.ts` — UC1
+
+### UC-DASH-07: Macro split chart
+
+**As a** user, **I want to** see my macro nutrient breakdown visually,
+**so that** I can assess my protein/carbs/fat balance at a glance.
+
+**Behavior:**
+- Donut chart showing protein (blue), carbs (yellow), fat (red) from latest day's data
+- Center text shows total calories
+- Compact legend below with gram values
+- Empty state if no nutrition data or all-zero macros
+
+**E2E Coverage:** `e2e/dashboard.spec.ts` — UC-DASH: Bento grid layout
+
+### UC-DASH-08: Activity heatmap
+
+**As a** user, **I want to** see my workout consistency over time,
+**so that** I can identify patterns and maintain my training habit.
+
+**Behavior:**
+- GitHub-style SVG heatmap showing workout days for ~13 weeks
+- 4 intensity levels based on set count: rest (10% opacity), 1-10 (40%), 11-20 (70%), 21+ (100%)
+- Day labels (Mon, Wed, Fri, Sun) on left
+- Hover tooltip showing date and set count
+- Less/More legend below
+
+**E2E Coverage:** `e2e/dashboard.spec.ts` — UC-DASH: Bento grid layout
+
+### UC-DASH-09: Mobile swipeable charts
+
+**As a** user on mobile, **I want to** swipe between charts,
+**so that** each chart gets full screen width for readability.
+
+**Behavior:**
+- CSS scroll-snap horizontal carousel with 4 cards: Nutrition, Volume, Weight, Activity
+- Dot indicators below showing current position
+- Clickable dots to jump to specific chart
+- Only visible on viewports < 768px (md breakpoint)
+
+**E2E Coverage:** `e2e/dashboard.spec.ts` — Dashboard Mobile
 
 ---
 

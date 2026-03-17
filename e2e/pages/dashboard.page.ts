@@ -15,13 +15,19 @@ export class DashboardPage {
   readonly workoutVolumeChart: Locator;
   readonly bodyWeightChart: Locator;
 
-  // Weekly summary stat labels
-  readonly avgCalories: Locator;
-  readonly workoutSessions: Locator;
-  readonly avgWeight: Locator;
+  // KPI strip metrics (identified by label text inside KpiCard)
+  readonly kpiAvgCal: Locator;
+  readonly kpiSessions: Locator;
+  readonly kpiWeight: Locator;
+  readonly kpiProtein: Locator;
+  readonly kpiAiScore: Locator;
 
-  // Latest report
-  readonly latestReport: Locator;
+  // Report alert bar
+  readonly reportAlertBar: Locator;
+
+  // New bento grid components
+  readonly macroSplitChart: Locator;
+  readonly activityHeatmap: Locator;
 
   // Date range picker (in the Topbar, contains "—" between dates)
   readonly datePickerTrigger: Locator;
@@ -31,15 +37,24 @@ export class DashboardPage {
 
     this.heading = page.getByRole('heading', { name: 'Dashboard' });
 
-    this.nutritionChart = page.getByText('Nutrition Trends');
-    this.workoutVolumeChart = page.getByText('Workout Volume (kg)');
-    this.bodyWeightChart = page.getByText('Body Weight (kg)');
+    // Charts appear twice in DOM (bento grid + swipeable mobile) — scope to first (desktop)
+    this.nutritionChart = page.getByText('Nutrition Trends').first();
+    this.workoutVolumeChart = page.getByText('Workout Volume (kg)').first();
+    this.bodyWeightChart = page.getByText('Body Weight (kg)').first();
 
-    this.avgCalories = page.getByText('Avg Daily Calories');
-    this.workoutSessions = page.getByText('Workout Sessions');
-    this.avgWeight = page.getByText('Avg Weight');
+    // KPI cards appear twice (desktop grid + mobile scroll) — scope to first
+    this.kpiAvgCal = page.getByText('avg cal').first();
+    this.kpiSessions = page.getByText('sessions').first();
+    this.kpiWeight = page.getByText('weight').first();
+    this.kpiProtein = page.getByText('protein').first();
+    this.kpiAiScore = page.getByText('AI score').first();
 
-    this.latestReport = page.getByText('AI Weekly Report');
+    // Report alert bar
+    this.reportAlertBar = page.getByText('View →').locator('..');
+
+    // Bento grid new components
+    this.macroSplitChart = page.getByText('Macro Split').first();
+    this.activityHeatmap = page.getByText('Activity').first();
 
     // Desktop topbar date picker (the one with text-sm, not the compact mobile one)
     this.datePickerTrigger = page
@@ -57,14 +72,8 @@ export class DashboardPage {
     await this.datePickerTrigger.click();
   }
 
-  /** Get the value (bold number) inside a stat card by its label text */
-  statValue(label: string): Locator {
-    // Each stat is its own Card. Find the card that contains the label,
-    // then locate the bold value <p> within that specific card.
-    return this.page
-      .locator('[data-slot="card"]')
-      .filter({ hasText: label })
-      .locator('p.text-2xl')
-      .first();
+  /** Get a KPI card by its label text */
+  kpiCard(label: string): Locator {
+    return this.page.locator('[data-slot="card"]').filter({ hasText: label }).first();
   }
 }

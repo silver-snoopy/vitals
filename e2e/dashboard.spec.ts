@@ -28,59 +28,79 @@ test.describe('Dashboard', () => {
       await expect(dashboard.bodyWeightChart).toBeVisible();
     });
 
-    test('renders weekly summary stats with computed values', async () => {
-      await expect(dashboard.avgCalories).toBeVisible();
-      await expect(dashboard.workoutSessions).toBeVisible();
-      await expect(dashboard.avgWeight).toBeVisible();
-
-      // Verify the stats show actual values (not dashes)
-      const calorieValue = dashboard.statValue('Avg Daily Calories');
-      await expect(calorieValue).toContainText('kcal');
-
-      const sessionValue = dashboard.statValue('Workout Sessions');
-      await expect(sessionValue).toContainText('2');
-
-      const weightValue = dashboard.statValue('Avg Weight');
-      await expect(weightValue).toContainText('kg');
+    test('renders KPI strip with 5 metrics', async () => {
+      await expect(dashboard.kpiAvgCal).toBeVisible();
+      await expect(dashboard.kpiSessions).toBeVisible();
+      await expect(dashboard.kpiProtein).toBeVisible();
+      await expect(dashboard.kpiAiScore).toBeVisible();
     });
 
-    test('renders Latest AI Report preview', async () => {
-      await expect(dashboard.latestReport).toBeVisible();
+    test('KPI cards show computed values', async () => {
+      // avg cal card should have a number
+      const calCard = dashboard.kpiCard('avg cal');
+      await expect(calCard.locator('.tabular-nums')).not.toHaveText('—');
 
-      // Report summary text from fixture
+      // sessions card should show "2" (2 workout sessions in fixture)
+      const sessionsCard = dashboard.kpiCard('sessions');
+      await expect(sessionsCard.locator('.tabular-nums')).toHaveText('2');
+
+      // AI score should show 7.2/10
+      const aiCard = dashboard.kpiCard('AI score');
+      await expect(aiCard.locator('.tabular-nums')).toHaveText('7.2/10');
+    });
+
+    test('renders report alert bar with summary', async () => {
+      // Report summary from fixture
       await expect(dashboard.page.getByText('Great progress this week')).toBeVisible();
-
-      // Action items are shown
-      await expect(dashboard.page.getByText('Increase fiber intake')).toBeVisible();
+      // View link
+      await expect(dashboard.page.getByText('View →')).toBeVisible();
+      // Score badge
+      await expect(dashboard.page.getByText('Score: 7.2/10')).toBeVisible();
     });
 
-    test('displays all five widget sections on initial load', async () => {
-      // All five dashboard widgets should be present
+    test('report alert bar View link navigates to /reports', async ({ page }) => {
+      await page.getByText('View →').click();
+      await expect(page).toHaveURL(/\/reports/);
+    });
+  });
+
+  test.describe('UC-DASH: Bento grid layout', () => {
+    test('bento grid shows all 5 chart areas', async () => {
       await expect(dashboard.nutritionChart).toBeVisible();
       await expect(dashboard.workoutVolumeChart).toBeVisible();
       await expect(dashboard.bodyWeightChart).toBeVisible();
-      await expect(dashboard.avgCalories).toBeVisible();
-      await expect(dashboard.latestReport).toBeVisible();
+      await expect(dashboard.macroSplitChart).toBeVisible();
+      await expect(dashboard.activityHeatmap).toBeVisible();
+    });
+
+    test('activity heatmap renders SVG with cells', async ({ page }) => {
+      const svg = page.locator('svg[aria-label="Workout activity heatmap"]').first();
+      await expect(svg).toBeVisible();
+      // Should have rect elements (heatmap cells)
+      const rects = svg.locator('rect');
+      expect(await rects.count()).toBeGreaterThan(0);
+    });
+
+    test('macro split chart shows donut with macro labels', async ({ page }) => {
+      await expect(dashboard.macroSplitChart).toBeVisible();
+      await expect(page.getByText('kcal')).toBeVisible();
+      await expect(page.getByText(/Protein \d+g/)).toBeVisible();
     });
   });
 
   test.describe('UC2: Custom date range selection', () => {
     test('date range picker is visible and shows current range', async () => {
       await expect(dashboard.datePickerTrigger).toBeVisible();
-      // Default range is 30 days — trigger should contain a date-like string
       await expect(dashboard.datePickerTrigger).toContainText('—');
     });
 
     test('opening date picker shows a calendar popover', async ({ page }) => {
       await dashboard.openDatePicker();
-
-      // Calendar component renders with data-slot="calendar"
       const calendar = page.locator('[data-slot="calendar"]').first();
       await expect(calendar).toBeVisible();
     });
 
     test('selecting a new date range triggers a data refresh', async ({ page }) => {
-      // Track API calls to verify refetch
       const apiCalls: string[] = [];
       page.on('request', (req) => {
         if (req.url().includes('/api/dashboard/weekly')) {
@@ -88,40 +108,59 @@ test.describe('Dashboard', () => {
         }
       });
 
-      // Wait for initial load request
       await page.waitForTimeout(500);
       const initialCount = apiCalls.length;
 
-      // Open date picker
       await dashboard.openDatePicker();
       const calendar = page.locator('[data-slot="calendar"]').first();
       await expect(calendar).toBeVisible();
 
-      // react-day-picker in range mode: clicking a single day sets from=to,
-      // which satisfies the handleSelect condition and closes the popover.
       await calendar.getByRole('button', { name: /March 1st/ }).click();
-
-      // Popover should close and the date range trigger updates
       await expect(dashboard.datePickerTrigger).toContainText('Mar 1');
 
-      // A new API call should have been made
       expect(apiCalls.length).toBeGreaterThan(initialCount);
     });
 
     test('dashboard content updates after date range change', async ({ page }) => {
-      // After changing dates, the dashboard should still render all widgets
       await dashboard.openDatePicker();
       const calendar = page.locator('[data-slot="calendar"]').first();
       await expect(calendar).toBeVisible();
 
-      // Select a single day — this changes the range and closes the popover
       await calendar.getByRole('button', { name: /March 1st/ }).click();
 
-      // All widgets should still be visible after range change
       await expect(dashboard.nutritionChart).toBeVisible();
       await expect(dashboard.workoutVolumeChart).toBeVisible();
       await expect(dashboard.bodyWeightChart).toBeVisible();
-      await expect(dashboard.avgCalories).toBeVisible();
     });
+  });
+});
+
+test.describe('Dashboard Mobile', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  let dashboard: DashboardPage;
+
+  test.beforeEach(async ({ page }) => {
+    await mockDashboardApi(page);
+    dashboard = new DashboardPage(page);
+    await dashboard.goto();
+  });
+
+  test('KPI strip is horizontally scrollable', async ({ page }) => {
+    // On mobile, KPI cards are in a horizontal scroll container
+    const scrollContainer = page.locator('.snap-x.snap-mandatory').first();
+    await expect(scrollContainer).toBeVisible();
+  });
+
+  test('report alert bar is visible without scrolling', async ({ page }) => {
+    await expect(page.getByText('View →')).toBeVisible();
+  });
+
+  test('charts are swipeable with dot indicators', async ({ page }) => {
+    // Wait for first dot to appear, then count all
+    const firstDot = page.getByRole('button', { name: 'Go to Nutrition' });
+    await expect(firstDot).toBeVisible();
+    const dots = page.getByRole('button', { name: /Go to/ });
+    expect(await dots.count()).toBe(4);
   });
 });
