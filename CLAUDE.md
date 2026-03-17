@@ -61,6 +61,16 @@ These are stored in `.mcp.json` and shared with all team members.
 - Local dev DB: `docker compose up -d` (PostgreSQL 16 on port 5432)
 - Tests: `npm run test` (Vitest across all packages)
 
+## Design System
+- **Font:** JetBrains Mono Variable (all text — headings, body, data)
+- **Color palette:** Healthcare cyan primary (`#0891B2`), analytics blue secondary (`#3B82F6`), orange accent (`#F97316`)
+- **CSS variables:** OKLch color space in `src/index.css` — light + dark mode, mapped via `@theme inline`
+- **Extra tokens:** `--success` (`#059669`) and `--warning` (`#D97706`) — use `text-success`, `bg-warning` etc.
+- **Chart colors:** Centralized in `src/lib/chart-config.ts` — calories(orange), protein(blue), carbs(yellow), fat(red), fiber(green), weight(purple), volume(cyan)
+- **KPI component:** `src/components/ui/kpi-card.tsx` — compact card with trend arrows (▲/▼/→)
+- **Sparkline component:** `src/components/charts/Sparkline.tsx` — tiny inline Recharts LineChart
+- **Design spec:** `docs/research/2026-03-17-ui-ux-transformation-plan.md`
+
 ## Backend Conventions
 - **Routes:** Fastify plugin pattern — `async function routes(app: FastifyInstance, opts: { env: EnvConfig })`
 - **Route registration:** In `app.ts` via `await app.register(routes, { env })`

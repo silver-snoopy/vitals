@@ -4,6 +4,6 @@ export const CHART_COLORS = {
   carbs: '#eab308',
   fat: '#ef4444',
   fiber: '#22c55e',
-  weight: '#a855f7',
+  weight: '#8b5cf6',
   volume: '#06b6d4',
 } as const;
