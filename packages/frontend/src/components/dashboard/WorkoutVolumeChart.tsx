@@ -1,19 +1,14 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, parseISO } from 'date-fns';
 import type { WorkoutSession } from '@vitals/shared';
+import { calcSessionVolume } from '@vitals/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CHART_COLORS } from '@/lib/chart-config';
-
-function sessionVolume(session: WorkoutSession): number {
-  return session.sets
-    .filter((s) => s.setType !== 'warmup')
-    .reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0);
-}
 
 export function WorkoutVolumeChart({ sessions }: { sessions: WorkoutSession[] }) {
   const chartData = sessions.map((s) => ({
     day: format(parseISO(s.date), 'MMM d'),
-    volume: Math.round(sessionVolume(s)),
+    volume: Math.round(calcSessionVolume(s.sets)),
   }));
 
   return (

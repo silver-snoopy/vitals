@@ -38,6 +38,7 @@ const flattenedRows = [
 function makeClient(overrides: Partial<HevyClient> = {}): HevyClient {
   return {
     fetchWorkouts: vi.fn().mockResolvedValue(flattenedRows),
+    fetchExerciseTemplates: vi.fn().mockResolvedValue({}),
     ...overrides,
   };
 }
@@ -141,9 +142,14 @@ describe('HevyApiClient', () => {
   });
 
   it('builds correct request URL with pagination params', async () => {
+    const emptyTemplates = new Response(JSON.stringify({ exercise_templates: [] }), {
+      status: 200,
+    });
+    const emptyWorkouts = new Response(JSON.stringify({ workouts: [] }), { status: 200 });
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response(JSON.stringify({ workouts: [] }), { status: 200 }));
+      .mockResolvedValueOnce(emptyTemplates)
+      .mockResolvedValueOnce(emptyWorkouts);
     const client = new HevyApiClient('test-key', 'https://api.hevyapp.com/v1');
     await client.fetchWorkouts(new Date('2026-03-01'), new Date('2026-03-07'));
 
@@ -170,15 +176,19 @@ describe('HevyApiClient', () => {
       workouts: [makeWorkout('Day 11', 'Bench')],
       page_count: 2,
     };
+    const emptyTemplates = new Response(JSON.stringify({ exercise_templates: [] }), {
+      status: 200,
+    });
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(emptyTemplates)
       .mockResolvedValueOnce(new Response(JSON.stringify(page1), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify(page2), { status: 200 }));
 
     const client = new HevyApiClient('test-key', 'https://api.hevyapp.com/v1');
     const rows = await client.fetchWorkouts(new Date('2026-03-01'), new Date('2026-03-07'));
 
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
     expect(rows).toHaveLength(11);
     expect(rows[0].exercise_title).toBe('Exercise 1');
     expect(rows[10].exercise_title).toBe('Bench');

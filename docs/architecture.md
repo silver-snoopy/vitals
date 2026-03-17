@@ -92,7 +92,7 @@ src/
 | Table | Purpose | Key Pattern |
 |-------|---------|-------------|
 | `measurements` | EAV store for nutrition + biometrics | Unique: `(user_id, source, metric, measured_at)` |
-| `workout_sets` | Individual exercise sets (flat, no session ID) | Unique: `(user_id, source, exercise_name, set_index, COALESCE(started_at, epoch))` |
+| `workout_sets` | Individual exercise sets (flat, no session ID). Includes `title`, `exercise_type`, and pre-calculated `volume_kg` | Unique: `(user_id, source, exercise_name, set_index, COALESCE(started_at, epoch))` |
 | `collection_metadata` | Provider sync state | PK: `(user_id, provider_name)` |
 | `weekly_reports` | AI-generated weekly analyses | JSONB: insights, action_items, data_coverage, sections |
 | `ai_generations` | AI call audit trail | Token usage tracking |
@@ -120,6 +120,8 @@ All ingestion uses `INSERT ... ON CONFLICT DO UPDATE` with unique indexes. This 
 ### Workout Session Grouping
 
 The `workout_sets` table has no explicit session ID. Sessions are derived at query time by grouping sets with the same `(DATE(started_at), source)`. This avoids a separate sessions table and handles Hevy's flat API response naturally.
+
+**Pre-calculated volume:** `volume_kg` is computed at ingest time using `(weight_kg + bodyweight_adjust) * reps`. For `weighted_bodyweight` exercises (e.g., weighted pull-ups), the user's bodyweight at collection time is added to the set weight. This ensures historical accuracy — volume reflects the bodyweight at the time of the workout, not the current bodyweight.
 
 ## Data Flow
 
