@@ -144,10 +144,13 @@ export function parseAppleHealthExport(xml: string, userId: string): AppleHealth
     workoutSets.push({
       userId,
       source: 'apple_health',
+      title: null,
       exerciseName: exerciseName || 'Unknown',
+      exerciseType: null,
       setIndex: 0,
       setType: 'normal',
       weightKg: null,
+      volumeKg: null,
       reps: null,
       durationSeconds,
       distanceMeters: null,

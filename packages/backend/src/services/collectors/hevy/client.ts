@@ -1,5 +1,10 @@
+export interface ExerciseTypeMap {
+  [exerciseTitle: string]: string;
+}
+
 export interface HevyClient {
   fetchWorkouts(startDate: Date, endDate: Date): Promise<Record<string, unknown>[]>;
+  fetchExerciseTemplates(): Promise<ExerciseTypeMap>;
 }
 
 function formatHevyDatetime(value: unknown): string | null {
@@ -20,7 +25,10 @@ function formatHevyDatetime(value: unknown): string | null {
   }
 }
 
-function flattenWorkouts(workouts: Array<Record<string, unknown>>): Record<string, unknown>[] {
+function flattenWorkouts(
+  workouts: Array<Record<string, unknown>>,
+  exerciseTypes: ExerciseTypeMap = {},
+): Record<string, unknown>[] {
   const rows: Record<string, unknown>[] = [];
 
   for (const workout of workouts) {
@@ -36,6 +44,8 @@ function flattenWorkouts(workouts: Array<Record<string, unknown>>): Record<strin
       const exerciseTitle = (exercise.title ?? exercise.name) as string | undefined;
       const sets = (exercise.sets ?? []) as Array<Record<string, unknown>>;
 
+      const exerciseType = exerciseTitle ? (exerciseTypes[exerciseTitle] ?? null) : null;
+
       for (const [idx, set] of sets.entries()) {
         const setIndex = set.set_index ?? set.index ?? idx;
         rows.push({
@@ -44,6 +54,7 @@ function flattenWorkouts(workouts: Array<Record<string, unknown>>): Record<strin
           end_time: endTime,
           description,
           exercise_title: exerciseTitle,
+          exercise_type: exerciseType,
           set_index: setIndex,
           weight_kg: set.weight_kg ?? set.weight,
           reps: set.reps,
@@ -83,8 +94,55 @@ export class HevyApiClient implements HevyClient {
     this.apiBase = apiBase.replace(/\/$/, '');
   }
 
+  async fetchExerciseTemplates(): Promise<ExerciseTypeMap> {
+    if (!this.apiKey) throw new Error('Missing HEVY_API_KEY');
+
+    const typeMap: ExerciseTypeMap = {};
+    let page = 1;
+    const pageSize = 10;
+    const maxPages = 500;
+
+    while (page <= maxPages) {
+      const params = new URLSearchParams({
+        page: String(page),
+        pageSize: String(pageSize),
+      });
+      const response = await fetch(`${this.apiBase}/exercise_templates?${params}`, {
+        headers: { 'api-key': this.apiKey },
+      });
+      if (!response.ok) break;
+
+      const payload = (await response.json()) as Record<string, unknown>;
+      const templates = (
+        Array.isArray(payload.exercise_templates)
+          ? payload.exercise_templates
+          : Array.isArray(payload.data)
+            ? payload.data
+            : []
+      ) as Array<Record<string, unknown>>;
+      if (templates.length === 0) break;
+
+      for (const t of templates) {
+        const title = String(t.title ?? t.name ?? '');
+        const type = String(t.type ?? '');
+        if (title && type) typeMap[title] = type;
+      }
+
+      const rawPageCount = payload.page_count;
+      const pageCount = rawPageCount != null ? Number(rawPageCount) : NaN;
+      if (!isNaN(pageCount) && page >= pageCount) break;
+      if (templates.length < pageSize) break;
+
+      page++;
+    }
+
+    return typeMap;
+  }
+
   async fetchWorkouts(_startDate: Date, _endDate: Date): Promise<Record<string, unknown>[]> {
     if (!this.apiKey) throw new Error('Missing HEVY_API_KEY');
+
+    const exerciseTypes = await this.fetchExerciseTemplates();
 
     const allWorkouts: Array<Record<string, unknown>> = [];
     let page = 1;
@@ -118,6 +176,6 @@ export class HevyApiClient implements HevyClient {
       page++;
     }
 
-    return flattenWorkouts(allWorkouts);
+    return flattenWorkouts(allWorkouts, exerciseTypes);
   }
 }

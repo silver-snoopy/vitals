@@ -6,6 +6,7 @@ import type {
   BiometricReading,
   WeeklyReport,
 } from '@vitals/shared';
+import { calcSessionVolume } from '@vitals/shared';
 import { persona, analysisProtocol, outputFormat } from './prompt-loader.js';
 
 function avg(nums: number[]): number {
@@ -123,21 +124,18 @@ function formatWorkoutDetail(current: WorkoutSession[], previous: WorkoutSession
   // Session summary
   lines.push('### Sessions');
   for (const session of current) {
-    const workingSets = session.sets.filter(
-      (s) => s.weightKg != null && s.reps != null && s.setType !== 'warmup',
-    );
-    const totalVolume = workingSets.reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0);
+    const totalVolume = calcSessionVolume(session.sets);
     const durationMin = Math.round(session.durationSeconds / 60);
 
     lines.push('');
     lines.push(
-      `**${session.title || 'Untitled'}** — ${session.date} (${durationMin} min, ${workingSets.length} working sets, volume: ${num(totalVolume, 0)} kg)`,
+      `**${session.title || 'Untitled'}** — ${session.date} (${durationMin} min, ${session.sets.length} sets, volume: ${num(totalVolume, 0)} kg)`,
     );
     lines.push('| Exercise | Sets | Weight × Reps | RPE |');
     lines.push('|----------|------|---------------|-----|');
 
     // Group sets by exercise
-    const byExercise = new Map<string, typeof workingSets>();
+    const byExercise = new Map<string, WorkoutSession['sets']>();
     for (const s of session.sets) {
       if (!byExercise.has(s.exerciseName)) byExercise.set(s.exerciseName, []);
       byExercise.get(s.exerciseName)!.push(s);
@@ -160,14 +158,7 @@ function formatWorkoutDetail(current: WorkoutSession[], previous: WorkoutSession
   // Week-over-week volume comparison
   if (previous.length > 0) {
     const calcTotalVolume = (sessions: WorkoutSession[]) =>
-      sessions.reduce(
-        (total, s) =>
-          total +
-          s.sets
-            .filter((set) => set.weightKg != null && set.reps != null && set.setType !== 'warmup')
-            .reduce((sum, set) => sum + (set.weightKg ?? 0) * (set.reps ?? 0), 0),
-        0,
-      );
+      sessions.reduce((total, s) => total + calcSessionVolume(s.sets), 0);
 
     const currentVolume = calcTotalVolume(current);
     const prevVolume = calcTotalVolume(previous);

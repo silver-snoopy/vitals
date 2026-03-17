@@ -91,17 +91,37 @@ export async function ingestMeasurements(
   return { inserted, errors };
 }
 
+/**
+ * Compute pre-calculated volume for a set.
+ * For weighted_bodyweight exercises, adds bodyweightKg to the set weight.
+ */
+function computeVolumeKg(r: WorkoutSetRow, bodyweightKg: number | null): number | null {
+  const weight = r.weightKg;
+  const reps = r.reps;
+  if (weight == null && reps == null) return null;
+  const bwAdjust =
+    r.exerciseType === 'weighted_bodyweight' && bodyweightKg != null ? bodyweightKg : 0;
+  return ((weight ?? 0) + bwAdjust) * (reps ?? 0);
+}
+
+export interface IngestWorkoutOpts {
+  bodyweightKg?: number | null;
+}
+
 export async function ingestWorkoutSets(
   pool: pg.Pool,
   rows: WorkoutSetRow[],
+  opts: IngestWorkoutOpts = {},
 ): Promise<IngestResult> {
   if (rows.length === 0) return { inserted: 0, errors: [] };
+
+  const bodyweightKg = opts.bodyweightKg ?? null;
 
   const unique = dedup(
     rows,
     (r) => `${r.userId}|${r.source}|${r.exerciseName}|${r.setIndex}|${r.startedAt ?? ''}`,
   );
-  const COL_COUNT = 14;
+  const COL_COUNT = 17;
   let inserted = 0;
   const errors: string[] = [];
 
@@ -111,11 +131,14 @@ export async function ingestWorkoutSets(
       values.push(
         r.userId,
         r.source,
+        r.title,
         r.exerciseName,
+        r.exerciseType,
         r.setIndex,
         r.setType,
         r.weightKg,
         r.reps,
+        computeVolumeKg(r, bodyweightKg),
         r.durationSeconds,
         r.distanceMeters,
         r.rpe,
@@ -128,16 +151,19 @@ export async function ingestWorkoutSets(
 
     const sql = `
       INSERT INTO workout_sets
-        (user_id, source, exercise_name, set_index, set_type,
-         weight_kg, reps, duration_seconds, distance_meters,
+        (user_id, source, title, exercise_name, exercise_type, set_index, set_type,
+         weight_kg, reps, volume_kg, duration_seconds, distance_meters,
          rpe, started_at, ended_at, tags, collected_at)
       VALUES ${buildPlaceholders(batch.length, COL_COUNT)}
       ON CONFLICT (user_id, source, exercise_name, set_index,
                    COALESCE(started_at, '1970-01-01'::timestamptz))
       DO UPDATE SET
+        title = EXCLUDED.title,
+        exercise_type = EXCLUDED.exercise_type,
         set_type = EXCLUDED.set_type,
         weight_kg = EXCLUDED.weight_kg,
         reps = EXCLUDED.reps,
+        volume_kg = EXCLUDED.volume_kg,
         duration_seconds = EXCLUDED.duration_seconds,
         distance_meters = EXCLUDED.distance_meters,
         rpe = EXCLUDED.rpe,

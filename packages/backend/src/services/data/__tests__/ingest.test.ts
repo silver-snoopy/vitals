@@ -23,11 +23,14 @@ function makeWorkoutSetRow(overrides: Partial<WorkoutSetRow> = {}): WorkoutSetRo
   return {
     userId,
     source: 'hevy',
+    title: null,
     exerciseName: 'Squat',
+    exerciseType: null,
     setIndex: 0,
     setType: 'normal',
     weightKg: 100,
     reps: 5,
+    volumeKg: null,
     durationSeconds: null,
     distanceMeters: null,
     rpe: 8,
@@ -155,6 +158,6 @@ describe('ingestWorkoutSets', () => {
 
     await ingestWorkoutSets(pool, [makeWorkoutSetRow()]);
     // 1 row × 14 columns = 14 params (includes set_type and tags)
-    expect(capturedParams).toHaveLength(14);
+    expect(capturedParams).toHaveLength(17);
   });
 });

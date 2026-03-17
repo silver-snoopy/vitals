@@ -278,6 +278,10 @@ The date range picker on other pages is irrelevant to report generation.
 
 **Behavior:**
 - One card per session showing: title, date, duration, total volume (kg), set count
+- Title uses the workout title from the source (e.g., "Upper") with fallback to "{Source} Workout"
+- Total volume uses pre-calculated `volume_kg` from the database (computed at ingest time)
+- For `weighted_bodyweight` exercises (e.g., Pull Up Weighted), volume includes user's bodyweight
+- All sets (including warmups) are included in volume calculations
 - Exercise name badges for each unique exercise in the session
 - Ordered by date
 - Empty state: "No workouts in this period."

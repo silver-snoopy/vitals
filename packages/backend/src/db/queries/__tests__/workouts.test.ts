@@ -10,11 +10,14 @@ const baseRow = {
   id: 'set-uuid-1',
   user_id: 'user-uuid',
   source: 'hevy',
+  title: 'Upper',
   exercise_name: 'Bench Press',
+  exercise_type: 'weight_reps',
   set_index: 0,
   set_type: 'normal',
   weight_kg: '80',
   reps: '8',
+  volume_kg: '640',
   duration_seconds: null,
   distance_meters: null,
   rpe: '7',
@@ -146,8 +149,19 @@ describe('queryWorkoutSessions', () => {
     expect(result).toEqual([]);
   });
 
-  it('generates deterministic session title from source', async () => {
-    const pool = makeMockPool([{ ...baseRow, source: 'hevy' }]);
+  it('uses stored title when available', async () => {
+    const pool = makeMockPool([{ ...baseRow, source: 'hevy', title: 'Upper' }]);
+    const result = await queryWorkoutSessions(
+      pool,
+      'user-uuid',
+      new Date('2026-03-01'),
+      new Date('2026-03-07'),
+    );
+    expect(result[0].title).toBe('Upper');
+  });
+
+  it('falls back to source-based title when no stored title', async () => {
+    const pool = makeMockPool([{ ...baseRow, source: 'hevy', title: null }]);
     const result = await queryWorkoutSessions(
       pool,
       'user-uuid',

@@ -5,11 +5,14 @@ interface WorkoutSetDbRow {
   id: string;
   user_id: string;
   source: string;
+  title: string | null;
   exercise_name: string;
+  exercise_type: string | null;
   set_index: string | number;
   set_type: string;
   weight_kg: string | null;
   reps: string | null;
+  volume_kg: string | null;
   duration_seconds: string | null;
   distance_meters: string | null;
   rpe: string | null;
@@ -68,10 +71,12 @@ function groupIntoSessions(rows: WorkoutSetDbRow[], userId: string): WorkoutSess
       id: String(r.id),
       sessionId,
       exerciseName: String(r.exercise_name),
+      exerciseType: r.exercise_type ?? null,
       setIndex: Number(r.set_index),
       setType: String(r.set_type ?? 'normal'),
       weightKg: r.weight_kg !== null && r.weight_kg !== undefined ? Number(r.weight_kg) : null,
       reps: r.reps !== null && r.reps !== undefined ? Number(r.reps) : null,
+      volumeKg: r.volume_kg !== null && r.volume_kg !== undefined ? Number(r.volume_kg) : null,
       durationSeconds:
         r.duration_seconds !== null && r.duration_seconds !== undefined
           ? Number(r.duration_seconds)
@@ -84,7 +89,8 @@ function groupIntoSessions(rows: WorkoutSetDbRow[], userId: string): WorkoutSess
     }));
 
     const source = String(group.source);
-    const title = source.charAt(0).toUpperCase() + source.slice(1) + ' Workout';
+    const storedTitle = group.rows.find((r) => r.title)?.title;
+    const title = storedTitle ?? source.charAt(0).toUpperCase() + source.slice(1) + ' Workout';
 
     sessions.push({
       id: sessionId,
@@ -108,8 +114,8 @@ export async function queryWorkoutSessions(
   endDate: Date,
 ): Promise<WorkoutSession[]> {
   const { rows } = await pool.query(
-    `SELECT id, user_id, source, exercise_name, set_index, set_type,
-       weight_kg, reps, duration_seconds, distance_meters, rpe,
+    `SELECT id, user_id, source, title, exercise_name, exercise_type, set_index, set_type,
+       weight_kg, reps, volume_kg, duration_seconds, distance_meters, rpe,
        started_at, ended_at, collected_at
      FROM workout_sets
      WHERE user_id = $1 AND started_at BETWEEN $2 AND $3
@@ -131,8 +137,8 @@ export async function queryExerciseProgress(
   const { rows } = await pool.query(
     `SELECT DATE(started_at) AS day,
        MAX(weight_kg) AS max_weight,
-       SUM(CASE WHEN COALESCE(set_type, 'normal') != 'warmup' THEN weight_kg * COALESCE(reps, 0) ELSE 0 END) AS total_volume,
-       COUNT(*) FILTER (WHERE COALESCE(set_type, 'normal') != 'warmup') AS total_sets
+       SUM(COALESCE(volume_kg, weight_kg * COALESCE(reps, 0))) AS total_volume,
+       COUNT(*) AS total_sets
      FROM workout_sets
      WHERE user_id = $1 AND exercise_name = $2
        ${hasDateRange ? 'AND started_at BETWEEN $3 AND $4' : ''}

@@ -1,5 +1,6 @@
 import { format, parseISO } from 'date-fns';
 import type { WorkoutSession } from '@vitals/shared';
+import { calcSessionVolume } from '@vitals/shared';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -7,14 +8,6 @@ function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
-}
-
-function sessionVolume(session: WorkoutSession): number {
-  return Math.round(
-    session.sets
-      .filter((s) => s.setType !== 'warmup')
-      .reduce((sum, s) => sum + (s.weightKg ?? 0) * (s.reps ?? 0), 0),
-  );
 }
 
 export function WorkoutSessionCard({ session }: { session: WorkoutSession }) {
@@ -32,7 +25,7 @@ export function WorkoutSessionCard({ session }: { session: WorkoutSession }) {
         <div className="flex gap-2 text-xs text-muted-foreground">
           <span>{formatDuration(session.durationSeconds)}</span>
           <span>·</span>
-          <span>{sessionVolume(session).toLocaleString()} kg volume</span>
+          <span>{Math.round(calcSessionVolume(session.sets)).toLocaleString()} kg volume</span>
           <span>·</span>
           <span>{session.sets.length} sets</span>
         </div>
