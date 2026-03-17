@@ -12,16 +12,19 @@ export async function wsReportRoutes(
 ): Promise<void> {
   app.get<{ Querystring: { reportId?: string; token?: string } }>(
     '/ws/reports',
-    {
-      websocket: true,
-      preValidation: async (request, reply) => {
+    { websocket: true },
+    async (socket, request) => {
+      // Auth check inside handler — preValidation reply.code() breaks WS upgrades.
+      // Match apiKeyMiddleware: skip auth when no key is configured (dev mode).
+      if (opts.env.xApiKey) {
         const token = (request.query as { token?: string }).token;
         if (!token || token !== opts.env.xApiKey) {
-          return reply.code(401).send({ error: 'Unauthorized', statusCode: 401 });
+          socket.send(JSON.stringify({ error: 'Unauthorized' }));
+          socket.close(1008, 'Unauthorized');
+          return;
         }
-      },
-    },
-    async (socket, request) => {
+      }
+
       const reportId = (request.query as { reportId?: string }).reportId;
 
       if (!reportId || !UUID_RE.test(reportId)) {
