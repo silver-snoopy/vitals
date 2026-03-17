@@ -63,5 +63,10 @@ export function useInvalidateReports() {
   return () => {
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.all });
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.reports.latest });
+    // Report generation collects fresh data — refresh all dashboard queries
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ['nutrition'] });
+    queryClient.invalidateQueries({ queryKey: ['workouts'] });
+    queryClient.invalidateQueries({ queryKey: ['measurements'] });
   };
 }
