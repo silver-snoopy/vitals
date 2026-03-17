@@ -7,7 +7,21 @@ class ResizeObserverMock {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+
+let originalResizeObserver: typeof ResizeObserver | undefined;
+
+beforeAll(() => {
+  originalResizeObserver = globalThis.ResizeObserver;
+  if (!originalResizeObserver) {
+    globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+  }
+});
+
+afterAll(() => {
+  // Restore whatever value was present before these tests ran (possibly undefined)
+  (globalThis as typeof globalThis & { ResizeObserver?: typeof ResizeObserver }).ResizeObserver =
+    originalResizeObserver;
+});
 
 describe('Sparkline', () => {
   it('renders an SVG element', () => {
