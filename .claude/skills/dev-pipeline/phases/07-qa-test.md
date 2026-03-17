@@ -111,10 +111,26 @@ mkdir -p e2e/screenshots
 
 4. **Present screenshots to the user** using whatever image or file-sharing mechanism is available in the current environment.
 
-5. **Clean up after verification:**
-Delete the temporary visual test file and screenshot directory using shell-appropriate commands.
+5. **Upload screenshots for PR evidence:**
+Upload the verification screenshots to the GitHub repo using `gh` so they can be referenced in the PR body (Phase 9). Use the repo's issue/PR image upload or attach them as PR comment images.
 
-The visual test and screenshots are temporary artifacts — they exist only for verification evidence during the pipeline run and must not be committed.
+```bash
+# Upload each screenshot and capture the returned markdown image URL
+gh issue create --title "tmp-upload" --body "![screenshot](screenshot.png)" --repo <owner>/<repo>
+# Or attach via PR comment after PR is created
+```
+
+**Preferred method:** After the PR is created in Phase 9, add a comment with the screenshots:
+```bash
+gh pr comment <PR_NUMBER> --body "## Visual Verification\n\n![description](url)"
+```
+
+**Alternative:** If `gh` image upload is not feasible, keep screenshots in `e2e/screenshots/` and commit them to the PR branch before pushing. Add `e2e/screenshots/` to `.gitignore` after the PR is merged.
+
+The key requirement is that **verification evidence must be attached to the PR** so reviewers can see it. Screenshots must not be silently deleted.
+
+6. **Clean up after PR attachment:**
+Delete the temporary visual test file. Screenshots can be deleted locally after they are uploaded to the PR.
 
 ### For bugfixes specifically
 Repeat the same user action from Phase 2 that originally triggered the bug. The screenshot should clearly show the corrected behavior.

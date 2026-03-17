@@ -48,7 +48,9 @@ git push -u origin HEAD
 
 ## Step 4: Open PR
 
-**For bugfixes:** If `fix-verified.png` exists from Phase 7, include a before/after evidence section in the PR body describing what was broken (Phase 2 screenshot) and what it looks like now (Phase 7 screenshot). Since GitHub PRs accept markdown but not local images, describe the screenshots textually (what the user sees) rather than embedding image links.
+**For UI changes (features and bugfixes):** Verification screenshots from Phase 7 must be attached to the PR. After creating the PR, upload screenshots as a PR comment using `gh pr comment` so reviewers can see the visual evidence.
+
+**For bugfixes specifically:** Include a before/after evidence section in the PR body describing what was broken (Phase 2 screenshot) and what it looks like now (Phase 7 screenshot).
 
 Create the PR with `gh pr create` if available. Use a title under 70 characters and a body shaped like:
 
@@ -58,6 +60,9 @@ Create the PR with `gh pr create` if available. Use a title under 70 characters 
 
 ## Use Cases
 - UC-XXX-NN: <title>
+
+## Visual Verification (UI changes)
+<screenshots attached as PR comment after creation>
 
 ## Verification Evidence (bugfixes only)
 **Before fix:** <describe what the user saw — the broken behavior from Phase 2>
@@ -75,11 +80,34 @@ Create the PR with `gh pr create` if available. Use a title under 70 characters 
 - <Other doc updates if applicable>
 ```
 
-## Step 5: Cleanup Temporary Screenshots
+## Step 5: Upload Visual Evidence to PR (UI changes)
 
-Delete any temporary screenshots created during the pipeline using shell-appropriate commands.
+**Required when:** Phase 7 captured verification screenshots for UI changes.
 
-These files are evidence artifacts — they served their purpose during verification and should not be committed to the repository.
+After the PR is created, upload screenshots as a PR comment:
+```bash
+gh pr comment <PR_NUMBER> --body "$(cat <<'EVIDENCE'
+## Visual Verification
+
+### <Description of state 1>
+![<alt text>](<image-url>)
+
+### <Description of state 2>
+![<alt text>](<image-url>)
+EVIDENCE
+)"
+```
+
+**Image upload method:** GitHub does not support direct image upload via `gh`. Instead:
+1. Commit screenshots to the PR branch in a temporary `e2e/screenshots/` directory before pushing
+2. Reference them in the PR comment using their raw GitHub URL
+3. After the PR is merged, the screenshots persist in git history as verification evidence
+
+**Alternative:** If committing screenshots is undesirable, describe the verification results textually in the PR comment (what was verified, what was seen on screen, viewport sizes tested).
+
+## Step 6: Cleanup
+
+Delete the temporary visual test file (not the screenshots if they were committed to the branch).
 
 ## Step 6: Report to User
 Return the PR URL and a summary:
@@ -89,10 +117,11 @@ Return the PR URL and a summary:
 - Any follow-up items
 
 ## Checklist
-- [ ] Only intended files staged (no screenshots, no `.env`)
+- [ ] Only intended files staged (no `.env`)
 - [ ] Commit message follows conventions
 - [ ] Pushed to feature branch
 - [ ] PR created targeting master, or blocker clearly reported if tooling prevents completion
-- [ ] **(Bugfixes)** PR body includes verification evidence section
-- [ ] Temporary screenshots deleted
+- [ ] **(UI changes)** Visual verification screenshots attached to PR (comment or committed)
+- [ ] **(Bugfixes)** PR body includes before/after verification evidence section
+- [ ] Temporary visual test file deleted
 - [ ] PR URL returned to user, or blocker clearly reported if the PR could not be created
