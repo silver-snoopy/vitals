@@ -1,4 +1,4 @@
-import { LineChart, Line, ResponsiveContainer } from 'recharts';
+import { LineChart, Line } from 'recharts';
 
 interface SparklineProps {
   data: Array<{ value: number }>;
@@ -7,21 +7,24 @@ interface SparklineProps {
   height?: number;
 }
 
-export function Sparkline({ data, color = '#0891B2', width = 80, height = 40 }: SparklineProps) {
+export function Sparkline({
+  data,
+  color = 'var(--color-primary)',
+  width = 80,
+  height = 40,
+}: SparklineProps) {
   if (data.length < 2) return null;
 
   return (
-    <ResponsiveContainer width={width} height={height}>
-      <LineChart data={data}>
-        <Line
-          type="monotone"
-          dataKey="value"
-          stroke={color}
-          strokeWidth={1.5}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <LineChart width={width} height={height} data={data}>
+      <Line
+        type="monotone"
+        dataKey="value"
+        stroke={color}
+        strokeWidth={1.5}
+        dot={false}
+        isAnimationActive={false}
+      />
+    </LineChart>
   );
 }
