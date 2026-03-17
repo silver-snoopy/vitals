@@ -53,6 +53,9 @@ dist/
 playwright-report/
 test-results/
 
+# Screenshots (generated, not versioned)
+docs/screenshots/
+
 # OS
 .DS_Store
 Thumbs.db
