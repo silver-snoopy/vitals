@@ -1,5 +1,42 @@
 # Personal Claude Preferences
 
+## Developer Setup (AI Tooling)
+
+New machine? Run the setup script to install required Claude Code plugins:
+
+```bash
+bash scripts/setup-claude.sh
+```
+
+Or install manually:
+
+```bash
+claude plugin install superpowers
+```
+
+### What's included in the repo
+
+| File | Purpose | Shared? |
+|------|---------|---------|
+| `AGENTS.md` | Cross-tool AI agent instructions | Yes |
+| `.github/copilot-instructions.md` | GitHub Copilot instructions | Yes |
+| `.claude/settings.json` | Hooks, permissions, enabled plugins | Yes |
+| `.claude/settings.local.json` | Machine-specific permissions | No (gitignored) |
+| `.claude/skills/` | Project-specific Claude Code skills | Yes |
+| `.mcp.json` | Shared MCP server declarations | Yes |
+
+### Required plugins
+
+- **superpowers** (`claude-plugins-official`) — brainstorming, planning, code review, TDD workflows
+
+### MCP servers
+
+Add project-scoped MCP servers via:
+```bash
+claude mcp add --scope project <name> <command>
+```
+These are stored in `.mcp.json` and shared with all team members.
+
 ## Communication Style
 - Be concise and direct
 - Prefer code examples over lengthy explanations

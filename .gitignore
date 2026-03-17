@@ -60,3 +60,6 @@ Thumbs.db
 # Local dev seed data (real health exports — never commit)
 /data/
 .superpowers/
+
+# Claude Code local settings (machine-specific permissions)
+.claude/settings.local.json
