@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Settings } from 'lucide-react';
 import { useDashboard } from '@/api/hooks/useDashboard';
 import type { DashboardData } from '@/api/hooks/useDashboard';
@@ -10,16 +10,17 @@ import { WeeklySummaryCard } from './WeeklySummaryCard';
 import { NutritionChart } from './NutritionChart';
 import { WorkoutVolumeChart } from './WorkoutVolumeChart';
 import { WeightChart } from './WeightChart';
-import { LatestReportPreview } from './LatestReportPreview';
+import { ReportPanel } from './ReportPanel';
 import { WidgetOrderSettings } from './WidgetOrderSettings';
 
+/** Widgets that appear in the right column (charts). */
 interface WidgetDef {
   id: WidgetId;
   halfWidth?: boolean;
-  render: (dashboard: DashboardData) => React.ReactNode;
+  render: (dashboard: DashboardData) => ReactNode;
 }
 
-const WIDGETS: WidgetDef[] = [
+const CHART_WIDGETS: WidgetDef[] = [
   {
     id: 'nutrition-chart',
     halfWidth: true,
@@ -34,24 +35,21 @@ const WIDGETS: WidgetDef[] = [
     id: 'weight-chart',
     render: (d) => <WeightChart biometrics={d.biometrics} />,
   },
-  {
-    id: 'weekly-summary',
-    render: (d) => (
-      <WeeklySummaryCard nutrition={d.nutrition} sessions={d.workouts} biometrics={d.biometrics} />
-    ),
-  },
-  {
-    id: 'latest-report',
-    render: () => <LatestReportPreview />,
-  },
 ];
 
-const WIDGET_MAP = new Map(WIDGETS.map((w) => [w.id, w]));
+const CHART_IDS = new Set<WidgetId>(['nutrition-chart', 'workout-volume-chart', 'weight-chart']);
+const CHART_MAP = new Map(CHART_WIDGETS.map((w) => [w.id, w]));
 
-function renderOrderedWidgets(order: WidgetId[], dashboard: DashboardData) {
-  const ordered = order.map((id) => WIDGET_MAP.get(id)).filter(Boolean) as WidgetDef[];
+/**
+ * On the two-column layout, only chart widgets are reorderable in the right column.
+ * On single-column, all widgets render in stored order with the left-column widgets
+ * (summary + report) placed at the top.
+ */
+function renderChartWidgets(order: WidgetId[], dashboard: DashboardData) {
+  const chartOrder = order.filter((id) => CHART_IDS.has(id));
+  const ordered = chartOrder.map((id) => CHART_MAP.get(id)).filter(Boolean) as WidgetDef[];
 
-  const elements: React.ReactNode[] = [];
+  const elements: ReactNode[] = [];
   let i = 0;
 
   while (i < ordered.length) {
@@ -109,7 +107,20 @@ export function DashboardPage() {
           <ChartSkeleton />
         </div>
       ) : (
-        <div className="space-y-6">{renderOrderedWidgets(order, dashboard)}</div>
+        <div className="grid grid-cols-1 gap-6 min-[1440px]:grid-cols-[380px_1fr] min-[1440px]:items-start min-[1700px]:grid-cols-[440px_1fr]">
+          {/* Left column: summary + report (sticky on large screens) */}
+          <div className="space-y-5 min-[1440px]:sticky min-[1440px]:top-6 min-[1440px]:max-h-[calc(100vh-3rem)] min-[1440px]:overflow-y-auto min-[1440px]:scrollbar-thin">
+            <WeeklySummaryCard
+              nutrition={dashboard.nutrition}
+              sessions={dashboard.workouts}
+              biometrics={dashboard.biometrics}
+            />
+            <ReportPanel />
+          </div>
+
+          {/* Right column: charts */}
+          <div className="space-y-6">{renderChartWidgets(order, dashboard)}</div>
+        </div>
       )}
     </div>
   );

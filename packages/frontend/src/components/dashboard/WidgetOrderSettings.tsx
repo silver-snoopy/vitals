@@ -1,9 +1,14 @@
 import { ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWidgetOrderStore, WIDGET_LABELS } from '@/store/useWidgetOrderStore';
+import type { WidgetId } from '@/store/useWidgetOrderStore';
+
+/** Only chart widgets are reorderable — summary and report are pinned in the left column. */
+const CHART_IDS = new Set<WidgetId>(['nutrition-chart', 'workout-volume-chart', 'weight-chart']);
 
 export function WidgetOrderSettings() {
   const order = useWidgetOrderStore((s) => s.order);
+  const chartOrder = order.filter((id) => CHART_IDS.has(id));
   const moveUp = useWidgetOrderStore((s) => s.moveUp);
   const moveDown = useWidgetOrderStore((s) => s.moveDown);
   const reset = useWidgetOrderStore((s) => s.reset);
@@ -17,8 +22,11 @@ export function WidgetOrderSettings() {
           Reset
         </Button>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Reorder chart widgets (summary &amp; report are pinned).
+      </p>
       <ul className="space-y-1">
-        {order.map((id, idx) => (
+        {chartOrder.map((id, idx) => (
           <li
             key={id}
             className="flex items-center justify-between rounded-md bg-muted/50 px-2 py-1"
@@ -38,7 +46,7 @@ export function WidgetOrderSettings() {
                 variant="ghost"
                 size="icon-xs"
                 onClick={() => moveDown(id)}
-                disabled={idx === order.length - 1}
+                disabled={idx === chartOrder.length - 1}
                 aria-label={`Move ${WIDGET_LABELS[id]} down`}
               >
                 <ChevronDown className="h-3.5 w-3.5" />

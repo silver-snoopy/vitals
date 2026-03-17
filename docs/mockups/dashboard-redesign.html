@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vitals Dashboard — Redesign Mockup</title>
+    <style>
+      :root {
+        --bg: #0a0a0b;
+        --surface: #141417;
+        --surface-hover: #1c1c21;
+        --border: #27272a;
+        --text: #fafafa;
+        --text-muted: #a1a1aa;
+        --text-dim: #71717a;
+        --accent: #3b82f6;
+        --red: #ef4444;
+        --amber: #f59e0b;
+        --green: #22c55e;
+        --cyan: #06b6d4;
+        --purple: #a855f7;
+        --orange: #f97316;
+        --radius: 12px;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        padding: 0;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .header h1 {
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .date-picker {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .date-picker .preset {
+        padding: 4px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .date-picker .preset.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
+      .date-picker .preset:hover:not(.active) {
+        background: var(--surface-hover);
+      }
+
+      /* ── Sidebar placeholder (simulates real app nav) ── */
+      .app-shell {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .sidebar-placeholder {
+        width: 224px;
+        flex-shrink: 0;
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        padding: 20px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .sidebar-logo {
+        font-size: 18px;
+        font-weight: 700;
+        padding: 8px 12px 16px;
+        color: var(--text);
+      }
+
+      .sidebar-link {
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.15s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .sidebar-link:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+      }
+      .sidebar-link.active {
+        background: rgba(59, 130, 246, 0.1);
+        color: var(--accent);
+      }
+
+      .sidebar-icon {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+      }
+
+      .main-content {
+        flex: 1;
+        min-width: 0;
+        padding: 24px;
+      }
+
+      @media (max-width: 767px) {
+        .sidebar-placeholder {
+          display: none;
+        }
+      }
+
+      /* ── Two-column layout ── */
+      /* Breakpoint at 1440px because sidebar eats 224px → content area ~1216px */
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      @media (min-width: 1440px) {
+        .dashboard-grid {
+          grid-template-columns: 380px 1fr;
+          align-items: start;
+        }
+      }
+
+      @media (min-width: 1700px) {
+        .dashboard-grid {
+          grid-template-columns: 440px 1fr;
+        }
+      }
+
+      /* ── Left column (sticky on xl+) ── */
+      .left-column {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      @media (min-width: 1440px) {
+        .left-column {
+          position: sticky;
+          top: 24px;
+          max-height: calc(100vh - 48px);
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: var(--border) transparent;
+        }
+      }
+
+      .right-column {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* ── Cards ── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: 16px 20px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .card-subtitle {
+        font-size: 12px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+
+      .card-body {
+        padding: 16px 20px 20px;
+      }
+
+      /* ── Summary stat cards ── */
+      .stat-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+      }
+
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        text-align: center;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-dim);
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .stat-unit {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 400;
+      }
+
+      /* ── Report panel ── */
+      .report-panel .card-header {
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .report-summary {
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.6;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      /* ── Action items ── */
+      .action-items-header {
+        padding: 14px 20px 8px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-dim);
+      }
+
+      .action-item {
+        display: flex;
+        gap: 12px;
+        padding: 10px 20px;
+        border-bottom: 1px solid var(--border);
+        align-items: flex-start;
+        transition: background 0.1s;
+      }
+
+      .action-item:last-child {
+        border-bottom: none;
+      }
+      .action-item:hover {
+        background: var(--surface-hover);
+      }
+
+      .action-priority {
+        width: 4px;
+        border-radius: 2px;
+        min-height: 36px;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .priority-high {
+        background: var(--red);
+      }
+      .priority-medium {
+        background: var(--amber);
+      }
+      .priority-low {
+        background: var(--accent);
+      }
+
+      .action-content {
+        flex: 1;
+      }
+
+      .action-category {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-dim);
+        margin-bottom: 2px;
+      }
+
+      .action-text {
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.5;
+      }
+
+      .priority-badge {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        padding: 2px 8px;
+        border-radius: 4px;
+        flex-shrink: 0;
+        margin-top: 2px;
+      }
+
+      .badge-high {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+      }
+      .badge-medium {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--amber);
+      }
+      .badge-low {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--accent);
+      }
+
+      /* ── Scorecard ── */
+      .scorecard-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        padding: 12px 20px 16px;
+      }
+
+      .scorecard-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        background: var(--bg);
+        border-radius: 8px;
+      }
+
+      .score-ring {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .score-good {
+        background: rgba(34, 197, 94, 0.15);
+        color: var(--green);
+      }
+      .score-ok {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--amber);
+      }
+      .score-bad {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+      }
+
+      .score-label {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      /* ── Expandable sections ── */
+      .section-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-top: 1px solid var(--border);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-muted);
+        transition: all 0.15s;
+      }
+
+      .section-toggle:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+      }
+
+      .section-toggle .chevron {
+        font-size: 16px;
+        transition: transform 0.2s;
+      }
+
+      .section-content {
+        padding: 0 20px 16px;
+        font-size: 13px;
+        color: var(--text-muted);
+        line-height: 1.7;
+        display: none;
+      }
+
+      .section-content.open {
+        display: block;
+      }
+
+      /* ── Chart placeholders ── */
+      .chart-area {
+        height: 200px;
+        background: linear-gradient(180deg, transparent 0%, rgba(59, 130, 246, 0.03) 100%);
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .chart-line {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+      }
+
+      .chart-line svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .chart-bar-group {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-around;
+        height: 100%;
+        padding: 0 12px;
+      }
+
+      .chart-bar {
+        width: 24px;
+        border-radius: 4px 4px 0 0;
+        background: var(--cyan);
+        opacity: 0.7;
+      }
+
+      .chart-legend {
+        display: flex;
+        gap: 16px;
+        padding-top: 8px;
+      }
+
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+
+      .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      /* ── Chart pair (half-width on right column) ── */
+      .chart-pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+
+      @media (max-width: 1439px) {
+        .chart-pair {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── Annotation labels ── */
+      .annotation {
+        position: fixed;
+        background: var(--accent);
+        color: white;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 4px;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      /* ── Refresh/generate button ── */
+      .btn-ghost {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 6px;
+        transition: all 0.15s;
+        font-size: 16px;
+      }
+
+      .btn-ghost:hover {
+        background: var(--surface-hover);
+        color: var(--text);
+      }
+
+      /* ── Mockup label ── */
+      .mockup-banner {
+        text-align: center;
+        padding: 10px;
+        margin-bottom: 20px;
+        background: rgba(59, 130, 246, 0.1);
+        border: 1px dashed var(--accent);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--accent);
+        font-weight: 500;
+      }
+
+      .mockup-banner em {
+        font-style: normal;
+        opacity: 0.7;
+      }
+
+      /* ── Responsive note ── */
+      @media (max-width: 1439px) {
+        .responsive-note {
+          display: block;
+          text-align: center;
+          padding: 12px;
+          margin-bottom: 16px;
+          background: rgba(245, 158, 11, 0.1);
+          border: 1px dashed var(--amber);
+          border-radius: 8px;
+          font-size: 12px;
+          color: var(--amber);
+        }
+      }
+      @media (min-width: 1440px) {
+        .responsive-note {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <!-- Sidebar -->
+      <nav class="sidebar-placeholder">
+        <div class="sidebar-logo">Vitals</div>
+        <div class="sidebar-link active"><span class="sidebar-icon">◫</span> Dashboard</div>
+        <div class="sidebar-link"><span class="sidebar-icon">🍎</span> Nutrition</div>
+        <div class="sidebar-link"><span class="sidebar-icon">💪</span> Workouts</div>
+        <div class="sidebar-link"><span class="sidebar-icon">📊</span> Reports</div>
+      </nav>
+
+      <!-- Main Content Area -->
+      <div class="main-content">
+        <div class="mockup-banner">
+          WIREFRAME MOCKUP — Dashboard Redesign Proposal
+          <br /><em>Resize browser to 1280px+ to see two-column layout</em>
+        </div>
+
+        <div class="responsive-note">
+          ⚠ Viewing single-column (mobile/tablet) layout. Widen to 1280px+ for the two-column
+          desktop layout.
+        </div>
+
+        <!-- Header -->
+        <div class="header">
+          <h1>Dashboard</h1>
+          <div class="date-picker">
+            <button class="preset">7d</button>
+            <button class="preset active">14d</button>
+            <button class="preset">30d</button>
+            <button class="preset">90d</button>
+          </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="dashboard-grid">
+          <!-- ════════ LEFT COLUMN: Report + Summary ════════ -->
+          <div class="left-column">
+            <!-- Summary Stats -->
+            <div class="stat-row">
+              <div class="stat-card">
+                <div class="stat-label">Avg Calories</div>
+                <div class="stat-value">2,180 <span class="stat-unit">kcal</span></div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Workouts</div>
+                <div class="stat-value">5</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Avg Weight</div>
+                <div class="stat-value">78.3 <span class="stat-unit">kg</span></div>
+              </div>
+            </div>
+
+            <!-- AI Report Panel -->
+            <div class="card report-panel">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">AI Weekly Report</div>
+                  <div class="card-subtitle">Mar 3 – Mar 17, 2026</div>
+                </div>
+                <button class="btn-ghost" title="Regenerate">↻</button>
+              </div>
+
+              <!-- Summary -->
+              <div class="report-summary">
+                Strong training consistency this week with 5 sessions completed. Protein intake
+                averaged 142g/day — slightly below the 160g target needed to support current
+                training volume. Body weight stable at 78.3kg, trending down 0.4kg over the period.
+              </div>
+
+              <!-- Action Items (always visible, prominent) -->
+              <div class="action-items-header">Action Items</div>
+
+              <div class="action-item">
+                <div class="action-priority priority-high"></div>
+                <div class="action-content">
+                  <div class="action-category">nutrition</div>
+                  <div class="action-text">
+                    Increase daily protein to 160g — add a post-workout shake or 200g Greek yogurt
+                    to close the 18g gap.
+                  </div>
+                </div>
+                <span class="priority-badge badge-high">high</span>
+              </div>
+
+              <div class="action-item">
+                <div class="action-priority priority-high"></div>
+                <div class="action-content">
+                  <div class="action-category">recovery</div>
+                  <div class="action-text">
+                    Add a dedicated mobility session on rest days — hip flexor tightness is limiting
+                    squat depth.
+                  </div>
+                </div>
+                <span class="priority-badge badge-high">high</span>
+              </div>
+
+              <div class="action-item">
+                <div class="action-priority priority-medium"></div>
+                <div class="action-content">
+                  <div class="action-category">workout</div>
+                  <div class="action-text">
+                    Progressive overload on bench press has stalled — try adding a pause rep
+                    variation for 2 weeks.
+                  </div>
+                </div>
+                <span class="priority-badge badge-medium">medium</span>
+              </div>
+
+              <div class="action-item">
+                <div class="action-priority priority-low"></div>
+                <div class="action-content">
+                  <div class="action-category">general</div>
+                  <div class="action-text">
+                    Consider tracking sleep duration — recovery metrics would improve report
+                    accuracy.
+                  </div>
+                </div>
+                <span class="priority-badge badge-low">low</span>
+              </div>
+
+              <!-- Scorecard -->
+              <div
+                class="action-items-header"
+                style="border-top: 1px solid var(--border); padding-top: 14px"
+              >
+                Scorecard
+              </div>
+              <div class="scorecard-grid">
+                <div class="scorecard-item">
+                  <div class="score-ring score-good">8</div>
+                  <div class="score-label">Training</div>
+                </div>
+                <div class="scorecard-item">
+                  <div class="score-ring score-ok">6</div>
+                  <div class="score-label">Nutrition</div>
+                </div>
+                <div class="scorecard-item">
+                  <div class="score-ring score-good">7</div>
+                  <div class="score-label">Recovery</div>
+                </div>
+                <div class="scorecard-item">
+                  <div class="score-ring score-good">8</div>
+                  <div class="score-label">Consistency</div>
+                </div>
+              </div>
+
+              <!-- Expandable sections -->
+              <div class="section-toggle" onclick="toggleSection(this)">
+                <span>What's Working</span>
+                <span class="chevron">›</span>
+              </div>
+              <div class="section-content">
+                Training frequency is excellent — 5 sessions/week is well above the 4-session
+                target. Upper body volume is progressively increasing. Caloric intake is consistent
+                and aligned with maintenance goals.
+              </div>
+
+              <div class="section-toggle" onclick="toggleSection(this)">
+                <span>⚠ Hazards</span>
+                <span class="chevron">›</span>
+              </div>
+              <div class="section-content">
+                Protein deficit of ~18g/day compounds over the week to ~126g missed protein. Hip
+                mobility limitation could lead to compensatory lower back strain during heavy
+                squats. No deload week scheduled in the last 6 weeks.
+              </div>
+
+              <div class="section-toggle" onclick="toggleSection(this)">
+                <span>Recommendations</span>
+                <span class="chevron">›</span>
+              </div>
+              <div class="section-content">
+                Schedule a deload week within the next 2 weeks. Replace one leg press session with
+                front squats to address mobility under load. Add a casein shake before bed to
+                passively boost protein by 25g.
+              </div>
+
+              <div class="section-toggle" onclick="toggleSection(this)">
+                <span>Nutrition Analysis</span>
+                <span class="chevron">›</span>
+              </div>
+              <div class="section-content">
+                Average macros: 2,180 kcal / 142g protein / 245g carbs / 78g fat. Weekday compliance
+                is strong but weekend calories spike by ~300 kcal due to higher fat intake. Fiber
+                intake averaging 22g — below the 30g recommendation.
+              </div>
+
+              <div class="section-toggle" onclick="toggleSection(this)">
+                <span>Training Load</span>
+                <span class="chevron">›</span>
+              </div>
+              <div class="section-content">
+                Total weekly volume: 48,200 kg. Upper body volume up 8% from last week. Lower body
+                volume flat — attributed to one skipped leg session replaced with cardio. Bench
+                press working sets unchanged at 80kg × 5 for 3 consecutive weeks.
+              </div>
+            </div>
+          </div>
+
+          <!-- ════════ RIGHT COLUMN: Charts ════════ -->
+          <div class="right-column">
+            <!-- Nutrition + Workout side by side -->
+            <div class="chart-pair">
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Nutrition Trends</div>
+                </div>
+                <div class="card-body">
+                  <div class="chart-area">
+                    <svg viewBox="0 0 400 180" preserveAspectRatio="none">
+                      <polyline
+                        fill="none"
+                        stroke="#f97316"
+                        stroke-width="2"
+                        points="0,120 30,110 60,90 90,100 120,85 150,95 180,80 210,70 240,75 270,65 300,70 330,60 360,55 400,50"
+                      />
+                      <polyline
+                        fill="none"
+                        stroke="#3b82f6"
+                        stroke-width="2"
+                        points="0,150 30,145 60,140 90,148 120,135 150,130 180,138 210,125 240,120 270,128 300,118 330,115 360,110 400,108"
+                      />
+                      <polyline
+                        fill="none"
+                        stroke="#eab308"
+                        stroke-width="1.5"
+                        opacity="0.6"
+                        points="0,130 30,125 60,118 90,122 120,115 150,110 180,108 210,100 240,105 270,98 300,95 330,92 360,88 400,85"
+                      />
+                    </svg>
+                  </div>
+                  <div class="chart-legend">
+                    <div class="legend-item">
+                      <div class="legend-dot" style="background: #f97316"></div>
+                      Calories
+                    </div>
+                    <div class="legend-item">
+                      <div class="legend-dot" style="background: #3b82f6"></div>
+                      Protein
+                    </div>
+                    <div class="legend-item">
+                      <div class="legend-dot" style="background: #eab308"></div>
+                      Carbs
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <div class="card-title">Workout Volume (kg)</div>
+                </div>
+                <div class="card-body">
+                  <div class="chart-area">
+                    <div class="chart-bar-group">
+                      <div class="chart-bar" style="height: 55%"></div>
+                      <div class="chart-bar" style="height: 0%"></div>
+                      <div class="chart-bar" style="height: 72%"></div>
+                      <div class="chart-bar" style="height: 0%"></div>
+                      <div class="chart-bar" style="height: 68%"></div>
+                      <div class="chart-bar" style="height: 80%"></div>
+                      <div class="chart-bar" style="height: 0%"></div>
+                      <div class="chart-bar" style="height: 60%"></div>
+                      <div class="chart-bar" style="height: 0%"></div>
+                      <div class="chart-bar" style="height: 75%"></div>
+                      <div class="chart-bar" style="height: 0%"></div>
+                      <div class="chart-bar" style="height: 85%"></div>
+                      <div class="chart-bar" style="height: 65%"></div>
+                      <div class="chart-bar" style="height: 0%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Weight chart (full width) -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Body Weight (kg)</div>
+              </div>
+              <div class="card-body">
+                <div class="chart-area" style="height: 160px">
+                  <svg viewBox="0 0 400 140" preserveAspectRatio="none">
+                    <polyline
+                      fill="none"
+                      stroke="#a855f7"
+                      stroke-width="2.5"
+                      points="0,80 30,78 60,82 90,75 120,70 150,72 180,68 210,65 240,68 270,62 300,60 330,58 360,55 400,52"
+                    />
+                    <polyline
+                      fill="none"
+                      stroke="#a855f7"
+                      stroke-width="1"
+                      stroke-dasharray="4,4"
+                      opacity="0.3"
+                      points="0,66 400,66"
+                    />
+                  </svg>
+                </div>
+                <div class="chart-legend">
+                  <div class="legend-item">
+                    <div class="legend-dot" style="background: #a855f7"></div>
+                    Weight
+                  </div>
+                  <div class="legend-item" style="opacity: 0.5">
+                    <div class="legend-dot" style="background: #a855f7; opacity: 0.4"></div>
+                    Trend
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- end main-content -->
+    </div>
+    <!-- end app-shell -->
+
+    <script>
+      function toggleSection(el) {
+        const content = el.nextElementSibling;
+        const chevron = el.querySelector('.chevron');
+        const isOpen = content.classList.toggle('open');
+        chevron.style.transform = isOpen ? 'rotate(90deg)' : 'rotate(0deg)';
+      }
+    </script>
+  </body>
+</html>

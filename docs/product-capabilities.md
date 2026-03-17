@@ -15,6 +15,8 @@ and biometrics (Apple Health) in a single unified dashboard.
 | UC-DASH-01 | Default dashboard view | Implemented |
 | UC-DASH-02 | Custom date range selection | Implemented |
 | UC-DASH-03 | Widget order customization | Implemented |
+| UC-DASH-04 | Two-column dashboard layout | Implemented |
+| UC-DASH-05 | Detailed AI report panel | Implemented |
 
 ### UC-DASH-01: Default dashboard view
 
@@ -27,8 +29,8 @@ and biometrics (Apple Health) in a single unified dashboard.
 - Workout Volume: bar chart showing total volume (weight x reps) per session
 - Body Weight: line chart with auto-scaled Y axis
 - Weekly Summary: three stat cards — Avg Daily Calories (kcal), Workout Sessions (count), Avg Weight (kg)
-- Latest AI Report: preview with summary text and top 3 action items with priority badges
-- Default date range: last 30 days
+- AI Report Panel: full report with summary, all action items (colored priority bars), scorecard, and expandable sections
+- Default date range: last 14 days
 - Loading state shows skeleton placeholders; errors display inline message
 
 **E2E Coverage:** `e2e/dashboard.spec.ts` — UC1
@@ -41,7 +43,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 **Behavior:**
 - Date range picker in top bar (desktop) or mobile header (compact)
 - Popover with calendar (2 months desktop, 1 month mobile)
-- Quick presets on mobile: 7d, 30d, 90d
+- Quick presets on mobile: 7d, 14d, 30d, 90d
 - Selecting a range triggers refetch of all dashboard data
 - Range persists across page navigation via Zustand store
 
@@ -54,11 +56,39 @@ and biometrics (Apple Health) in a single unified dashboard.
 
 **Behavior:**
 - Settings gear icon in dashboard header opens widget order panel
-- Move up/down buttons per widget
+- Move up/down buttons for chart widgets only (summary & report are pinned in left column on wide screens)
 - Reset to default button
 - Order persisted in localStorage
 
 **E2E Coverage:** None
+
+### UC-DASH-04: Two-column dashboard layout
+
+**As a** user on a large screen, **I want** the report and charts side by side,
+**so that** I can cross-reference insights with visual data without scrolling.
+
+**Behavior:**
+- At 1440px+ viewport width, dashboard splits into two columns
+- Left column (380–440px, sticky): Weekly Summary stats + AI Report Panel
+- Right column: charts stacked (Nutrition + Workout Volume paired, Body Weight full-width)
+- Below 1440px: single-column fallback with all widgets stacked vertically
+- Left column scrolls independently with sticky positioning
+
+**E2E Coverage:** `e2e/dashboard.spec.ts` — UC1
+
+### UC-DASH-05: Detailed AI report panel
+
+**As a** user, **I want** the AI report to prominently show action items and expandable detail sections,
+**so that** I can quickly see what to act on and dive deeper when needed.
+
+**Behavior:**
+- Always visible: summary paragraph + all action items with colored left-border (red=high, amber=medium, blue=low), category label, and priority badge
+- Scorecard: 2×2 grid of score rings (green ≥7, amber ≥5, red <5) when report sections include scorecard data
+- Expandable sections: What's Working, Hazards, Recommendations, Nutrition Analysis, Training Load, Biometrics Overview, Cross-Domain Correlation — rendered as markdown, collapsed by default
+- Regenerate button in header with loading spinner state
+- Graceful degradation: if no report sections exist, only summary + action items are shown
+
+**E2E Coverage:** `e2e/dashboard.spec.ts` — UC1
 
 ---
 

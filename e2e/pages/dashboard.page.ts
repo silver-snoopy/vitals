@@ -39,7 +39,7 @@ export class DashboardPage {
     this.workoutSessions = page.getByText('Workout Sessions');
     this.avgWeight = page.getByText('Avg Weight');
 
-    this.latestReport = page.getByText('Latest AI Report');
+    this.latestReport = page.getByText('AI Weekly Report');
 
     // Desktop topbar date picker (the one with text-sm, not the compact mobile one)
     this.datePickerTrigger = page
