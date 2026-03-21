@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   createConversation,
+  getConversation,
   listConversations,
   addMessage,
   getMessages,
@@ -35,6 +36,19 @@ const fakeMsgRow = {
 
 describe('conversation queries', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('getConversation returns null when no rows returned', async () => {
+    const pool = makePool([]);
+    const result = await getConversation(pool, 'uuid-nonexistent');
+    expect(result).toBeNull();
+  });
+
+  it('getConversation returns mapped row when found', async () => {
+    const pool = makePool([fakeConvRow]);
+    const result = await getConversation(pool, 'uuid-1');
+    expect(result?.id).toBe('uuid-1');
+    expect(result?.title).toBe('My chat');
+  });
 
   it('createConversation inserts and returns mapped row', async () => {
     const pool = makePool([fakeConvRow]);

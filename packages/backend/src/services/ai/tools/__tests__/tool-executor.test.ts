@@ -68,6 +68,39 @@ describe('executeTool', () => {
     expect(parsed.error).toMatch(/unknown tool/i);
   });
 
+  it('query_workouts returns JSON string', async () => {
+    const result = await executeTool(
+      'query_workouts',
+      { startDate: '2026-03-01', endDate: '2026-03-07' },
+      mockDb,
+      'default',
+    );
+    const parsed = JSON.parse(result) as unknown[];
+    expect(Array.isArray(parsed)).toBe(true);
+  });
+
+  it('query_exercise_progress with optional dates omitted', async () => {
+    const result = await executeTool(
+      'query_exercise_progress',
+      { exerciseName: 'Squat' },
+      mockDb,
+      'default',
+    );
+    const parsed = JSON.parse(result) as { sets: unknown[] };
+    expect(parsed.sets).toBeDefined();
+  });
+
+  it('query_exercise_progress with explicit date range', async () => {
+    const result = await executeTool(
+      'query_exercise_progress',
+      { exerciseName: 'Bench Press', startDate: '2026-03-01', endDate: '2026-03-07' },
+      mockDb,
+      'default',
+    );
+    const parsed = JSON.parse(result) as { sets: unknown[] };
+    expect(parsed.sets).toBeDefined();
+  });
+
   it('invalid date returns error JSON without throwing', async () => {
     const result = await executeTool(
       'query_nutrition',
