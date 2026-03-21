@@ -117,8 +117,10 @@ const reportsFixture = {
         nutritionAnalysis: '',
         trainingLoad: '',
         crossDomainCorrelation: '',
-        whatsWorking: '',
-        hazards: '',
+        whatsWorking:
+          '- Consistent calorie tracking every day\n- Hit protein targets 5 out of 7 days\n- Workout frequency on track',
+        hazards:
+          '- Fiber intake below 25g most days\n- No dedicated recovery sessions\n- Sleep data missing',
         recommendations: '',
       },
       aiProvider: 'gemini',
