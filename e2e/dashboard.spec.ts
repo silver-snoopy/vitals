@@ -49,17 +49,17 @@ test.describe('Dashboard', () => {
       await expect(aiCard.locator('.tabular-nums')).toHaveText('7.2/10');
     });
 
-    test('renders report alert bar with summary', async () => {
-      // Report summary from fixture
+    test('renders insights panel with summary and actions', async () => {
+      // Report summary from fixture (full text, not truncated)
       await expect(dashboard.page.getByText('Great progress this week')).toBeVisible();
-      // View link
-      await expect(dashboard.page.getByText('View →')).toBeVisible();
-      // Score badge
-      await expect(dashboard.page.getByText('Score: 7.2/10')).toBeVisible();
+      // View Report link
+      await expect(dashboard.page.getByText('View Report →')).toBeVisible();
+      // Action items section header
+      await expect(dashboard.page.getByText(/This Week.s Focus/)).toBeVisible();
     });
 
-    test('report alert bar View link navigates to /reports', async ({ page }) => {
-      await page.getByText('View →').click();
+    test('insights panel View Report link navigates to /reports', async ({ page }) => {
+      await page.getByText('View Report →').first().click();
       await expect(page).toHaveURL(/\/reports/);
     });
   });
@@ -152,8 +152,8 @@ test.describe('Dashboard Mobile', () => {
     await expect(scrollContainer).toBeVisible();
   });
 
-  test('report alert bar is visible without scrolling', async ({ page }) => {
-    await expect(page.getByText('View →')).toBeVisible();
+  test('insights panel is visible without scrolling', async ({ page }) => {
+    await expect(page.getByText('View Report →')).toBeVisible();
   });
 
   test('charts are swipeable with dot indicators', async ({ page }) => {

@@ -16,7 +16,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 | UC-DASH-02 | Custom date range selection | Implemented |
 | ~~UC-DASH-03~~ | ~~Widget order customization~~ | Removed (Phase C) |
 | UC-DASH-04 | Bento grid layout | Implemented |
-| UC-DASH-05 | Report alert bar | Implemented |
+| UC-DASH-05 | Insights panel | Implemented |
 | UC-DASH-06 | KPI strip with trends | Implemented |
 | UC-DASH-07 | Macro split chart | Implemented |
 | UC-DASH-08 | Activity heatmap | Implemented |
@@ -28,7 +28,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 **so that** I can quickly assess my recent trends.
 
 **Behavior:**
-- Dashboard displays: KPI strip, report alert bar, bento chart grid
+- Dashboard displays: KPI strip, insights panel, bento chart grid
 - KPI strip: 5 compact metric cards — Avg Calories, Sessions, Weight, Protein, AI Score
 - Each KPI card shows value, trend arrow (▲/▼/→), and sparkline where applicable
 - Charts: Nutrition Trends, Body Weight, Workout Volume, Macro Split donut, Activity Heatmap
@@ -63,14 +63,19 @@ and biometrics (Apple Health) in a single unified dashboard.
 
 **E2E Coverage:** `e2e/dashboard.spec.ts` — UC-DASH: Bento grid layout
 
-### UC-DASH-05: Report alert bar
+### UC-DASH-05: Insights panel
 
-**As a** user, **I want** a compact report summary on the dashboard,
-**so that** I can see my latest AI insights without the report dominating the page.
+**As a** user, **I want** to see actionable AI insights directly on the dashboard,
+**so that** I can immediately understand my focus areas without navigating to Reports.
 
 **Behavior:**
-- Single-line bar showing: report summary (truncated to 60 chars), AI score badge, action item count, "View →" link
-- Links to /reports page
+- Score ring: SVG circular indicator showing overall AI score (color-coded: green ≥7, amber ≥5, red <5)
+- Full summary text (not truncated), period dates, "View Report →" link
+- Top 3 action items: priority-colored cards with category labels, action text (2-line clamp), priority badges
+- If >3 items: "+N more in full report" link
+- Focus areas: "What's Working" (emerald tint) and "Watch Out" (amber tint) cards with extracted bullet points from report sections
+- Desktop: 3-column action items grid, 2-column focus areas
+- Mobile: all sections stack vertically, score ring centered
 - If no report: "No report yet — Generate →"
 - If generating: spinner with "Generating report…"
 

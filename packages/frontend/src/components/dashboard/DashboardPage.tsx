@@ -4,7 +4,7 @@ import { KpiCard } from '@/components/ui/kpi-card';
 import { Sparkline } from '@/components/charts/Sparkline';
 import { ChartSkeleton } from '@/components/ui/LoadingSkeleton';
 import { computeKpiData } from './kpi-helpers';
-import { ReportAlertBar } from './ReportAlertBar';
+import { InsightsPanel } from './InsightsPanel';
 import { NutritionChart } from './NutritionChart';
 import { WorkoutVolumeChart } from './WorkoutVolumeChart';
 import { WeightChart } from './WeightChart';
@@ -83,8 +83,8 @@ export function DashboardPage() {
         ))}
       </div>
 
-      {/* Report Alert Bar */}
-      <ReportAlertBar />
+      {/* Insights Panel */}
+      <InsightsPanel />
 
       {/* Bento grid — desktop/tablet */}
       <div className="hidden md:grid md:grid-cols-2 xl:grid-cols-3 gap-6">

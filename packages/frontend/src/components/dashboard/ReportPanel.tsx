@@ -10,26 +10,9 @@ import { useReportGenerationStore } from '@/store/useReportGenerationStore';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { GenerateReportDialog } from '@/components/reports/GenerateReportDialog';
 import { cn } from '@/lib/utils';
+import { priorityColor, priorityVariant, scoreColor } from '@/components/reports/report-utils';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
-const priorityColor: Record<ActionItem['priority'], string> = {
-  high: 'border-l-red-500',
-  medium: 'border-l-amber-500',
-  low: 'border-l-blue-500',
-};
-
-const priorityVariant: Record<ActionItem['priority'], 'destructive' | 'secondary' | 'outline'> = {
-  high: 'destructive',
-  medium: 'secondary',
-  low: 'outline',
-};
-
-function scoreColor(score: number) {
-  if (score >= 7) return 'bg-green-500/15 text-green-500';
-  if (score >= 5) return 'bg-amber-500/15 text-amber-500';
-  return 'bg-red-500/15 text-red-500';
-}
 
 interface CollapsibleSectionProps {
   title: string;
