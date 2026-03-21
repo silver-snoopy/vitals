@@ -67,7 +67,7 @@ export function ChatPage() {
         void queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] });
         break;
       case 'error':
-        finalizeStreaming();
+        finalizeStreaming(event.error);
         break;
     }
   }

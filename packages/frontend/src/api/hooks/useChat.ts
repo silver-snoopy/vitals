@@ -62,7 +62,6 @@ export function useDeleteConversation() {
     mutationFn: (id: string) =>
       apiFetch(`/api/chat/conversations/${id}`, {
         method: 'DELETE',
-        headers: { 'x-api-key': import.meta.env.VITE_X_API_KEY ?? '' },
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['chat', 'conversations'] });
@@ -80,6 +79,8 @@ export function useChatWebSocket(
   const wsRef = useRef<WebSocket | null>(null);
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
+  // Queue for messages sent while WebSocket is still connecting
+  const pendingQueue = useRef<Array<{ message: string; conversationId?: string }>>([]);
 
   useEffect(() => {
     if (!active) return;
@@ -98,12 +99,27 @@ export function useChatWebSocket(
       ws = new WebSocket(`${wsUrl}/ws/chat?token=${token}`);
       wsRef.current = ws;
 
+      ws.onopen = () => {
+        retries = 0;
+        // Flush queued messages
+        const queued = pendingQueue.current.splice(0);
+        for (const item of queued) {
+          ws?.send(JSON.stringify({ message: item.message, conversationId: item.conversationId }));
+        }
+      };
+
       ws.onmessage = (event) => {
+        let data: WsChatEvent;
         try {
-          const data = JSON.parse(event.data as string) as WsChatEvent;
-          onEventRef.current(data);
+          data = JSON.parse(event.data as string) as WsChatEvent;
         } catch {
-          // ignore malformed
+          // Ignore genuinely malformed frames
+          return;
+        }
+        try {
+          onEventRef.current(data);
+        } catch (err) {
+          console.error('[useChatWebSocket] event handler error:', err);
         }
       };
 
@@ -114,11 +130,14 @@ export function useChatWebSocket(
           const delay = BASE_DELAY * 2 ** retries;
           retries++;
           retryTimer = setTimeout(connect, delay);
+        } else {
+          // Notify the UI that the connection is permanently lost
+          onEventRef.current({ type: 'error', error: 'Connection lost. Please refresh the page.' });
         }
       };
 
       ws.onerror = () => {
-        // handled in onclose
+        // Errors surface via onclose
       };
     }
 
@@ -127,6 +146,7 @@ export function useChatWebSocket(
     return () => {
       closed = true;
       wsRef.current = null;
+      pendingQueue.current = [];
       if (retryTimer) clearTimeout(retryTimer);
       if (ws && ws.readyState !== WebSocket.CLOSED) {
         ws.close();
@@ -137,8 +157,12 @@ export function useChatWebSocket(
   return {
     send: (message: string, conversationId?: string) => {
       const ws = wsRef.current;
-      if (ws && ws.readyState === WebSocket.OPEN) {
+      if (!ws) return;
+      if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ message, conversationId }));
+      } else if (ws.readyState === WebSocket.CONNECTING) {
+        // Queue for delivery once the connection opens
+        pendingQueue.current.push({ message, conversationId });
       }
     },
   };

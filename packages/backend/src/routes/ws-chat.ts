@@ -13,6 +13,7 @@ import type { AIMessage } from '@vitals/shared';
 import type { ToolCallRecord } from '../services/ai/tools/tool-executor.js';
 
 const DEFAULT_USER_ID = 'default';
+const MAX_MESSAGE_LENGTH = 4000;
 
 interface WsChatMessage {
   message: string;
@@ -37,7 +38,24 @@ export async function wsChatRoutes(
         }
       }
 
+      let isProcessing = false;
+
       socket.on('message', async (rawData: Buffer) => {
+        // Guard against concurrent messages corrupting conversation state
+        if (isProcessing) {
+          socket.send(JSON.stringify({ type: 'error', error: 'A message is already being processed' }));
+          return;
+        }
+        isProcessing = true;
+
+        try {
+          await handleMessage(rawData);
+        } finally {
+          isProcessing = false;
+        }
+      });
+
+      async function handleMessage(rawData: Buffer) {
         const provider = createAIProvider(opts.env);
         let payload: WsChatMessage;
 
@@ -55,37 +73,60 @@ export async function wsChatRoutes(
           return;
         }
 
-        let convId = conversationId;
-
-        if (!convId) {
-          const conv = await createConversation(app.db, DEFAULT_USER_ID);
-          convId = conv.id;
-          socket.send(JSON.stringify({ type: 'conversation_id', conversationId: convId }));
-        } else {
-          const existing = await getConversation(app.db, convId);
-          if (!existing) {
-            socket.send(JSON.stringify({ type: 'error', error: 'Conversation not found' }));
-            return;
-          }
+        if (message.length > MAX_MESSAGE_LENGTH) {
+          socket.send(JSON.stringify({ type: 'error', error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` }));
+          return;
         }
 
-        // Load history
-        const dbMessages = await getMessages(app.db, convId);
-        const history: AIMessage[] = dbMessages
-          .filter((m) => m.role !== 'tool')
-          .map((m) => ({ role: m.role, content: m.content }));
+        let convId = conversationId;
 
-        // Persist user message
-        await addMessage(app.db, {
-          conversationId: convId,
-          role: 'user',
-          content: message,
-          toolCalls: null,
-          toolName: null,
-          toolCallId: null,
-          tokensUsed: null,
-        });
+        // DB setup — errors here must reach the client
+        try {
+          if (!convId) {
+            const conv = await createConversation(app.db, DEFAULT_USER_ID);
+            convId = conv.id;
+            socket.send(JSON.stringify({ type: 'conversation_id', conversationId: convId }));
+          } else {
+            const existing = await getConversation(app.db, convId);
+            if (!existing) {
+              socket.send(JSON.stringify({ type: 'error', error: 'Conversation not found' }));
+              return;
+            }
+          }
 
+          // Load history
+          const dbMessages = await getMessages(app.db, convId);
+          const history: AIMessage[] = dbMessages
+            .filter((m) => m.role !== 'tool')
+            .map((m) => ({ role: m.role, content: m.content }));
+
+          // Persist user message
+          await addMessage(app.db, {
+            conversationId: convId,
+            role: 'user',
+            content: message,
+            toolCalls: null,
+            toolName: null,
+            toolCallId: null,
+            tokensUsed: null,
+          });
+
+          await streamResponse(provider, convId, message, history);
+        } catch (err) {
+          const errMessage = err instanceof Error ? err.message : 'Unknown error';
+          app.log.error({ err, convId }, 'ws-chat: setup or DB error');
+          if (socket.readyState === socket.OPEN) {
+            socket.send(JSON.stringify({ type: 'error', error: errMessage }));
+          }
+        }
+      }
+
+      async function streamResponse(
+        provider: ReturnType<typeof createAIProvider>,
+        convId: string,
+        message: string,
+        history: AIMessage[],
+      ) {
         const toolCallRecords: ToolCallRecord[] = [];
         let fullResponse = '';
 
@@ -113,31 +154,36 @@ export async function wsChatRoutes(
             }
           }
         } catch (err) {
-          const message = err instanceof Error ? err.message : 'Unknown error';
+          const errMessage = err instanceof Error ? err.message : 'Unknown error';
+          app.log.error({ err, convId }, 'ws-chat: stream error');
           if (socket.readyState === socket.OPEN) {
-            socket.send(JSON.stringify({ type: 'error', error: message }));
+            socket.send(JSON.stringify({ type: 'error', error: errMessage }));
           }
           return;
         }
 
-        // Persist assistant response
-        await addMessage(app.db, {
-          conversationId: convId,
-          role: 'assistant',
-          content: fullResponse,
-          toolCalls: toolCallRecords.map((tc) => ({ id: '', name: tc.toolName, input: tc.input })),
-          toolName: null,
-          toolCallId: null,
-          tokensUsed: null,
-        });
+        // Persist assistant response — log errors but don't surface to client (response already sent)
+        try {
+          await addMessage(app.db, {
+            conversationId: convId,
+            role: 'assistant',
+            content: fullResponse,
+            toolCalls: toolCallRecords.map((tc) => ({ id: '', name: tc.toolName, input: tc.input })),
+            toolName: null,
+            toolCallId: null,
+            tokensUsed: null,
+          });
 
-        // Auto-title from first message
-        const conv = await getConversation(app.db, convId);
-        if (conv && !conv.title) {
-          const title = message.slice(0, 60) + (message.length > 60 ? '…' : '');
-          await updateConversationTitle(app.db, convId, title);
+          // Auto-title from first message
+          const conv = await getConversation(app.db, convId);
+          if (conv && !conv.title) {
+            const title = message.slice(0, 60) + (message.length > 60 ? '…' : '');
+            await updateConversationTitle(app.db, convId, title);
+          }
+        } catch (err) {
+          app.log.error({ err, convId }, 'ws-chat: failed to persist assistant response');
         }
-      });
+      }
     },
   );
 }

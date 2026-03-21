@@ -19,7 +19,7 @@ export function MessageBubble({ message }: Props) {
   }
 
   return (
-    <div className="flex justify-start">
+    <div className="flex justify-start" data-testid="assistant-bubble">
       <div className="max-w-[85%] space-y-1">
         <ToolCallPanel toolCalls={message.toolCalls} />
         <div className="prose prose-sm dark:prose-invert max-w-none rounded-2xl rounded-tl-sm bg-muted px-4 py-2.5 leading-relaxed">
@@ -36,7 +36,7 @@ interface StreamingBubbleProps {
 
 export function StreamingBubble({ text }: StreamingBubbleProps) {
   return (
-    <div className="flex justify-start">
+    <div className="flex justify-start" data-testid="streaming-bubble">
       <div className="max-w-[85%] rounded-2xl rounded-tl-sm bg-muted px-4 py-2.5">
         <div className="prose prose-sm dark:prose-invert max-w-none leading-relaxed">
           <Markdown remarkPlugins={[remarkGfm]}>{text || '…'}</Markdown>

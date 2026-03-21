@@ -84,6 +84,8 @@ export async function executeTool(
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    // Log unexpected errors (programming bugs, infrastructure failures) for observability
+    console.error(`[tool-executor] ${toolName} failed:`, err);
     return JSON.stringify({ error: message });
   }
 }

@@ -20,7 +20,7 @@ interface ChatState {
   startStreaming: () => void;
   appendStreamChunk: (text: string) => void;
   appendToolCall: (tc: ToolCallRecord) => void;
-  finalizeStreaming: () => void;
+  finalizeStreaming: (errorText?: string) => void;
   reset: () => void;
 }
 
@@ -55,36 +55,51 @@ export const useChatStore = create<ChatState>((set) => ({
 
   appendToolCall: (tc) =>
     set((s) => {
-      // Attach to the last assistant message being built, or create a placeholder
       const messages = [...s.messages];
       const last = messages[messages.length - 1];
       if (last?.role === 'assistant') {
+        // Attach to the in-progress assistant message
         messages[messages.length - 1] = {
           ...last,
           toolCalls: [...last.toolCalls, tc],
         };
         return { messages };
       }
-      return {};
+      // No assistant message yet (first tool call in a new turn) — create a placeholder
+      return {
+        messages: [
+          ...messages,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant' as const,
+            content: '',
+            toolCalls: [tc],
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      };
     }),
 
-  finalizeStreaming: () =>
-    set((s) => ({
-      isStreaming: false,
-      streamingText: '',
-      messages: s.streamingText
-        ? [
-            ...s.messages,
-            {
-              id: `assistant-${Date.now()}`,
-              role: 'assistant',
-              content: s.streamingText,
-              toolCalls: [],
-              createdAt: new Date().toISOString(),
-            },
-          ]
-        : s.messages,
-    })),
+  finalizeStreaming: (errorText?: string) =>
+    set((s) => {
+      const contentToAdd = errorText ?? s.streamingText;
+      return {
+        isStreaming: false,
+        streamingText: '',
+        messages: contentToAdd
+          ? [
+              ...s.messages,
+              {
+                id: `assistant-${Date.now()}`,
+                role: 'assistant' as const,
+                content: errorText ? `⚠️ ${errorText}` : s.streamingText,
+                toolCalls: [],
+                createdAt: new Date().toISOString(),
+              },
+            ]
+          : s.messages,
+      };
+    }),
 
   reset: () =>
     set({ activeConversationId: null, messages: [], streamingText: '', isStreaming: false }),

@@ -43,6 +43,7 @@ export function ChatInput({ onSend, disabled }: Props) {
           onKeyDown={handleKeyDown}
           onInput={handleInput}
           placeholder="Ask about your health data…"
+          aria-label="Message input"
           disabled={disabled}
           rows={1}
           className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground disabled:opacity-50"

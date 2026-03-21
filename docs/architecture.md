@@ -52,7 +52,9 @@ src/
 │   ├── dashboard.ts      GET /api/dashboard/weekly       (Phase 3)
 │   ├── reports.ts        GET/POST /api/reports            (Phase 3)
 │   ├── ws-reports.ts     WS /ws/reports/:reportId         (async status)
-│   └── upload.ts         POST /api/upload/apple-health   (Phase 3)
+│   ├── upload.ts         POST /api/upload/apple-health   (Phase 3)
+│   ├── chat.ts           POST/GET/DELETE /api/chat/*      (Phase 6A)
+│   └── ws-chat.ts        WS /ws/chat                      (Phase 6A streaming)
 ├── db/
 │   ├── pool.ts           Singleton pg.Pool
 │   ├── helpers.ts        Collection metadata CRUD
@@ -76,13 +78,18 @@ src/
         ├── claude-provider.ts     AIProvider implementation (Claude)
         ├── gemini-provider.ts     AIProvider implementation (Gemini)
         ├── ai-service.ts          Provider factory (AI_PROVIDER env)
+        ├── conversation-service.ts Agentic loop: chat() + chatStream() (Phase 6A)
         ├── report-generator.ts    Report orchestration (data fetch + AI call + save)
         ├── prompt-builder.ts      Data formatting + prompt assembly
         ├── prompt-loader.ts       Loads .md prompt files at startup
-        └── prompts/               3-file prompt architecture
-            ├── persona.md         Role, tone, analytical rules
-            ├── analysis-protocol.md  5-step data processing order
-            └── output-format.md   JSON schema for 8-section report
+        ├── prompts/               Prompt files
+        │   ├── persona.md         Role, tone, analytical rules
+        │   ├── analysis-protocol.md  5-step data processing order
+        │   ├── output-format.md   JSON schema for 8-section report
+        │   └── chat-persona.md    Conversational AI persona (Phase 6A)
+        └── tools/                 AI tool use (Phase 6A)
+            ├── health-tools.ts    6 HEALTH_TOOLS declarations
+            └── tool-executor.ts   Tool dispatch → DB query → JSON result
 ```
 
 ## Data Model
@@ -98,6 +105,8 @@ src/
 | `ai_generations` | AI call audit trail | Token usage tracking |
 | `apple_health_imports` | File upload tracking | Status: pending → processing → completed/failed |
 | `daily_aggregates` | Materialized view for dashboard | Refreshed after each collection run |
+| `conversations` | Chat conversation sessions (Phase 6A) | PK: UUID, FK: user_id |
+| `messages` | Individual chat messages (Phase 6A) | role CHECK: user/assistant/tool, JSONB tool_calls |
 
 ### EAV Pattern (measurements table)
 
@@ -193,6 +202,11 @@ POST /api/reports/generate
 | GET | `/api/dashboard/weekly` | None | Phase 3 |
 | POST | `/api/reports/generate` | X-API-Key | Phase 3 |
 | WS | `/ws/reports/:reportId` | Token query param | Live |
+| POST | `/api/chat` | None | Phase 6A |
+| GET | `/api/chat/conversations` | None | Phase 6A |
+| GET | `/api/chat/conversations/:id` | None | Phase 6A |
+| DELETE | `/api/chat/conversations/:id` | None | Phase 6A |
+| WS | `/ws/chat` | Token query param | Phase 6A |
 | GET | `/api/reports` | None | Phase 3 |
 | GET | `/api/reports/:id` | None | Phase 3 |
 | POST | `/api/upload/apple-health` | X-API-Key | Phase 3 |

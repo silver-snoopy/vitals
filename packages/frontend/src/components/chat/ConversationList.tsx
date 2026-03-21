@@ -27,6 +27,7 @@ export function ConversationList({ conversations, activeId, onSelect, onNew }: P
       {conversations.map((conv) => (
         <div
           key={conv.id}
+          data-testid="conversation-item"
           className={`group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors cursor-pointer ${
             conv.id === activeId
               ? 'bg-accent text-accent-foreground'

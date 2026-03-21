@@ -15,6 +15,7 @@ import {
 import type { AIMessage } from '@vitals/shared';
 
 const DEFAULT_USER_ID = 'default';
+const MAX_MESSAGE_LENGTH = 4000;
 
 interface SendMessageBody {
   message: string;
@@ -35,6 +36,10 @@ export async function chatRoutes(
 
       if (!message || typeof message !== 'string' || message.trim() === '') {
         return reply.code(400).send({ error: 'message is required' });
+      }
+
+      if (message.length > MAX_MESSAGE_LENGTH) {
+        return reply.code(400).send({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` });
       }
 
       let convId = conversationId;

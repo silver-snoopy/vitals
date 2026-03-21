@@ -424,6 +424,85 @@ The date range picker on other pages is irrelevant to report generation.
 
 ---
 
+## 6. Conversational AI Chat (Phase 6A)
+
+| ID | Use Case | Status |
+|----|----------|--------|
+| UC-CHAT-01 | Send a natural language health question | Implemented |
+| UC-CHAT-02 | AI uses tools to fetch real health data | Implemented |
+| UC-CHAT-03 | Stream AI response in real time | Implemented |
+| UC-CHAT-04 | Persist and reload conversation history | Implemented |
+| UC-CHAT-05 | Manage multiple conversations | Implemented |
+
+### UC-CHAT-01: Send a natural language health question
+
+**As a** user, **I want to** ask questions about my health data in plain English,
+**so that** I can get insights without navigating charts manually.
+
+**Behavior:**
+- `/chat` route with two-panel layout: conversation sidebar (desktop) and chat area
+- Auto-resize textarea input, Enter to send, Shift+Enter for newline
+- Input disabled while AI is responding
+- New conversation created automatically on first message
+- Empty state shows example prompts to guide the user
+
+**E2E Coverage:** `e2e/chat.spec.ts` — UC-CHAT-01
+
+### UC-CHAT-02: AI uses tools to fetch real health data
+
+**As a** user, **I want to** get answers grounded in my actual data,
+**so that** responses are accurate and not generic.
+
+**Behavior:**
+- AI can call 6 health tools: `query_nutrition`, `query_workouts`, `query_biometrics`, `query_exercise_progress`, `get_latest_report`, `list_available_metrics`
+- Tool calls are transparent — collapsible badge shows tool name and parameters
+- Agentic loop: up to 10 tool-call iterations before answering (prevents infinite loops)
+- Tool errors are returned to the AI as structured `{ error: message }` objects
+
+**E2E Coverage:** `e2e/chat.spec.ts` — UC-CHAT-02 (tool badge visibility test)
+
+### UC-CHAT-03: Stream AI response in real time
+
+**As a** user, **I want to** see the AI response appear word by word,
+**so that** the experience feels responsive even for long answers.
+
+**Behavior:**
+- WebSocket connection at `/ws/chat` (token auth via query param)
+- Text chunks stream to the UI as received; markdown rendered in real-time
+- Streaming bubble shows `…` placeholder until first chunk arrives
+- `done` event triggers finalization (streaming bubble → permanent assistant message)
+- Errors from AI provider are shown inline in the chat thread
+
+**E2E Coverage:** `e2e/chat.spec.ts` — UC-CHAT-03
+
+### UC-CHAT-04: Persist and reload conversation history
+
+**As a** user, **I want to** return to previous conversations,
+**so that** I don't lose context between sessions.
+
+**Behavior:**
+- All messages persisted to `conversations` + `messages` tables after each exchange
+- Conversation auto-titled from the first user message (truncated to 60 chars)
+- Selecting a conversation loads its full message history from the DB
+- Tool-only messages (`role: 'tool'`) filtered from display
+
+**E2E Coverage:** `e2e/chat.spec.ts` — UC-CHAT-04
+
+### UC-CHAT-05: Manage multiple conversations
+
+**As a** user, **I want to** start new conversations and delete old ones,
+**so that** I can keep my chat history organized.
+
+**Behavior:**
+- Sidebar lists all conversations sorted by last activity
+- "+ New conversation" button resets to empty state
+- Delete button (hover-reveal) removes conversation and refreshes list
+- Mobile: header "New" button replaces sidebar (drawer not shown on mobile)
+
+**E2E Coverage:** `e2e/chat.spec.ts` — UC-CHAT-05
+
+---
+
 ## Cross-Cutting Concerns
 
 ### Responsive Design
@@ -443,7 +522,7 @@ The date range picker on other pages is irrelevant to report generation.
 **so that** I don't need to open a hamburger menu for every navigation action.
 
 **Behavior:**
-- Fixed bottom tab bar with 4 tabs: Dashboard, Nutrition, Workouts, Reports
+- Fixed bottom tab bar with 5 tabs: Dashboard, Nutrition, Workouts, Reports, Chat
 - Active tab highlighted in primary (cyan) color with icon + label
 - Hidden on desktop (md+ breakpoint) — desktop uses sidebar
 - MobileHeader shows branding, date picker, upload, and theme toggle
