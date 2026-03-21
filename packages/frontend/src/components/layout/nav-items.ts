@@ -1,4 +1,4 @@
-import { LayoutDashboard, Salad, Dumbbell, FileText } from 'lucide-react';
+import { LayoutDashboard, Salad, Dumbbell, FileText, MessageCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,7 @@ export const navItems: NavItem[] = [
   { to: '/nutrition', label: 'Nutrition', icon: Salad, end: false },
   { to: '/workouts', label: 'Workouts', icon: Dumbbell, end: false },
   { to: '/reports', label: 'Reports', icon: FileText, end: false },
+  { to: '/chat', label: 'Chat', icon: MessageCircle, end: false },
 ];
 
 export function navLinkClassName(isActive: boolean, size: 'default' | 'lg' = 'default') {

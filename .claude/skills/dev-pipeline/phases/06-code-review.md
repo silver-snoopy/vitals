@@ -3,9 +3,19 @@
 ## Purpose
 Catch bugs, convention violations, and security issues before testing.
 
-## Preferred: Launch Review Agents
+## Preferred: Run pr-review-toolkit
 
-Spawn 3 review agents IN PARALLEL using the Agent tool with `subagent_type: "feature-dev:code-reviewer"`:
+Invoke `/pr-review-toolkit:review-pr` as the primary quality gate. This skill orchestrates
+specialized sub-agents (code reviewer, type design analyzer, silent failure hunter, etc.)
+across the full diff and returns consolidated findings.
+
+After the skill completes, address all HIGH and MEDIUM findings before moving to Phase 7.
+
+## Supplementary: Launch Targeted Review Agents
+
+After `/pr-review-toolkit:review-pr`, spawn 3 additional agents IN PARALLEL using the Agent
+tool with `subagent_type: "feature-dev:code-reviewer"` for project-specific checks not
+covered by the toolkit:
 
 ### Agent 1: Bugs & Logic
 Prompt: "Review the following changed files for bugs, logic errors, edge cases, null/undefined handling, race conditions, and incorrect assumptions. Only report HIGH and MEDIUM confidence findings."
@@ -24,7 +34,7 @@ Each agent prompt should include:
 
 ## Fallback: Structured Self-Review
 
-If review agents or helper skills are unavailable, review the change manually using the same three scopes:
+If `/pr-review-toolkit:review-pr` and review agents are unavailable, review the change manually using the same three scopes:
 - Bugs and logic
 - Conventions and style
 - Security
@@ -48,6 +58,7 @@ Use the current diff and Phase 1 goal as the review input, and record any HIGH o
 - Re-check only the specific findings that were fixed (no need to re-run full review)
 
 ## Checklist
-- [ ] Review completed across logic, conventions, and security
+- [ ] `/pr-review-toolkit:review-pr` run and findings reviewed
+- [ ] Supplementary agent reviews completed (logic, conventions, security)
 - [ ] HIGH/MEDIUM findings addressed
 - [ ] Build still passes after fixes

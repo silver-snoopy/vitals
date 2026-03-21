@@ -41,6 +41,8 @@ const validAIResponse = JSON.stringify({
 
 const mockAIProvider: AIProvider = {
   name: () => 'claude',
+  completeWithTools: vi.fn(),
+  stream: vi.fn(),
   complete: vi.fn().mockResolvedValue({
     content: validAIResponse,
     model: 'claude-sonnet-4-20250514',
