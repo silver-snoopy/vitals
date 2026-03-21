@@ -12,7 +12,6 @@ import {
 import type { AIMessage } from '@vitals/shared';
 import type { ToolCallRecord } from '../services/ai/tools/tool-executor.js';
 
-const DEFAULT_USER_ID = 'default';
 const MAX_MESSAGE_LENGTH = 4000;
 
 interface WsChatMessage {
@@ -83,7 +82,7 @@ export async function wsChatRoutes(
         // DB setup — errors here must reach the client
         try {
           if (!convId) {
-            const conv = await createConversation(app.db, DEFAULT_USER_ID);
+            const conv = await createConversation(app.db, opts.env.dbDefaultUserId);
             convId = conv.id;
             socket.send(JSON.stringify({ type: 'conversation_id', conversationId: convId }));
           } else {
@@ -111,7 +110,7 @@ export async function wsChatRoutes(
             tokensUsed: null,
           });
 
-          await streamResponse(provider, convId, message, history);
+          await streamResponse(provider, opts.env.dbDefaultUserId, convId, message, history);
         } catch (err) {
           const errMessage = err instanceof Error ? err.message : 'Unknown error';
           app.log.error({ err, convId }, 'ws-chat: setup or DB error');
@@ -123,6 +122,7 @@ export async function wsChatRoutes(
 
       async function streamResponse(
         provider: ReturnType<typeof createAIProvider>,
+        userId: string,
         convId: string,
         message: string,
         history: AIMessage[],
@@ -134,7 +134,7 @@ export async function wsChatRoutes(
           for await (const chunk of chatStream(
             provider,
             app.db,
-            DEFAULT_USER_ID,
+            userId,
             message,
             history,
             (record) => {

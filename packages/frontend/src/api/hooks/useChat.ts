@@ -160,8 +160,8 @@ export function useChatWebSocket(
       if (!ws) return;
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ message, conversationId }));
-      } else if (ws.readyState === WebSocket.CONNECTING) {
-        // Queue for delivery once the connection opens
+      } else {
+        // Queue for delivery once the connection opens (covers CONNECTING and CLOSED states)
         pendingQueue.current.push({ message, conversationId });
       }
     },

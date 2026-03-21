@@ -82,22 +82,31 @@ export const useChatStore = create<ChatState>((set) => ({
 
   finalizeStreaming: (errorText?: string) =>
     set((s) => {
-      const contentToAdd = errorText ?? s.streamingText;
+      const content = errorText ? `⚠️ ${errorText}` : s.streamingText;
+      const messages = [...s.messages];
+      const last = messages[messages.length - 1];
+
+      if (last?.role === 'assistant' && last.content === '') {
+        // A tool call placeholder already exists — merge streaming text into it
+        messages[messages.length - 1] = { ...last, content: content || '' };
+        return { isStreaming: false, streamingText: '', messages };
+      }
+
       return {
         isStreaming: false,
         streamingText: '',
-        messages: contentToAdd
+        messages: content
           ? [
-              ...s.messages,
+              ...messages,
               {
                 id: `assistant-${Date.now()}`,
                 role: 'assistant' as const,
-                content: errorText ? `⚠️ ${errorText}` : s.streamingText,
+                content,
                 toolCalls: [],
                 createdAt: new Date().toISOString(),
               },
             ]
-          : s.messages,
+          : messages,
       };
     }),
 

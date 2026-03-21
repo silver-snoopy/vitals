@@ -45,6 +45,14 @@ export class ClaudeProvider implements AIProvider {
             ],
           };
         }
+        if (m.role === 'assistant' && m.toolUses?.length) {
+          const content: Array<{ type: 'text'; text: string } | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }> = [];
+          if (m.content) content.push({ type: 'text', text: m.content });
+          for (const tu of m.toolUses) {
+            content.push({ type: 'tool_use', id: tu.id, name: tu.name, input: tu.input });
+          }
+          return { role: 'assistant' as const, content };
+        }
         return {
           role: m.role as 'user' | 'assistant',
           content: m.content,

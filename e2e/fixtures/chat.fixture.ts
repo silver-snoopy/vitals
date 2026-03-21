@@ -62,7 +62,7 @@ export async function mockChatApi(page: Page) {
  */
 export async function mockChatWebSocket(page: Page) {
   await page.routeWebSocket(/\/ws\/chat/, async (ws: WebSocketRoute) => {
-    ws.onMessage(async (_message) => {
+    ws.onMessage(async () => {
       // Simulate server response sequence
       await new Promise((r) => setTimeout(r, 50));
       ws.send(JSON.stringify({ type: 'conversation_id', conversationId: 'conv-new-1' }));
@@ -90,7 +90,7 @@ export async function mockChatWebSocket(page: Page) {
  */
 export async function mockChatWebSocketError(page: Page) {
   await page.routeWebSocket(/\/ws\/chat/, async (ws: WebSocketRoute) => {
-    ws.onMessage(async (_message) => {
+    ws.onMessage(async () => {
       await new Promise((r) => setTimeout(r, 50));
       ws.send(JSON.stringify({ type: 'error', error: 'AI provider unavailable' }));
     });

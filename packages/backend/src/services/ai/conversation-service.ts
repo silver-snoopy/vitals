@@ -90,6 +90,13 @@ export async function chat(
   };
 }
 
+interface AssembledToolCall {
+  id: string;
+  name: string;
+  inputFromStart: Record<string, unknown>; // Gemini: full input in tool_call_start
+  inputJson: string; // Claude: accumulated JSON fragments from tool_call_delta
+}
+
 export async function* chatStream(
   provider: AIProvider,
   db: pg.Pool,
@@ -110,59 +117,83 @@ export async function* chatStream(
   while (iterations < MAX_ITERATIONS) {
     iterations++;
 
-    // Collect streaming chunks — we need to detect tool calls before yielding
-    const chunks: AIStreamChunk[] = [];
+    const textChunks: AIStreamChunk[] = [];
+    const toolCallMap = new Map<string, AssembledToolCall>();
+    let activeToolCallId: string | null = null;
+
+    // Collect all chunks, accumulating tool_call_delta fragments per tool call ID
     for await (const chunk of provider.stream(messages, HEALTH_TOOLS)) {
-      chunks.push(chunk);
+      if (chunk.type === 'text') {
+        textChunks.push(chunk);
+      } else if (chunk.type === 'tool_call_start' && chunk.toolCall?.id && chunk.toolCall?.name) {
+        activeToolCallId = chunk.toolCall.id;
+        toolCallMap.set(activeToolCallId, {
+          id: chunk.toolCall.id,
+          name: chunk.toolCall.name,
+          inputFromStart: chunk.toolCall.input ?? {},
+          inputJson: '',
+        });
+      } else if (chunk.type === 'tool_call_delta' && activeToolCallId) {
+        // Accumulate partial JSON string fragments
+        const partialJson =
+          typeof chunk.toolCall?.input === 'string'
+            ? chunk.toolCall.input
+            : (chunk.toolCall?.input as unknown as string) ?? '';
+        const entry = toolCallMap.get(activeToolCallId);
+        if (entry) entry.inputJson += partialJson;
+      }
+      // 'done' chunk: handled by loop exit
     }
 
-    // Check if any tool calls were made
-    const toolCallChunks = chunks.filter((c) => c.type === 'tool_call_start');
+    const assembledToolCalls = Array.from(toolCallMap.values());
 
-    if (toolCallChunks.length === 0) {
+    if (assembledToolCalls.length === 0) {
       // No tool calls — stream text chunks to caller
-      for (const chunk of chunks) {
+      for (const chunk of textChunks) {
         yield chunk;
       }
+      yield { type: 'done' };
       return;
     }
 
-    // Tool calls present — execute them, then continue loop
-    // Yield tool_call_start chunks so the UI can show transparency badges
-    for (const chunk of chunks.filter((c) => c.type === 'tool_call_start')) {
-      yield chunk;
+    // Yield tool_call_start badges so the UI can show transparency indicators
+    for (const tc of assembledToolCalls) {
+      yield { type: 'tool_call_start', toolCall: { id: tc.id, name: tc.name, input: {} } };
     }
 
-    const assistantText = chunks
-      .filter((c) => c.type === 'text')
-      .map((c) => c.text ?? '')
-      .join('');
+    // Resolve all tool inputs before pushing the assistant message so we can
+    // include tool_use blocks (required by Claude's API before tool_result blocks)
+    const resolvedToolCalls = assembledToolCalls.map((tc) => {
+      let input: Record<string, unknown> = tc.inputFromStart;
+      if (tc.inputJson) {
+        try {
+          input = JSON.parse(tc.inputJson) as Record<string, unknown>;
+        } catch {
+          console.error(`[chatStream] Failed to parse tool input JSON for ${tc.name}:`, tc.inputJson);
+        }
+      }
+      return { ...tc, resolvedInput: input };
+    });
 
-    messages.push({ role: 'assistant', content: assistantText });
+    const assistantText = textChunks.map((c) => c.text ?? '').join('');
+    messages.push({
+      role: 'assistant',
+      content: assistantText,
+      toolUses: resolvedToolCalls.map((tc) => ({ id: tc.id, name: tc.name, input: tc.resolvedInput })),
+    });
 
-    for (const chunk of toolCallChunks) {
-      if (!chunk.toolCall?.name || !chunk.toolCall?.id) continue;
+    // Execute each tool and push results
+    for (const tc of resolvedToolCalls) {
+      const toolResult = await executeTool(tc.name, tc.resolvedInput, db, userId);
 
-      const toolResult = await executeTool(
-        chunk.toolCall.name,
-        (chunk.toolCall.input as Record<string, unknown>) ?? {},
-        db,
-        userId,
-      );
-
-      const record: ToolCallRecord = {
-        toolName: chunk.toolCall.name,
-        input: (chunk.toolCall.input as Record<string, unknown>) ?? {},
-        result: toolResult,
-      };
-
+      const record: ToolCallRecord = { toolName: tc.name, input: tc.resolvedInput, result: toolResult };
       onToolCall?.(record);
 
       messages.push({
         role: 'tool',
         content: toolResult,
-        toolCallId: chunk.toolCall.id,
-        toolName: chunk.toolCall.name,
+        toolCallId: tc.id,
+        toolName: tc.name,
       });
     }
   }

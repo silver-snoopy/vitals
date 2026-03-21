@@ -3,6 +3,7 @@ export interface AIMessage {
   content: string;
   toolCallId?: string;
   toolName?: string;
+  toolUses?: Array<{ id: string; name: string; input: Record<string, unknown> }>;
 }
 
 export interface AICompletionResult {
