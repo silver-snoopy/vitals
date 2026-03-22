@@ -138,7 +138,7 @@ export function InsightsPanel() {
   const hasFocusAreas = workingBullets.length > 0 || hazardBullets.length > 0;
 
   return (
-    <Card className="overflow-hidden">
+    <Card>
       {/* Section 1: Score + Summary */}
       <div className="flex flex-col items-center gap-4 px-4 py-4 md:flex-row md:items-start">
         {score != null && <ScoreRing score={score} />}
