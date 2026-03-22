@@ -3,6 +3,7 @@ import type { FastifyBaseLogger } from 'fastify';
 import type { EnvConfig } from '../config/env.js';
 import type { ReportStatusUpdate } from '@vitals/shared';
 import { updateReportStatus, completeReport, logAiGeneration } from '../db/queries/reports.js';
+import { promoteActionItems } from '../db/queries/action-items.js';
 import { gatherAndGenerate } from './ai/report-generator.js';
 import { createAIProvider } from './ai/ai-service.js';
 import { runCollection } from './collectors/pipeline.js';
@@ -81,6 +82,11 @@ export function runReportInBackground(
         totalTokens: gen.usage.totalTokens,
         purpose: 'weekly_report',
       });
+
+      // Promote action items to persistent tracked entities
+      if (gen.actionItems.length > 0) {
+        await promoteActionItems(pool, params.userId, reportId, gen.actionItems);
+      }
 
       emitStatus(reportId, 'completed', 'Report ready');
     } catch (err: unknown) {

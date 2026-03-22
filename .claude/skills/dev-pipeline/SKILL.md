@@ -40,7 +40,7 @@ Examples:
 
 Non-degradable quality gates remain hard requirements:
 - Live local reproduction for bugfixes when the bug is reproducible in the running system
-- Live local verification with screenshot evidence for user-visible UI changes
+- Live local verification with screenshot evidence — mandatory for every change regardless of layer (UI, backend, or otherwise)
 - Build, lint, format, unit, and E2E validation required by the phase
 - Documentation updates required by the change
 
@@ -206,12 +206,12 @@ Steps:
 2. Run `npm run format:check` — new/changed files must pass
 3. Run `npm test` — all unit tests pass
 4. Run `npx playwright test` — all E2E tests pass
-5. **If UI changes:** Write new E2E tests covering the new use cases
-6. **If UI is affected (MANDATORY):** Start local dev environment, write a temporary Playwright visual test against the live UI (`http://localhost:3000`), capture screenshots at key states, present them to the user as evidence, then clean up the temporary test and screenshots. This applies to frontend changes, new UI features, AND backend changes that extend API responses consumed by the frontend — if a user would see something different on screen, this step is mandatory.
+5. **If new interactive UI behavior was added:** Write new E2E tests covering the new use cases
+6. **(ALWAYS MANDATORY — no exemptions):** Start local dev environment, write a temporary Playwright visual test against the live system (`http://localhost:3000`), capture screenshots at key states, present them to the user as evidence, then clean up the temporary test and screenshots. This applies to ALL changes — frontend, backend, API-only, refactors, anything. There are no exemptions based on change type.
 
 **Hard requirement:** Complete the automated validation required by the change, and for any user-visible UI impact, verify behavior on the live local environment with screenshot evidence.
 **Preferred mechanism:** Use the repo's lint, format, unit, E2E, and Playwright-based live verification workflow.
-**Allowed fallback:** If a named helper or exact temporary test workflow is unavailable, use another method only if it preserves the same validation strength. User-visible UI changes must still be verified against the live local environment; mocked tests alone are not sufficient.
+**Allowed fallback:** If a named helper or exact temporary test workflow is unavailable, use another method only if it preserves the same validation strength. Every change must be verified against the live local environment — mocked tests alone are never sufficient, regardless of change type.
 
 **Exit criteria:** All tests pass. New E2E tests written for new interactive behavior. Any change that affects what users see on screen is verified on live local environment with screenshot evidence presented to user.
 

@@ -33,6 +33,10 @@ vi.mock('../../../db/queries/reports.js', () => ({
   logAiGeneration: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('../../../db/queries/action-items.js', () => ({
+  promoteActionItems: vi.fn().mockResolvedValue(undefined),
+}));
+
 const validAIResponse = JSON.stringify({
   summary: 'A productive week.',
   insights: '- Calories on target\n- Protein slightly low',

@@ -71,8 +71,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 **Behavior:**
 - Score ring: SVG circular indicator showing overall AI score (color-coded: green ≥7, amber ≥5, red <5)
 - Full summary text (not truncated), period dates, "View Report →" link
-- Top 3 action items: priority-colored cards with category labels, action text (2-line clamp), priority badges
-- If >3 items: "+N more in full report" link
+- Top 3 action items: interactive cards with accept/defer/reject actions (pending) or complete/defer (active); progress counter "X/Y done"; "View all actions →" link to `/reports/actions`
 - Focus areas: "What's Working" (emerald tint) and "Watch Out" (amber tint) cards with extracted bullet points from report sections
 - Desktop: 3-column action items grid, 2-column focus areas
 - Mobile: all sections stack vertically, score ring centered
@@ -305,7 +304,83 @@ The date range picker on other pages is irrelevant to report generation.
 
 ---
 
-## 3. Nutrition
+## 3. Action Items (F3)
+
+| ID | Use Case | Status |
+|----|----------|--------|
+| UC-ACT-01 | View and filter action items on Actions page | Implemented |
+| UC-ACT-02 | Accept a pending action item | Implemented |
+| UC-ACT-03 | Complete an active action item | Implemented |
+| UC-ACT-04 | Defer an action item | Implemented |
+| UC-ACT-05 | Reject a pending action item | Implemented |
+| UC-ACT-06 | Progress summary on dashboard (InsightsPanel) | Implemented |
+
+### UC-ACT-01: View and filter action items
+
+**As a** user, **I want to** see all my action items grouped by status and filter them,
+**so that** I can review what I've committed to and track my progress.
+
+**Behavior:**
+- Route: `/reports/actions`
+- Progress card at top: "X of Y completed" with progress bar
+- Filter tabs: All, Pending, Active, Completed, Deferred
+- Items grouped by status: Pending → Active → Deferred (in "All" view)
+- Each item shows category, priority badge, text, and context-appropriate action buttons
+- Empty state messages per section
+
+**E2E Coverage:** `e2e/action-items.spec.ts` — UC-ACT-01, UC-ACT-03
+
+### UC-ACT-02: Accept a pending action item
+
+**As a** user, **I want to** explicitly accept an action item,
+**so that** I consciously commit to the behavior change.
+
+**Behavior:**
+- Pending items show: Accept, Defer, Reject buttons
+- Accept → `active` status (optimistic UI update)
+- Optimistic update reverts on API error with toast notification
+
+**E2E Coverage:** `e2e/action-items.spec.ts` — UC-ACT-01
+
+### UC-ACT-03: Complete an active action item
+
+**As a** user, **I want to** mark an action item as done,
+**so that** I can track my adherence over time.
+
+**Behavior:**
+- Active items show: Done, Defer buttons
+- Done → `completed` status with `completed_at` timestamp
+- Completed items show "✓ Completed [date]" (read-only)
+
+**E2E Coverage:** `e2e/action-items.spec.ts` — UC-ACT-01
+
+### UC-ACT-04–05: Defer and Reject
+
+**As a** user, **I want to** defer or reject items I can't or won't do,
+**so that** my active list stays focused.
+
+**Behavior:**
+- Defer: `pending/active → deferred`; deferred items show Re-accept button
+- Reject: `pending → rejected` (terminal state)
+- Status transitions validated server-side; invalid transitions return 400
+
+**E2E Coverage:** `e2e/action-items.spec.ts` — UC-ACT-03
+
+### UC-ACT-06: Dashboard progress integration
+
+**As a** user, **I want to** see my action item progress on the dashboard,
+**so that** I'm reminded of my commitments without navigating away.
+
+**Behavior:**
+- InsightsPanel "This Week's Focus" section shows top 3 pending/active items with interactive buttons
+- Progress counter: "X/Y done"
+- "View all actions →" link to `/reports/actions`
+
+**E2E Coverage:** `e2e/action-items.spec.ts` — UC-ACT-02, `e2e/dashboard.spec.ts`
+
+---
+
+## 5. Nutrition
 
 | ID | Use Case | Status |
 |----|----------|--------|
@@ -338,7 +413,7 @@ The date range picker on other pages is irrelevant to report generation.
 
 ---
 
-## 4. Workouts
+## 6. Workouts
 
 | ID | Use Case | Status |
 |----|----------|--------|
@@ -377,7 +452,7 @@ The date range picker on other pages is irrelevant to report generation.
 
 ---
 
-## 5. Data Upload
+## 7. Data Upload
 
 | ID | Use Case | Status |
 |----|----------|--------|
@@ -403,7 +478,7 @@ The date range picker on other pages is irrelevant to report generation.
 
 ---
 
-## 6. Appearance
+## 8. Appearance
 
 | ID | Use Case | Status |
 |----|----------|--------|
@@ -424,7 +499,7 @@ The date range picker on other pages is irrelevant to report generation.
 
 ---
 
-## 6. Conversational AI Chat (Phase 6A)
+## 9. Conversational AI Chat (Phase 6A)
 
 | ID | Use Case | Status |
 |----|----------|--------|

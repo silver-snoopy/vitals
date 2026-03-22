@@ -1,18 +1,13 @@
 import { format, parseISO } from 'date-fns';
 import { BarChart3, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import type { ActionItem } from '@vitals/shared';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useLatestReport } from '@/api/hooks/useReports';
+import { useActionItems, useActionItemSummary } from '@/api/hooks/useActionItems';
 import { useReportGenerationStore } from '@/store/useReportGenerationStore';
 import { cn } from '@/lib/utils';
-import {
-  priorityColor,
-  priorityVariant,
-  scoreRingColor,
-  extractBullets,
-} from '@/components/reports/report-utils';
+import { scoreRingColor, extractBullets } from '@/components/reports/report-utils';
+import { InteractiveActionItemCard } from '@/components/actions/InteractiveActionItemCard';
 
 function ScoreRing({ score }: { score: number }) {
   const radius = 22;
@@ -44,27 +39,6 @@ function ScoreRing({ score }: { score: number }) {
         />
       </svg>
       <span className="absolute text-sm font-bold">{score}</span>
-    </div>
-  );
-}
-
-function ActionItemCard({ item }: { item: ActionItem }) {
-  return (
-    <div
-      className={cn(
-        'flex items-start gap-3 border-l-[3px] rounded-r-md bg-muted/30 px-3 py-2.5',
-        priorityColor[item.priority],
-      )}
-    >
-      <div className="flex-1 space-y-0.5 min-w-0">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {item.category}
-        </span>
-        <p className="text-sm leading-relaxed line-clamp-2">{item.text}</p>
-      </div>
-      <Badge variant={priorityVariant[item.priority]} className="mt-0.5 shrink-0 text-[10px]">
-        {item.priority}
-      </Badge>
     </div>
   );
 }
@@ -103,6 +77,8 @@ function FocusAreaCard({
 export function InsightsPanel() {
   const { data: report, isLoading } = useLatestReport();
   const status = useReportGenerationStore((s) => s.status);
+  const { data: actionItemsData } = useActionItems({ status: ['pending', 'active'], limit: 3 });
+  const { data: summaryData } = useActionItemSummary();
 
   if (isLoading) return null;
 
@@ -137,9 +113,11 @@ export function InsightsPanel() {
   }
 
   const score = report.sections?.scorecard?.overall?.score;
-  const actions = report.actionItems ?? [];
-  const topActions = actions.slice(0, 3);
-  const remainingCount = Math.max(0, actions.length - 3);
+  const topActions = actionItemsData?.data ?? [];
+  const summary = summaryData?.data;
+  const completedCount = summary?.completed ?? 0;
+  const totalCount = summary?.total ?? 0;
+  const showProgress = totalCount > 0;
 
   const workingBullets = report.sections?.whatsWorking
     ? extractBullets(report.sections.whatsWorking, 3)
@@ -167,25 +145,30 @@ export function InsightsPanel() {
         </div>
       </div>
 
-      {/* Section 2: Top 3 Action Items */}
+      {/* Section 2: Interactive Action Items */}
       {topActions.length > 0 && (
         <div className="border-t border-border px-4 py-3">
-          <h3 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            This Week&rsquo;s Focus
-          </h3>
+          <div className="mb-2.5 flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              This Week&rsquo;s Focus
+            </h3>
+            {showProgress && (
+              <span className="text-xs text-muted-foreground">
+                {completedCount}/{totalCount} done
+              </span>
+            )}
+          </div>
           <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-            {topActions.map((item, i) => (
-              <ActionItemCard key={`${item.category}-${item.priority}-${i}`} item={item} />
+            {topActions.map((item) => (
+              <InteractiveActionItemCard key={item.id} item={item} />
             ))}
           </div>
-          {remainingCount > 0 && (
-            <Link
-              to="/reports"
-              className="mt-2 inline-block text-xs text-muted-foreground hover:text-primary"
-            >
-              +{remainingCount} more in full report
-            </Link>
-          )}
+          <Link
+            to="/reports/actions"
+            className="mt-2 inline-block text-xs text-muted-foreground hover:text-primary"
+          >
+            View all actions &rarr;
+          </Link>
         </div>
       )}
 

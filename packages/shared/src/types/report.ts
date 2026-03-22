@@ -8,6 +8,31 @@ export interface ActionItem {
   text: string;
 }
 
+export type ActionItemStatus =
+  | 'pending'
+  | 'active'
+  | 'completed'
+  | 'expired'
+  | 'deferred'
+  | 'superseded'
+  | 'rejected';
+
+export interface TrackedActionItem extends ActionItem {
+  id: string;
+  reportId: string;
+  status: ActionItemStatus;
+  targetMetric?: string;
+  targetDirection?: 'increase' | 'decrease' | 'maintain';
+  baselineValue?: number;
+  outcomeValue?: number;
+  outcomeConfidence?: 'high' | 'medium' | 'low';
+  outcomeMeasuredAt?: string;
+  createdAt: string;
+  dueBy?: string;
+  completedAt?: string;
+  statusChangedAt: string;
+}
+
 export interface ScorecardEntry {
   score: number;
   notes: string;
