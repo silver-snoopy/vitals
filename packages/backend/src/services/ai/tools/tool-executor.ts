@@ -1,7 +1,17 @@
 import type pg from 'pg';
-import { queryDailyNutritionSummary, queryMeasurementsByMetrics } from '../../../db/queries/measurements.js';
+import type { ActionItemStatus } from '@vitals/shared';
+import {
+  queryDailyNutritionSummary,
+  queryMeasurementsByMetrics,
+} from '../../../db/queries/measurements.js';
 import { queryWorkoutSessions, queryExerciseProgress } from '../../../db/queries/workouts.js';
 import { getLatestReport } from '../../../db/queries/reports.js';
+import {
+  listActionItems,
+  getActionItem,
+  getAttributionSummary,
+} from '../../../db/queries/action-items.js';
+import { measureOutcomes } from '../../action-items/outcome-measurer.js';
 
 export interface ToolCallRecord {
   toolName: string;
@@ -68,6 +78,47 @@ export async function executeTool(
           insights: report.insights,
           actionItems: report.actionItems,
         });
+      }
+
+      case 'query_action_items': {
+        const status = input.status as ActionItemStatus | 'all' | undefined;
+        const category = input.category as string | undefined;
+        const limit = typeof input.limit === 'number' ? input.limit : 20;
+        const filters: {
+          status?: ActionItemStatus | ActionItemStatus[];
+          category?: string;
+          limit: number;
+        } = { limit };
+        if (status && status !== 'all') filters.status = status;
+        if (category) filters.category = category;
+        const items = await listActionItems(db, userId, filters);
+        return JSON.stringify(items);
+      }
+
+      case 'query_action_outcomes': {
+        if (input.actionItemId) {
+          // On-demand measurement for a specific item
+          const item = await getActionItem(db, String(input.actionItemId), userId);
+          if (!item) return JSON.stringify({ error: 'Action item not found' });
+          if (item.status !== 'completed')
+            return JSON.stringify({ error: 'Item must be completed to measure outcome' });
+          if (item.targetMetric) {
+            const results = await measureOutcomes(db, userId, [item]);
+            return JSON.stringify(
+              results.length > 0 ? results[0] : { message: 'No measurable data found' },
+            );
+          }
+          return JSON.stringify({ message: 'Item has no target metric' });
+        }
+        // Attribution summary
+        const period = (input.period as 'week' | 'month' | 'all') ?? 'month';
+        const periodMap: Record<string, 'week' | 'month' | 'quarter'> = {
+          week: 'week',
+          month: 'month',
+          all: 'quarter',
+        };
+        const summary = await getAttributionSummary(db, userId, periodMap[period] ?? 'month');
+        return JSON.stringify(summary);
       }
 
       case 'list_available_metrics': {

@@ -3,6 +3,7 @@ import type {
   AIProvider,
   WeeklyReport,
   ActionItem,
+  ActionItemFollowUp,
   ReportSections,
   ScorecardEntry,
 } from '@vitals/shared';
@@ -12,8 +13,10 @@ import {
 } from '../../db/queries/measurements.js';
 import { queryWorkoutSessions } from '../../db/queries/workouts.js';
 import { getLatestReport, saveReport, logAiGeneration } from '../../db/queries/reports.js';
-import { promoteActionItems } from '../../db/queries/action-items.js';
+import { promoteActionItems, listActionItems } from '../../db/queries/action-items.js';
 import { buildReportPrompt } from './prompt-builder.js';
+import { measureOutcomes, determineOutcome } from '../action-items/outcome-measurer.js';
+import { expireStaleItems, supersedeItems } from '../action-items/lifecycle-manager.js';
 
 const BIOMETRIC_METRICS = [
   'weight_kg',
@@ -212,6 +215,73 @@ export interface GatherAndGenerateResult {
  * Gathers data and calls the AI provider to generate report content.
  * Does NOT write to the database — caller is responsible for persistence.
  */
+/**
+ * Build action item follow-up context by running lifecycle management
+ * and outcome measurement before generating a new report.
+ */
+async function buildActionItemFollowUp(
+  pool: pg.Pool,
+  userId: string,
+): Promise<ActionItemFollowUp | undefined> {
+  // 1. Expire stale items
+  await expireStaleItems(pool, userId);
+
+  // 2. Measure outcomes for completed items without measurements
+  const completedItems = await listActionItems(pool, userId, {
+    status: 'completed',
+    limit: 50,
+  });
+  const unmeasured = completedItems.filter((i) => !i.outcomeMeasuredAt && i.targetMetric);
+  if (unmeasured.length > 0) {
+    await measureOutcomes(pool, userId, unmeasured);
+  }
+
+  // 3. Refresh completed items to get outcome data
+  const refreshedCompleted = await listActionItems(pool, userId, {
+    status: 'completed',
+    limit: 50,
+  });
+
+  // 4. Gather deferred and expired items
+  const [deferredItems, expiredItems, allItems] = await Promise.all([
+    listActionItems(pool, userId, { status: 'deferred', limit: 20 }),
+    listActionItems(pool, userId, { status: 'expired', limit: 20 }),
+    listActionItems(pool, userId, { limit: 200 }),
+  ]);
+
+  const totalActionable =
+    refreshedCompleted.length +
+    deferredItems.length +
+    expiredItems.length +
+    allItems.filter((i) => i.status === 'active' || i.status === 'pending').length;
+
+  if (totalActionable === 0) return undefined;
+
+  const completionRate = totalActionable > 0 ? refreshedCompleted.length / totalActionable : 0;
+
+  return {
+    completed: refreshedCompleted.map((i) => ({
+      text: i.text,
+      category: i.category,
+      targetMetric: i.targetMetric,
+      outcome:
+        i.outcomeValue != null && i.baselineValue != null && i.targetDirection
+          ? determineOutcome(i.baselineValue, i.outcomeValue, i.targetDirection)
+          : undefined,
+      outcomeConfidence: i.outcomeConfidence,
+    })),
+    deferred: deferredItems.map((i) => ({
+      text: i.text,
+      category: i.category,
+    })),
+    expired: expiredItems.map((i) => ({
+      text: i.text,
+      category: i.category,
+    })),
+    completionRate,
+  };
+}
+
 export async function gatherAndGenerate(
   pool: pg.Pool,
   aiProvider: AIProvider,
@@ -226,6 +296,9 @@ export async function gatherAndGenerate(
   prevEnd.setDate(prevEnd.getDate() - 1);
   const prevStart = new Date(prevEnd);
   prevStart.setDate(prevStart.getDate() - 6);
+
+  // 0. Run action item lifecycle management before generating
+  const actionItemFollowUp = await buildActionItemFollowUp(pool, userId);
 
   // 1. Fetch all data in parallel (current + previous week)
   const [
@@ -264,6 +337,7 @@ export async function gatherAndGenerate(
     previousWeekBiometrics,
     userNotes,
     workoutPlan,
+    actionItemFollowUp,
   });
   const result = await completeWithRetry(aiProvider, messages);
 
@@ -334,6 +408,8 @@ export async function generateWeeklyReport(
   // Promote action items to persistent tracked entities
   if (gen.actionItems.length > 0) {
     await promoteActionItems(pool, userId, reportId, gen.actionItems);
+    // Supersede old pending items that are replaced by new report items
+    await supersedeItems(pool, userId, reportId, gen.actionItems);
   }
 
   return {

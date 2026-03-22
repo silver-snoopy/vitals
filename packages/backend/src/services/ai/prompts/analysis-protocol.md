@@ -40,3 +40,17 @@ Process the provided data in this order before generating the report.
 - Identify patterns: e.g., HRV suppression + elevated RHR + reduced sweating = autonomic fatigue signal.
 - Assess whether training volume/frequency deviations explain recovery marker changes.
 - Evaluate whether caloric intake is appropriate for the actual (not prescribed) training load.
+
+## Step 6 — Action Item Follow-Up
+
+If previous action items are provided in the data bundle:
+
+- Review completed items and their measured outcomes (improved/stable/declined).
+- Note which recommendations led to measurable improvement — reinforce these patterns.
+- Review deferred items — if still relevant, consider re-recommending with updated context.
+- Review expired items — assess whether the underlying issue persists or has resolved itself.
+- Use the completion rate and outcome data to calibrate this week's recommendations:
+  - If completion rate is low, recommend fewer, higher-impact items.
+  - If outcomes show improvement, build on what worked.
+  - If outcomes declined, investigate whether the recommendation was appropriate or if other factors intervened.
+- Use correlation language ("correlated with"), never causation ("caused").

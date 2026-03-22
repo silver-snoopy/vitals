@@ -33,6 +33,39 @@ export interface TrackedActionItem extends ActionItem {
   statusChangedAt: string;
 }
 
+export type ActionItemOutcome = 'improved' | 'stable' | 'declined';
+
+export interface AttributionSummary {
+  period: string;
+  totalItems: number;
+  completedItems: number;
+  completionRate: number;
+  measuredItems: number;
+  improvedItems: number;
+  stableItems: number;
+  declinedItems: number;
+  improvementRate: number;
+  topImprovements: Array<{
+    text: string;
+    category: string;
+    metric: string;
+    change: string;
+  }>;
+}
+
+export interface ActionItemFollowUp {
+  completed: Array<{
+    text: string;
+    category: string;
+    targetMetric?: string;
+    outcome?: ActionItemOutcome;
+    outcomeConfidence?: string;
+  }>;
+  deferred: Array<{ text: string; category: string; reason?: string }>;
+  expired: Array<{ text: string; category: string }>;
+  completionRate: number;
+}
+
 export interface ScorecardEntry {
   score: number;
   notes: string;
@@ -93,4 +126,5 @@ export interface WeeklyDataBundle {
   previousWeekBiometrics: BiometricReading[];
   userNotes?: string;
   workoutPlan?: string;
+  actionItemFollowUp?: ActionItemFollowUp;
 }

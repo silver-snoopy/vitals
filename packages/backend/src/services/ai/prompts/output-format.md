@@ -23,7 +23,13 @@ All markdown fields should use tables where data comparison is involved, bullet 
     "overallRiskLevel": { "score": 0, "notes": "✅, ⚠️, or 🔴 with one-line summary" }
   },
   "actionItems": [
-    { "category": "nutrition|workout|recovery|general", "priority": "high|medium|low", "text": "Specific actionable recommendation" }
+    {
+      "category": "nutrition|workout|recovery|general",
+      "priority": "high|medium|low",
+      "text": "Specific actionable recommendation",
+      "targetMetric": "protein_g|calories|carbs_g|fat_g|body_weight_kg|body_fat_percent|hrv_rmssd|training_volume|training_frequency|null",
+      "targetDirection": "increase|decrease|maintain|null"
+    }
   ]
 }
 ```
@@ -43,3 +49,7 @@ Scorecard scores use a 1-10 scale:
 - Action items must have 3-7 entries covering the highest-priority changes.
 - If data for a section is insufficient, state what is missing in that section rather than omitting it.
 - Do not include any text outside the JSON object.
+- Each action item should include `targetMetric` and `targetDirection` when a measurable metric exists. Use `null` for general/lifestyle items that cannot be measured numerically. Examples:
+  - "Increase protein to 150g/day" → `targetMetric: "protein_g"`, `targetDirection: "increase"`
+  - "Add a deload week" → `targetMetric: "training_volume"`, `targetDirection: "decrease"`
+  - "Improve sleep consistency" → `targetMetric: null`, `targetDirection: null`

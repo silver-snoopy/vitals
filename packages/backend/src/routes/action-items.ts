@@ -7,6 +7,7 @@ import {
   getActionItem,
   updateActionItemStatus,
   getActionItemSummary,
+  getAttributionSummary,
 } from '../db/queries/action-items.js';
 
 const DEFAULT_USER_ID = 'default';
@@ -21,6 +22,21 @@ export async function actionItemRoutes(
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (_request, reply) => {
       const summary = await getActionItemSummary(app.db, DEFAULT_USER_ID);
+      return reply.send({ data: summary });
+    },
+  );
+
+  // GET /api/action-items/attribution
+  app.get<{
+    Querystring: { period?: string };
+  }>(
+    '/api/action-items/attribution',
+    { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
+    async (request, reply) => {
+      const period = (request.query.period ?? 'month') as 'week' | 'month' | 'quarter';
+      const validPeriods = ['week', 'month', 'quarter'];
+      const safePeriod = validPeriods.includes(period) ? period : 'month';
+      const summary = await getAttributionSummary(app.db, DEFAULT_USER_ID, safePeriod);
       return reply.send({ data: summary });
     },
   );

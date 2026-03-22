@@ -1,13 +1,28 @@
 import { format, parseISO } from 'date-fns';
 import { Check, Clock, X } from 'lucide-react';
 import { toast } from 'sonner';
-import type { TrackedActionItem } from '@vitals/shared';
+import type { TrackedActionItem, ActionItemOutcome } from '@vitals/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useUpdateActionItemStatus } from '@/api/hooks/useActionItems';
 import { useActionItemsStore } from '@/store/useActionItemsStore';
 import { priorityColor, priorityVariant } from '@/components/reports/report-utils';
 import { cn } from '@/lib/utils';
+import { OutcomeBadge } from './OutcomeBadge';
+
+function deriveOutcome(item: TrackedActionItem): ActionItemOutcome {
+  const baseline = item.baselineValue ?? 0;
+  const outcome = item.outcomeValue ?? 0;
+  const direction = item.targetDirection;
+
+  if (baseline === 0) return 'stable';
+  const changePct = ((outcome - baseline) / Math.abs(baseline)) * 100;
+
+  if (direction === 'maintain') return Math.abs(changePct) < 5 ? 'improved' : 'declined';
+  if (direction === 'increase')
+    return changePct > 2 ? 'improved' : changePct < -2 ? 'declined' : 'stable';
+  return changePct < -2 ? 'improved' : changePct > 2 ? 'declined' : 'stable';
+}
 
 interface Props {
   item: TrackedActionItem;
@@ -140,10 +155,17 @@ export function InteractiveActionItemCard({ item }: Props) {
         </div>
       )}
 
-      {effectiveStatus === 'completed' && item.completedAt && (
-        <p className="text-[11px] text-muted-foreground">
-          ✓ Completed {format(parseISO(item.completedAt), 'MMM d')}
-        </p>
+      {effectiveStatus === 'completed' && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {item.completedAt && (
+            <p className="text-[11px] text-muted-foreground">
+              ✓ Completed {format(parseISO(item.completedAt), 'MMM d')}
+            </p>
+          )}
+          {item.outcomeValue != null && item.baselineValue != null && item.targetDirection && (
+            <OutcomeBadge outcome={deriveOutcome(item)} confidence={item.outcomeConfidence} />
+          )}
+        </div>
       )}
     </div>
   );

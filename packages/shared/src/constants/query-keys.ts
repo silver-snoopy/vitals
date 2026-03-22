@@ -28,5 +28,6 @@ export const QUERY_KEYS = {
     list: (filters?: Record<string, string>) => ['action-items', 'list', filters] as const,
     byId: (id: string) => ['action-items', id] as const,
     summary: ['action-items', 'summary'] as const,
+    attribution: (period: string) => ['action-items', 'attribution', period] as const,
   },
 } as const;

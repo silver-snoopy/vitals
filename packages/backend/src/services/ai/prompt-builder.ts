@@ -1,6 +1,7 @@
 import type {
   AIMessage,
   WeeklyDataBundle,
+  ActionItemFollowUp,
   DailyNutritionSummary,
   WorkoutSession,
   BiometricReading,
@@ -187,6 +188,50 @@ function formatWorkoutPlan(plan?: string): string {
   return `## PRESCRIBED WORKOUT PLAN\n${plan}`;
 }
 
+function formatActionItemFollowUp(followUp?: ActionItemFollowUp): string {
+  if (!followUp) return '';
+
+  const lines: string[] = ['## ACTION ITEM FOLLOW-UP (Previous Week)'];
+  lines.push(`Completion rate: ${Math.round(followUp.completionRate * 100)}%`);
+
+  if (followUp.completed.length > 0) {
+    lines.push('');
+    lines.push('### Completed Items');
+    for (const item of followUp.completed) {
+      const outcome = item.outcome
+        ? ` → ${item.outcome.toUpperCase()}${item.outcomeConfidence ? ` (${item.outcomeConfidence} confidence)` : ''}`
+        : '';
+      const metric = item.targetMetric ? ` Target: ${item.targetMetric}` : '';
+      lines.push(`- [${item.category.toUpperCase()}] "${item.text}"${metric}${outcome}`);
+    }
+  }
+
+  if (followUp.deferred.length > 0) {
+    lines.push('');
+    lines.push('### Deferred Items');
+    for (const item of followUp.deferred) {
+      lines.push(
+        `- [${item.category.toUpperCase()}] "${item.text}"${item.reason ? ` — ${item.reason}` : ''}`,
+      );
+    }
+  }
+
+  if (followUp.expired.length > 0) {
+    lines.push('');
+    lines.push('### Expired Items');
+    for (const item of followUp.expired) {
+      lines.push(`- [${item.category.toUpperCase()}] "${item.text}" — expired without action`);
+    }
+  }
+
+  lines.push('');
+  lines.push(
+    "Consider these outcomes when generating this week's recommendations. Reinforce what worked, adjust what didn't, and address deferred items if still relevant.",
+  );
+
+  return lines.join('\n');
+}
+
 function formatPreviousReport(report: WeeklyReport | null): string {
   if (!report) return '';
   const context = report.sections
@@ -208,6 +253,7 @@ export function buildReportPrompt(bundle: WeeklyDataBundle): AIMessage[] {
     formatWorkoutPlan(bundle.workoutPlan),
     formatUserNotes(bundle.userNotes),
     formatPreviousReport(bundle.previousReport),
+    formatActionItemFollowUp(bundle.actionItemFollowUp),
   ].filter(Boolean);
 
   const user: AIMessage = {
