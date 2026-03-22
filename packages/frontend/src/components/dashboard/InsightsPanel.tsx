@@ -180,7 +180,7 @@ export function InsightsPanel() {
             </div>
           )}
           <Link
-            to="/reports/actions"
+            to="/actions"
             className="mt-2 inline-block text-xs text-muted-foreground hover:text-primary"
           >
             View all actions &rarr;

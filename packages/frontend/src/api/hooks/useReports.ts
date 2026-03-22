@@ -47,10 +47,7 @@ export function useGenerateReport() {
 
       return apiFetch<ApiResponse<GenerateReportResponse>>('/api/reports/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': import.meta.env.VITE_X_API_KEY ?? '',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
     },

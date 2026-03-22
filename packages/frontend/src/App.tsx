@@ -49,7 +49,7 @@ export default function App() {
               <Route path="nutrition" element={<NutritionPage />} />
               <Route path="workouts" element={<WorkoutsPage />} />
               <Route path="reports" element={<ReportsPage />} />
-              <Route path="reports/actions" element={<ActionsPage />} />
+              <Route path="actions" element={<ActionsPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>

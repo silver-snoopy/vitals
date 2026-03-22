@@ -15,9 +15,7 @@ export function useCollectionStatus() {
   return useQuery({
     queryKey: QUERY_KEYS.collection.status,
     queryFn: () =>
-      apiFetch<ApiResponse<CollectionStatus[]>>('/api/collect/status', {
-        headers: { 'x-api-key': import.meta.env.VITE_X_API_KEY ?? '' },
-      }),
+      apiFetch<ApiResponse<CollectionStatus[]>>('/api/collect/status'),
     staleTime: STALE_THRESHOLD_MS, // 24 hours — matches the staleness threshold
     select: (res) => ({
       statuses: res.data,
