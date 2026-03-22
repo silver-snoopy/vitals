@@ -1,5 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { BarChart3, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { useLatestReport } from '@/api/hooks/useReports';
@@ -66,7 +68,12 @@ function FocusAreaCard({
         {bullets.map((bullet, i) => (
           <li key={i} className="text-sm leading-relaxed text-muted-foreground line-clamp-1">
             <span className="mr-1.5 text-muted-foreground/50">&bull;</span>
-            {bullet}
+            <Markdown
+              remarkPlugins={[remarkGfm]}
+              components={{ p: ({ children }) => <>{children}</> }}
+            >
+              {bullet}
+            </Markdown>
           </li>
         ))}
       </ul>
