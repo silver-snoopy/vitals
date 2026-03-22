@@ -15,7 +15,7 @@ import { queryWorkoutSessions } from '../../db/queries/workouts.js';
 import { getLatestReport, saveReport, logAiGeneration } from '../../db/queries/reports.js';
 import { promoteActionItems, listActionItems } from '../../db/queries/action-items.js';
 import { buildReportPrompt } from './prompt-builder.js';
-import { measureOutcomes } from '../action-items/outcome-measurer.js';
+import { measureOutcomes, determineOutcome } from '../action-items/outcome-measurer.js';
 import { expireStaleItems, supersedeItems } from '../action-items/lifecycle-manager.js';
 
 const BIOMETRIC_METRICS = [
@@ -266,15 +266,7 @@ async function buildActionItemFollowUp(
       targetMetric: i.targetMetric,
       outcome:
         i.outcomeValue != null && i.baselineValue != null && i.targetDirection
-          ? i.outcomeValue > i.baselineValue
-            ? i.targetDirection === 'increase'
-              ? 'improved'
-              : 'declined'
-            : i.outcomeValue < i.baselineValue
-              ? i.targetDirection === 'decrease'
-                ? 'improved'
-                : 'declined'
-              : 'stable'
+          ? determineOutcome(i.baselineValue, i.outcomeValue, i.targetDirection)
           : undefined,
       outcomeConfidence: i.outcomeConfidence,
     })),

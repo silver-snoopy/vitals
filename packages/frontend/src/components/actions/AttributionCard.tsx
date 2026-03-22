@@ -64,6 +64,12 @@ export function AttributionCard({ data }: Props) {
         </div>
       )}
 
+      {!hasMeasured && data.totalItems > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Outcome data will appear once completed items have been measured.
+        </p>
+      )}
+
       {!hasMeasured && data.totalItems === 0 && (
         <p className="text-sm text-muted-foreground">
           No action items tracked yet. Complete some recommendations to see your impact.

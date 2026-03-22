@@ -77,11 +77,7 @@ export async function supersedeItems(
       (ni) => ni.category === category && keywordOverlap(text, ni.text) > 0.7,
     );
 
-    // Also supersede if new report has an item in the same category
-    // (simple approach from plan: same category = supersede pending)
-    const sameCategoryNewItem = newItems.some((ni) => ni.category === category);
-
-    if (hasReplacement || sameCategoryNewItem) {
+    if (hasReplacement) {
       toSupersede.push(id);
     }
   }
