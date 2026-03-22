@@ -17,7 +17,10 @@ describe('apiFetch', () => {
 
     await apiFetch('/api/test');
 
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/api/test'), undefined);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/test'),
+      expect.objectContaining({ headers: expect.any(Object) }),
+    );
   });
 
   it('returns parsed JSON on success', async () => {
