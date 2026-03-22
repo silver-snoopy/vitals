@@ -12,6 +12,7 @@ import {
 } from '../../db/queries/measurements.js';
 import { queryWorkoutSessions } from '../../db/queries/workouts.js';
 import { getLatestReport, saveReport, logAiGeneration } from '../../db/queries/reports.js';
+import { promoteActionItems } from '../../db/queries/action-items.js';
 import { buildReportPrompt } from './prompt-builder.js';
 
 const BIOMETRIC_METRICS = [
@@ -329,6 +330,11 @@ export async function generateWeeklyReport(
     totalTokens: gen.usage.totalTokens,
     purpose: 'weekly_report',
   });
+
+  // Promote action items to persistent tracked entities
+  if (gen.actionItems.length > 0) {
+    await promoteActionItems(pool, userId, reportId, gen.actionItems);
+  }
 
   return {
     id: reportId,

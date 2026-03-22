@@ -107,6 +107,7 @@ src/
 | `daily_aggregates` | Materialized view for dashboard | Refreshed after each collection run |
 | `conversations` | Chat conversation sessions (Phase 6A) | PK: UUID, FK: user_id |
 | `messages` | Individual chat messages (Phase 6A) | role CHECK: user/assistant/tool, JSONB tool_calls |
+| `action_items` | Persistent tracked action items from weekly reports (F3) | FK: weekly_reports(id) CASCADE; status CHECK with 7 states; 3 indexes |
 
 ### EAV Pattern (measurements table)
 
@@ -210,6 +211,10 @@ POST /api/reports/generate
 | GET | `/api/reports` | None | Phase 3 |
 | GET | `/api/reports/:id` | None | Phase 3 |
 | POST | `/api/upload/apple-health` | X-API-Key | Phase 3 |
+| GET | `/api/action-items` | X-API-Key | F3 |
+| GET | `/api/action-items/summary` | X-API-Key | F3 |
+| GET | `/api/action-items/:id` | X-API-Key | F3 |
+| PATCH | `/api/action-items/:id/status` | X-API-Key | F3 |
 
 ## Authentication
 

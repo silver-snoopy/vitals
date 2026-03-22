@@ -11,6 +11,7 @@ import { wsReportRoutes } from './routes/ws-reports.js';
 import { chatRoutes } from './routes/chat.js';
 import { wsChatRoutes } from './routes/ws-chat.js';
 import { uploadRoutes } from './routes/upload.js';
+import { actionItemRoutes } from './routes/action-items.js';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
 import { databasePlugin } from './plugins/database.js';
@@ -48,6 +49,7 @@ export async function buildApp(env: EnvConfig) {
   await app.register(chatRoutes, { env });
   await app.register(wsChatRoutes, { env });
   await app.register(uploadRoutes, { env });
+  await app.register(actionItemRoutes, { env });
 
   return app;
 }

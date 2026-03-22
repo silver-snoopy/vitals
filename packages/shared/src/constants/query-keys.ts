@@ -23,4 +23,10 @@ export const QUERY_KEYS = {
   collection: {
     status: ['collection', 'status'] as const,
   },
+  actionItems: {
+    all: ['action-items'] as const,
+    list: (filters?: Record<string, string>) => ['action-items', 'list', filters] as const,
+    byId: (id: string) => ['action-items', id] as const,
+    summary: ['action-items', 'summary'] as const,
+  },
 } as const;

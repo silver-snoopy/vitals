@@ -152,4 +152,36 @@ export async function mockDashboardApi(page: Page) {
       body: JSON.stringify(reportsFixture),
     });
   });
+
+  // Mock action items API so InsightsPanel renders correctly
+  await page.route('**/api/action-items/summary', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: { pending: 1, active: 1, completed: 0, deferred: 0, expired: 0, total: 2 },
+      }),
+    });
+  });
+
+  await page.route('**/api/action-items**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [
+          {
+            id: 'ai-1',
+            reportId: 'report-1',
+            category: 'nutrition',
+            priority: 'high',
+            text: 'Increase fiber intake to 30g daily',
+            status: 'pending',
+            createdAt: fmt(today),
+            statusChangedAt: fmt(today),
+          },
+        ],
+      }),
+    });
+  });
 }
