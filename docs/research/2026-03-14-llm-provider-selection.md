@@ -162,6 +162,49 @@ New prompt content: training phase classification, periodized macro targets, per
 
 **Phase C prompt estimate:** ~6,700 input + ~4,900 output = **~11,600 tokens/request**
 
+### Phase 6A: Conversational AI Health Assistant (Near-term)
+
+The [Phase 6A plan](../plans/2026-03-21-phase6a-conversational-ai.md) introduces a conversational chat interface with LLM tool use. Unlike batch reports (fire-and-forget), chat is **multi-turn with an agentic tool-use loop** — the LLM receives a user question, calls database query tools, receives results, and responds. This fundamentally changes the token consumption model.
+
+**Per chat interaction (single user question → answer):**
+
+| Component | Input Tokens | Output Tokens | Notes |
+|-----------|-------------|--------------|-------|
+| System prompt (chat persona + tool instructions) | ~800 | — | Sent every request |
+| Tool definitions (6 tools with JSON schemas) | ~1,200 | — | Sent every request |
+| Conversation history (avg 5 prior turns) | ~2,000 | — | Grows with conversation length |
+| User message | ~50-100 | — | Short natural language question |
+| LLM tool call request (1st loop iteration) | — | ~100-200 | Tool name + input params |
+| Tool result injected | ~300-800 | — | JSON query results (varies by data volume) |
+| LLM tool call request (2nd loop, if needed) | — | ~100-200 | ~40% of queries need a follow-up tool call |
+| Tool result injected (2nd) | ~300-800 | — | Only if 2nd tool call happens |
+| Final assistant response | — | ~300-600 | Natural language with cited data |
+
+**Single-tool-call interaction:** ~4,350 input + ~500 output = **~4,850 tokens**
+**Two-tool-call interaction:** ~5,350 input + ~700 output = **~6,050 tokens**
+**Weighted average (60% single, 40% double):** ~4,750 input + ~580 output = **~5,330 tokens/interaction**
+
+**Usage frequency estimates (single user):**
+
+| Scenario | Interactions/day | Interactions/month | Tokens/month |
+|----------|-----------------|-------------------|-------------|
+| Light (quick check-ins) | 3 | 90 | ~480,000 |
+| Moderate (daily analysis) | 8 | 240 | ~1,280,000 |
+| Heavy (deep exploration) | 15 | 450 | ~2,400,000 |
+
+**Note:** Chat usage is inherently less predictable than batch reports. A single deep exploration session (e.g., "analyze my last 3 months of training") could involve 10+ messages with 3-4 tool calls each. The heavy scenario accounts for these spikes.
+
+**Combined workload: reports + chat**
+
+| Scenario | Reports tokens/mo | Chat tokens/mo | **Total tokens/mo** |
+|----------|------------------|---------------|-------------------|
+| Current (reports only) | ~60,000 | 0 | ~60,000 |
+| Phase 6A light | ~60,000 | ~480,000 | **~540,000** |
+| Phase 6A moderate | ~60,000 | ~1,280,000 | **~1,340,000** |
+| Phase 6A heavy | ~60,000 | ~2,400,000 | **~2,460,000** |
+
+Chat represents a **9x–41x increase** in token consumption over reports alone. This shifts cost from negligible to a relevant consideration.
+
 ### Projected Monthly Costs by Phase (3 reports/day peak)
 
 | Model | Current (2K tok) | Phase A (5.3K) | Phase B (7.9K) | Phase C (11.6K) |
@@ -173,6 +216,24 @@ New prompt content: training phase classification, periodized macro targets, per
 | **Gemini 2.5 Pro** | $0.225 | $0.81 | $1.28 | $1.98 |
 | **GPT-5.2** | $0.284 | $1.03 | $1.63 | $2.52 |
 | **Claude Sonnet 4.6** | $0.338 | $1.17 | $1.83 | $2.79 |
+
+### Projected Monthly Costs with Phase 6A Chat (reports + chat combined)
+
+Token split for chat: ~89% input, ~11% output (tool-use loops are input-heavy).
+
+| Model | Light (540K tok) | Moderate (1.34M tok) | Heavy (2.46M tok) |
+|-------|-----------------|---------------------|------------------|
+| **GPT-4o Mini** | $0.05 | $0.11 | $0.19 |
+| **GPT-5 Mini** | $0.15 | $0.37 | $0.67 |
+| **Gemini 2.5 Flash** | $0.19 | $0.46 | $0.84 |
+| **Claude Haiku 4.5** | $0.54 | $1.28 | $2.31 |
+| **Gemini 2.5 Pro** | $0.81 | $1.94 | $3.51 |
+| **GPT-5.2** | $1.03 | $2.49 | $4.52 |
+| **Claude Sonnet 4.6** | $1.18 | $2.84 | $5.14 |
+
+**Key takeaway:** Chat pushes Haiku from ~$0.13/mo to **$0.54–$2.31/mo** depending on usage intensity. Even at heavy usage, Haiku stays under $2.50/mo — well within acceptable range. Sonnet at heavy chat usage reaches ~$5/mo, which is still trivial but 2x Haiku for the same task complexity.
+
+**Recommendation impact:** The phased model strategy still holds. Chat interactions are primarily question-answering over pre-computed data — the LLM interprets tool results, not raw data. This is within Haiku's capability ceiling. The upgrade trigger to Sonnet remains tied to prompt *complexity* (Phase B cross-domain reasoning), not prompt *volume* (chat frequency).
 
 ### Haiku vs Sonnet: Can Haiku Handle Future Complexity?
 
@@ -278,12 +339,13 @@ No code changes to `AIProvider` interface, `report-generator.ts`, or `prompt-bui
 
 ### Cost monitoring
 
-| Phase | Expected peak $/mo | Billing alert |
-|-------|-------------------|--------------|
-| Current → Phase A (Haiku) | $0.46 | $2/month |
-| Phase B+ (Sonnet) | $2.79 | $5/month |
+| Phase | Workload | Expected peak $/mo | Billing alert |
+|-------|----------|-------------------|--------------|
+| Current (Haiku, reports only) | ~180K tok | $0.46 | $2/month |
+| Phase 6A (Haiku, reports + chat) | ~2.5M tok | $2.31 | $5/month |
+| Phase B+ (Sonnet, reports + chat) | ~2.5M tok | $5.14 | $10/month |
 
-Set billing alerts on the Anthropic dashboard. At these volumes, even a 10x spike stays under $30/month.
+Set billing alerts on the Anthropic dashboard. Phase 6A chat increases consumption significantly (~9-41x) but Haiku's low per-token cost keeps absolute spend manageable. Even a 10x spike at heavy chat + Sonnet stays under $50/month.
 
 ---
 

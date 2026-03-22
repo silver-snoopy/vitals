@@ -9,7 +9,7 @@ import globals from 'globals';
 export default tseslint.config(
   // Global ignores
   {
-    ignores: ['**/dist/', '**/node_modules/', 'packages/workflows/'],
+    ignores: ['**/dist/', '**/node_modules/', 'packages/workflows/', 'docs/'],
   },
 
   // Base config for all TS/JS files

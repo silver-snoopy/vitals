@@ -8,6 +8,8 @@ import { dashboardRoutes } from './routes/dashboard.js';
 import { workoutRoutes } from './routes/workouts.js';
 import { reportRoutes } from './routes/reports.js';
 import { wsReportRoutes } from './routes/ws-reports.js';
+import { chatRoutes } from './routes/chat.js';
+import { wsChatRoutes } from './routes/ws-chat.js';
 import { uploadRoutes } from './routes/upload.js';
 import multipart from '@fastify/multipart';
 import websocket from '@fastify/websocket';
@@ -43,6 +45,8 @@ export async function buildApp(env: EnvConfig) {
   await app.register(workoutRoutes, { env });
   await app.register(reportRoutes, { env });
   await app.register(wsReportRoutes, { env });
+  await app.register(chatRoutes, { env });
+  await app.register(wsChatRoutes, { env });
   await app.register(uploadRoutes, { env });
 
   return app;
