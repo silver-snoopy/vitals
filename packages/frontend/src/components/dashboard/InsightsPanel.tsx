@@ -66,7 +66,7 @@ function FocusAreaCard({
       </div>
       <ul className="space-y-1">
         {bullets.map((bullet, i) => (
-          <li key={i} className="text-sm leading-relaxed text-muted-foreground line-clamp-1">
+          <li key={i} className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
             <span className="mr-1.5 text-muted-foreground/50">&bull;</span>
             <Markdown
               remarkPlugins={[remarkGfm]}
