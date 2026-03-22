@@ -1,7 +1,7 @@
 # Phase 7: QA Test
 
 ## Purpose
-Verify all changes work correctly through automated tests and, when applicable, live environment verification.
+Verify all changes work correctly through automated tests AND live environment verification. Live verification against the running local system is mandatory for every pipeline execution — frontend, backend, or any other layer.
 
 ## Step 1: Lint & Format
 ```bash
@@ -43,18 +43,13 @@ Run new tests:
 npx playwright test e2e/<feature>.spec.ts
 ```
 
-## Step 5: Live Environment UI Verification (MANDATORY when UI is affected)
+## Step 5: Live Environment Verification (ALWAYS MANDATORY)
 
-**Required when ANY of these apply:**
-1. **Frontend UI changes** — new or modified components, dialogs, forms, layout, styling, or interactive behavior
-2. **New frontend features** — any feature that introduces new UI elements or pages
-3. **Backend changes that affect UI rendering** — extended API response fields, new data shapes, or modified payloads that are consumed and displayed by the frontend
+**Required for every pipeline execution without exception — frontend, backend, API-only, type changes, refactors, config changes, anything.**
 
-**The key question:** Will a user see something different on screen as a result of this change? If yes → mandatory.
+There are no exemptions. Do not evaluate whether the change "affects the UI." Do not ask whether the user "would see something different." Run live verification on every change.
 
-**Not required for:** Backend-only changes with no UI consumer, type-only changes, config changes, CI/CD changes, or refactors with no visible UI impact.
-
-**Why mandatory:** Mocked E2E tests verify behavior against intercepted routes, but cannot catch rendering issues, styling problems, or integration bugs that only surface against a real running environment. Visual evidence provides confidence that the feature actually works as intended.
+**Why no exemptions:** Mocked E2E tests intercept routes and cannot catch integration bugs, real data shape mismatches, runtime errors in the live stack, or subtle breakage in adjacent features. The only way to know the system works is to exercise it while it is running. Backend changes that seem invisible often surface in unexpected UI states. Eliminating the conditional eliminates rationalization.
 
 ### Procedure
 
@@ -152,6 +147,6 @@ npx playwright test e2e/<renamed-file>.spec.ts
 - [ ] `npx playwright test` — all E2E tests pass
 - [ ] New E2E tests written (if applicable)
 - [ ] New E2E tests pass
-- [ ] **(UI changes)** Live UI verified with Playwright screenshots presented to user
-- [ ] **(UI changes)** Temporary visual test and screenshots cleaned up
+- [ ] Live system verified with Playwright screenshots presented to user (no exemptions)
+- [ ] Temporary visual test and screenshots cleaned up
 - [ ] **(Bugfixes)** Same bug action from Phase 2 repeated, screenshot shows fix
