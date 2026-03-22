@@ -7,21 +7,6 @@ All markdown fields should use tables where data comparison is involved, bullet 
 ```json
 {
   "summary": "1-2 sentence overview identifying the week's most significant finding and overall trajectory.",
-  "biometricsOverview": "Markdown. Body Composition table (this week vs previous week: weight, body fat %, FFM). Cardiac & Autonomic table (RHR, HRV, SpO2, respiration rate with signal indicators). Call out red flags with physiological explanation.",
-  "nutritionAnalysis": "Markdown. Daily Averages table (macros with amount and % of calories, protein per kg, fiber, sodium). Energy Availability calculation with result and threshold comparison. Micronutrient flags for anomalous days.",
-  "trainingLoad": "Markdown. Session Summary listing each session (split type, date, working sets, total volume). Volume Progression for key compound lifts week-over-week. Frequency Check comparing actual vs prescribed training days and rest days.",
-  "crossDomainCorrelation": "Markdown. Synthesize subjective notes with objective data. Identify cause-effect patterns across domains. Connect training load to recovery markers to nutrition adequacy.",
-  "whatsWorking": "Markdown. 3-5 bullet points of positive trends, strong adherence areas, or effective behaviors worth maintaining.",
-  "hazards": "Markdown. Numbered list of concerns ranked by severity. Each item: observation, why it matters, physiological mechanism.",
-  "recommendations": "Markdown with three subsections: **Immediate (this week)** — numbered, specific adjustments with target numbers. **Monitoring priorities** — what to watch next week with decision thresholds. **Medium-term (2-4 weeks)** — trajectory targets.",
-  "scorecard": {
-    "nutritionConsistency": { "score": 0, "notes": "Brief justification" },
-    "proteinTarget": { "score": 0, "notes": "Brief justification" },
-    "trainingAdherence": { "score": 0, "notes": "Brief justification" },
-    "recovery": { "score": 0, "notes": "Brief justification" },
-    "bodyCompTrend": { "score": 0, "notes": "Brief justification" },
-    "overallRiskLevel": { "score": 0, "notes": "✅, ⚠️, or 🔴 with one-line summary" }
-  },
   "actionItems": [
     {
       "category": "nutrition|workout|recovery|general",
@@ -30,7 +15,22 @@ All markdown fields should use tables where data comparison is involved, bullet 
       "targetMetric": "protein_g|calories|carbs_g|fat_g|body_weight_kg|body_fat_percent|hrv_rmssd|training_volume|training_frequency|null",
       "targetDirection": "increase|decrease|maintain|null"
     }
-  ]
+  ],
+  "scorecard": {
+    "nutritionConsistency": { "score": 0, "notes": "Brief justification" },
+    "proteinTarget": { "score": 0, "notes": "Brief justification" },
+    "trainingAdherence": { "score": 0, "notes": "Brief justification" },
+    "recovery": { "score": 0, "notes": "Brief justification" },
+    "bodyCompTrend": { "score": 0, "notes": "Brief justification" },
+    "overallRiskLevel": { "score": 0, "notes": "✅, ⚠️, or 🔴 with one-line summary" }
+  },
+  "biometricsOverview": "Markdown. Body Composition table (this week vs previous week: weight, body fat %, FFM). Cardiac & Autonomic table (RHR, HRV, SpO2, respiration rate with signal indicators). Call out red flags with physiological explanation.",
+  "nutritionAnalysis": "Markdown. Daily Averages table (macros with amount and % of calories, protein per kg, fiber, sodium). Energy Availability calculation with result and threshold comparison. Micronutrient flags for anomalous days.",
+  "trainingLoad": "Markdown. Session Summary listing each session (split type, date, working sets, total volume). Volume Progression for key compound lifts week-over-week. Frequency Check comparing actual vs prescribed training days and rest days.",
+  "crossDomainCorrelation": "Markdown. Synthesize subjective notes with objective data. Identify cause-effect patterns across domains. Connect training load to recovery markers to nutrition adequacy.",
+  "whatsWorking": "Markdown. 3-5 bullet points of positive trends, strong adherence areas, or effective behaviors worth maintaining.",
+  "hazards": "Markdown. Numbered list of concerns ranked by severity. Each item: observation, why it matters, physiological mechanism.",
+  "recommendations": "Markdown with three subsections: **Immediate (this week)** — numbered, specific adjustments with target numbers. **Monitoring priorities** — what to watch next week with decision thresholds. **Medium-term (2-4 weeks)** — trajectory targets."
 }
 ```
 

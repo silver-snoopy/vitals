@@ -10,7 +10,7 @@ import type {
 } from '@vitals/shared';
 
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
-const DEFAULT_MAX_TOKENS = 8192;
+const DEFAULT_MAX_TOKENS = 16000;
 
 export class ClaudeProvider implements AIProvider {
   private client: Anthropic;
