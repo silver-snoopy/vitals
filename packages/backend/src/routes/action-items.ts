@@ -10,18 +10,17 @@ import {
   getAttributionSummary,
 } from '../db/queries/action-items.js';
 
-const DEFAULT_USER_ID = 'default';
-
 export async function actionItemRoutes(
   app: FastifyInstance,
   opts: { env: EnvConfig },
 ): Promise<void> {
+  const userId = opts.env.dbDefaultUserId;
   // GET /api/action-items/summary — must be registered before /:id route
   app.get(
     '/api/action-items/summary',
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (_request, reply) => {
-      const summary = await getActionItemSummary(app.db, DEFAULT_USER_ID);
+      const summary = await getActionItemSummary(app.db, userId);
       return reply.send({ data: summary });
     },
   );
@@ -36,7 +35,7 @@ export async function actionItemRoutes(
       const period = (request.query.period ?? 'month') as 'week' | 'month' | 'quarter';
       const validPeriods = ['week', 'month', 'quarter'];
       const safePeriod = validPeriods.includes(period) ? period : 'month';
-      const summary = await getAttributionSummary(app.db, DEFAULT_USER_ID, safePeriod);
+      const summary = await getAttributionSummary(app.db, userId, safePeriod);
       return reply.send({ data: summary });
     },
   );
@@ -54,7 +53,7 @@ export async function actionItemRoutes(
         ? (status.split(',').filter(Boolean) as ActionItemStatus[])
         : undefined;
 
-      const items = await listActionItems(app.db, DEFAULT_USER_ID, {
+      const items = await listActionItems(app.db, userId, {
         status: statusFilter,
         category,
         reportId,
@@ -70,7 +69,7 @@ export async function actionItemRoutes(
     '/api/action-items/:id',
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (request, reply) => {
-      const item = await getActionItem(app.db, request.params.id, DEFAULT_USER_ID);
+      const item = await getActionItem(app.db, request.params.id, userId);
       if (!item) {
         return reply.code(404).send({ error: 'Not Found', statusCode: 404 });
       }
@@ -95,7 +94,7 @@ export async function actionItemRoutes(
         const updated = await updateActionItemStatus(
           app.db,
           request.params.id,
-          DEFAULT_USER_ID,
+          userId,
           status,
           dueBy,
         );
