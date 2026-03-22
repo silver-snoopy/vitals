@@ -428,7 +428,7 @@ The date range picker on other pages is irrelevant to report generation.
 
 **Behavior:**
 - Expire: `pending/active` items past `due_by` → `expired`
-- Supersede: `pending` items replaced by same-category items in new report → `superseded`
+- Supersede: `pending` items with >70% keyword overlap to new report items → `superseded`
 - Only `pending` items superseded (never `active` — user committed to those)
 - Runs before new report AI call
 
