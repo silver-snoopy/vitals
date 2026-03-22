@@ -8,6 +8,7 @@ export class ActionsPage {
   readonly tabPending: Locator;
   readonly tabActive: Locator;
   readonly tabCompleted: Locator;
+  readonly attributionCard: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -20,6 +21,7 @@ export class ActionsPage {
     this.tabPending = page.getByTestId('tab-pending');
     this.tabActive = page.getByTestId('tab-active');
     this.tabCompleted = page.getByTestId('tab-completed');
+    this.attributionCard = page.getByTestId('attribution-card');
   }
 
   async goto() {

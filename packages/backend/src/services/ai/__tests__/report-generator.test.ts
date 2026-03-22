@@ -35,6 +35,16 @@ vi.mock('../../../db/queries/reports.js', () => ({
 
 vi.mock('../../../db/queries/action-items.js', () => ({
   promoteActionItems: vi.fn().mockResolvedValue(undefined),
+  listActionItems: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../../action-items/outcome-measurer.js', () => ({
+  measureOutcomes: vi.fn().mockResolvedValue([]),
+}));
+
+vi.mock('../../action-items/lifecycle-manager.js', () => ({
+  expireStaleItems: vi.fn().mockResolvedValue(0),
+  supersedeItems: vi.fn().mockResolvedValue(0),
 }));
 
 const validAIResponse = JSON.stringify({

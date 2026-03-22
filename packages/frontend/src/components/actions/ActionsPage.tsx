@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import type { ActionItemStatus } from '@vitals/shared';
 import { Card } from '@/components/ui/card';
-import { useActionItems, useActionItemSummary } from '@/api/hooks/useActionItems';
+import {
+  useActionItems,
+  useActionItemSummary,
+  useAttributionSummary,
+} from '@/api/hooks/useActionItems';
 import { ActionItemsList } from './ActionItemsList';
+import { AttributionCard } from './AttributionCard';
 
 type FilterTab = 'all' | ActionItemStatus;
 
@@ -23,6 +28,7 @@ export function ActionsPage() {
 
   const { data: itemsData, isLoading } = useActionItems({ status: filterStatus });
   const { data: summaryData } = useActionItemSummary();
+  const { data: attributionData } = useAttributionSummary();
 
   const items = itemsData?.data ?? [];
   const summary = summaryData?.data;
@@ -47,6 +53,11 @@ export function ActionsPage() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <h1 className="text-2xl font-bold">Actions</h1>
+
+      {/* Attribution summary */}
+      {attributionData?.data && attributionData.data.totalItems > 0 && (
+        <AttributionCard data={attributionData.data} />
+      )}
 
       {/* Progress summary */}
       {summary && (

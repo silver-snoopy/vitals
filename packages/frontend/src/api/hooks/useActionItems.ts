@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ApiResponse, TrackedActionItem, ActionItemStatus } from '@vitals/shared';
+import type {
+  ApiResponse,
+  TrackedActionItem,
+  ActionItemStatus,
+  AttributionSummary,
+} from '@vitals/shared';
 import { QUERY_KEYS } from '@vitals/shared';
 import { apiFetch } from '../client';
 
@@ -68,6 +73,14 @@ export function useUpdateActionItemStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.actionItems.all });
     },
+  });
+}
+
+export function useAttributionSummary(period: 'week' | 'month' | 'quarter' = 'month') {
+  return useQuery({
+    queryKey: QUERY_KEYS.actionItems.attribution(period),
+    queryFn: () =>
+      apiFetch<ApiResponse<AttributionSummary>>(`/api/action-items/attribution?period=${period}`),
   });
 }
 

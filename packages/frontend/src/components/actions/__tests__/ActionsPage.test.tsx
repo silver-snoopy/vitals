@@ -35,6 +35,7 @@ vi.mock('@/api/hooks/useActionItems', () => ({
     data: { data: { pending: 1, active: 1, completed: 2, deferred: 0, expired: 0, total: 4 } },
   })),
   useUpdateActionItemStatus: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+  useAttributionSummary: vi.fn(() => ({ data: null })),
 }));
 
 vi.mock('@/store/useActionItemsStore', () => ({

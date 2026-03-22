@@ -77,6 +77,52 @@ export const HEALTH_TOOLS: AITool[] = [
     },
   },
   {
+    name: 'query_action_items',
+    description:
+      "Query the user's tracked action items from weekly reports. Can filter by status (pending, active, completed, deferred, expired) and category (nutrition, workout, recovery, general). Use this when the user asks about their action items, tasks, or recommendations from reports.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        status: {
+          type: 'string',
+          enum: ['pending', 'active', 'completed', 'deferred', 'expired', 'all'],
+          description: 'Filter by status. Default: "active" to show current items.',
+        },
+        category: {
+          type: 'string',
+          enum: ['nutrition', 'workout', 'recovery', 'general'],
+          description: 'Filter by category. Omit to show all categories.',
+        },
+        limit: {
+          type: 'number',
+          description: 'Max items to return. Default: 20.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'query_action_outcomes',
+    description:
+      'Query outcome measurements for completed action items. Shows whether target metrics improved after the user completed recommended actions. Use this when the user asks about results, impact, or effectiveness of their actions.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        actionItemId: {
+          type: 'string',
+          description:
+            'Specific action item ID to measure outcome for. If provided, generates a fresh snapshot.',
+        },
+        period: {
+          type: 'string',
+          enum: ['week', 'month', 'all'],
+          description: 'Time period for attribution summary. Default: "month".',
+        },
+      },
+      required: [],
+    },
+  },
+  {
     name: 'list_available_metrics',
     description:
       'List all distinct metric names available in the biometrics database for this user. Use this before calling query_biometrics to discover what metrics exist.',

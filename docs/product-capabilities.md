@@ -314,6 +314,12 @@ The date range picker on other pages is irrelevant to report generation.
 | UC-ACT-04 | Defer an action item | Implemented |
 | UC-ACT-05 | Reject a pending action item | Implemented |
 | UC-ACT-06 | Progress summary on dashboard (InsightsPanel) | Implemented |
+| UC-ACT-07 | Outcome measurement on completed items | Implemented |
+| UC-ACT-08 | Attribution summary card on Actions page | Implemented |
+| UC-ACT-09 | Outcome badges on completed items | Implemented |
+| UC-ACT-10 | Action item lifecycle automation (expire/supersede) | Implemented |
+| UC-ACT-11 | Chat tools for action items and outcomes | Implemented |
+| UC-ACT-12 | Action item follow-up in report generation | Implemented |
 
 ### UC-ACT-01: View and filter action items
 
@@ -377,6 +383,74 @@ The date range picker on other pages is irrelevant to report generation.
 - "View all actions →" link to `/reports/actions`
 
 **E2E Coverage:** `e2e/action-items.spec.ts` — UC-ACT-02, `e2e/dashboard.spec.ts`
+
+### UC-ACT-07: Outcome measurement on completed items
+
+**As a** user, **I want to** see whether my completed action items led to measurable improvement,
+**so that** I know which recommendations actually work for me.
+
+**Behavior:**
+- When a report is generated, all completed items with `targetMetric` are measured
+- Baseline: 7-day average before item creation; Outcome: 7-day average after completion
+- Outcome classified as improved/stable/declined based on `targetDirection`
+- Confidence: high (>10% + 5+ points), medium (2-10%), low (<3 points)
+- Uses correlation language, never causation
+
+### UC-ACT-08: Attribution summary card on Actions page
+
+**As a** user, **I want to** see a monthly impact summary at the top of my Actions page,
+**so that** I can understand how effective my health actions have been overall.
+
+**Behavior:**
+- `GET /api/action-items/attribution?period=week|month|quarter`
+- Card shows: completion rate bar, outcome breakdown (improved/stable/declined), top improvements
+- Renders only when `totalItems > 0`
+
+**E2E Coverage:** `e2e/action-item-outcomes.spec.ts` — UC-ACT-05
+
+### UC-ACT-09: Outcome badges on completed items
+
+**As a** user, **I want to** see outcome indicators on my completed action items,
+**so that** I can quickly identify which actions had the most impact.
+
+**Behavior:**
+- OutcomeBadge: green "↑ Improved", amber "— Stable", red "↓ Declined"
+- Shows confidence level in parentheses
+- Displayed on InteractiveActionItemCard in completed state
+- Visible in both Actions page and InsightsPanel
+
+**E2E Coverage:** `e2e/action-item-outcomes.spec.ts` — UC-ACT-05
+
+### UC-ACT-10: Action item lifecycle automation
+
+**As the system,** during report generation, stale items are expired and replaced items are superseded,
+**so that** the user's action list stays current without manual cleanup.
+
+**Behavior:**
+- Expire: `pending/active` items past `due_by` → `expired`
+- Supersede: `pending` items replaced by same-category items in new report → `superseded`
+- Only `pending` items superseded (never `active` — user committed to those)
+- Runs before new report AI call
+
+### UC-ACT-11: Chat tools for action items and outcomes
+
+**As a** user, **I want to** ask the AI about my action items and their outcomes,
+**so that** I can get personalized insights about my progress in conversation.
+
+**Behavior:**
+- `query_action_items`: filter by status/category, default shows active items
+- `query_action_outcomes`: attribution summary or on-demand measurement for specific item
+- AI uses correlation language per chat-persona guidelines
+
+### UC-ACT-12: Action item follow-up in report generation
+
+**As the system,** the AI report includes context about previous action items,
+**so that** recommendations build on what worked and adjust what didn't.
+
+**Behavior:**
+- `WeeklyDataBundle.actionItemFollowUp` added to prompt: completed items with outcomes, deferred items, expired items
+- AI Step 6 (analysis-protocol): review outcomes, calibrate recommendations
+- Output format: action items include `targetMetric` and `targetDirection` fields
 
 ---
 

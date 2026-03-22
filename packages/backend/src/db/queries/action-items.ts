@@ -193,6 +193,132 @@ export interface ActionItemSummary {
   total: number;
 }
 
+export async function getActionItemsWithOutcomes(
+  pool: pg.Pool,
+  userId: string,
+  periodDays = 30,
+): Promise<TrackedActionItem[]> {
+  const { rows } = await pool.query(
+    `SELECT ${COLUMNS} FROM action_items
+     WHERE user_id = $1
+       AND status = 'completed'
+       AND outcome_measured_at IS NOT NULL
+       AND completed_at >= now() - ($2 || ' days')::interval
+     ORDER BY completed_at DESC`,
+    [userId, String(periodDays)],
+  );
+  return rows.map((r) => mapRow(r as Record<string, unknown>));
+}
+
+export interface AttributionSummaryRow {
+  period: string;
+  totalItems: number;
+  completedItems: number;
+  completionRate: number;
+  measuredItems: number;
+  improvedItems: number;
+  stableItems: number;
+  declinedItems: number;
+  improvementRate: number;
+  topImprovements: Array<{
+    text: string;
+    category: string;
+    metric: string;
+    change: string;
+  }>;
+}
+
+export async function getAttributionSummary(
+  pool: pg.Pool,
+  userId: string,
+  period: 'week' | 'month' | 'quarter' = 'month',
+): Promise<AttributionSummaryRow> {
+  const intervalMap = { week: '7 days', month: '30 days', quarter: '90 days' };
+  const interval = intervalMap[period];
+
+  const { rows: statsRows } = await pool.query(
+    `SELECT
+       COUNT(*)::int AS total,
+       COUNT(*) FILTER (WHERE status = 'completed')::int AS completed,
+       COUNT(*) FILTER (WHERE status = 'completed' AND outcome_measured_at IS NOT NULL)::int AS measured,
+       COUNT(*) FILTER (WHERE status = 'completed' AND outcome_value IS NOT NULL AND baseline_value IS NOT NULL
+         AND (
+           (target_direction = 'increase' AND outcome_value > baseline_value) OR
+           (target_direction = 'decrease' AND outcome_value < baseline_value) OR
+           (target_direction = 'maintain' AND ABS(outcome_value - baseline_value) / GREATEST(ABS(baseline_value), 0.001) < 0.05)
+         ))::int AS improved,
+       COUNT(*) FILTER (WHERE status = 'completed' AND outcome_value IS NOT NULL AND baseline_value IS NOT NULL
+         AND ABS(outcome_value - baseline_value) / GREATEST(ABS(baseline_value), 0.001) < 0.02)::int AS stable,
+       COUNT(*) FILTER (WHERE status = 'completed' AND outcome_value IS NOT NULL AND baseline_value IS NOT NULL
+         AND NOT (
+           (target_direction = 'increase' AND outcome_value > baseline_value) OR
+           (target_direction = 'decrease' AND outcome_value < baseline_value) OR
+           (target_direction = 'maintain' AND ABS(outcome_value - baseline_value) / GREATEST(ABS(baseline_value), 0.001) < 0.05)
+         )
+         AND ABS(outcome_value - baseline_value) / GREATEST(ABS(baseline_value), 0.001) >= 0.02)::int AS declined
+     FROM action_items
+     WHERE user_id = $1 AND created_at >= now() - $2::interval`,
+    [userId, interval],
+  );
+
+  const stats = statsRows[0] ?? {
+    total: 0,
+    completed: 0,
+    measured: 0,
+    improved: 0,
+    stable: 0,
+    declined: 0,
+  };
+
+  // Top improvements: completed items with best outcome vs baseline
+  const { rows: topRows } = await pool.query(
+    `SELECT text, category, target_metric, target_direction, baseline_value, outcome_value
+     FROM action_items
+     WHERE user_id = $1
+       AND status = 'completed'
+       AND outcome_measured_at IS NOT NULL
+       AND baseline_value IS NOT NULL
+       AND outcome_value IS NOT NULL
+       AND created_at >= now() - $2::interval
+       AND (
+         (target_direction = 'increase' AND outcome_value > baseline_value) OR
+         (target_direction = 'decrease' AND outcome_value < baseline_value) OR
+         (target_direction = 'maintain' AND ABS(outcome_value - baseline_value) / GREATEST(ABS(baseline_value), 0.001) < 0.05)
+       )
+     ORDER BY ABS(outcome_value - baseline_value) DESC
+     LIMIT 3`,
+    [userId, interval],
+  );
+
+  const topImprovements = topRows.map((r) => {
+    const diff = Number(r.outcome_value) - Number(r.baseline_value);
+    const sign = diff >= 0 ? '+' : '';
+    return {
+      text: String(r.text),
+      category: String(r.category),
+      metric: String(r.target_metric),
+      change: `${sign}${diff.toFixed(1)}`,
+    };
+  });
+
+  const total = Number(stats.total);
+  const completed = Number(stats.completed);
+  const measured = Number(stats.measured);
+
+  return {
+    period,
+    totalItems: total,
+    completedItems: completed,
+    completionRate: total > 0 ? completed / total : 0,
+    measuredItems: measured,
+    improvedItems: Number(stats.improved),
+    stableItems: Number(stats.stable),
+    declinedItems: Number(stats.declined),
+    improvementRate: measured > 0 ? Number(stats.improved) / measured : 0,
+    topImprovements,
+  };
+}
+
 export async function getActionItemSummary(
   pool: pg.Pool,
   userId: string,

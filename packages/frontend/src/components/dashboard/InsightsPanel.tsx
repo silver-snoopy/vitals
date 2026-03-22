@@ -78,6 +78,7 @@ export function InsightsPanel() {
   const { data: report, isLoading } = useLatestReport();
   const status = useReportGenerationStore((s) => s.status);
   const { data: actionItemsData } = useActionItems({ status: ['pending', 'active'], limit: 3 });
+  const { data: completedItemsData } = useActionItems({ status: 'completed', limit: 3 });
   const { data: summaryData } = useActionItemSummary();
 
   if (isLoading) return null;
@@ -114,6 +115,9 @@ export function InsightsPanel() {
 
   const score = report.sections?.scorecard?.overall?.score;
   const topActions = actionItemsData?.data ?? [];
+  const recentCompleted = (completedItemsData?.data ?? []).filter(
+    (i) => i.outcomeValue != null && i.baselineValue != null,
+  );
   const summary = summaryData?.data;
   const completedCount = summary?.completed ?? 0;
   const totalCount = summary?.total ?? 0;
@@ -163,6 +167,18 @@ export function InsightsPanel() {
               <InteractiveActionItemCard key={item.id} item={item} />
             ))}
           </div>
+          {recentCompleted.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-border/50">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Recently Completed
+              </p>
+              <div className="grid grid-cols-1 gap-1.5 md:grid-cols-3">
+                {recentCompleted.map((item) => (
+                  <InteractiveActionItemCard key={item.id} item={item} />
+                ))}
+              </div>
+            </div>
+          )}
           <Link
             to="/reports/actions"
             className="mt-2 inline-block text-xs text-muted-foreground hover:text-primary"
