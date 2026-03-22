@@ -54,6 +54,7 @@ docs/screenshots/current-ui/
 
 # Playwright
 playwright-report/
+.playwright-mcp/
 test-results/
 
 # OS
