@@ -198,7 +198,7 @@ export function InsightsPanel() {
       {/* Section 3: Focus Areas */}
       {hasFocusAreas && (
         <div className="border-t border-border px-4 py-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className={cn('grid grid-cols-1 gap-3', workingBullets.length > 0 && hazardBullets.length > 0 && 'md:grid-cols-2')}>
             <FocusAreaCard
               title="What's Working"
               icon={CheckCircle2}
