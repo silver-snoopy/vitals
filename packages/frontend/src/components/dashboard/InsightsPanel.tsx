@@ -1,5 +1,7 @@
 import { format, parseISO } from 'date-fns';
 import { BarChart3, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import Markdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { useLatestReport } from '@/api/hooks/useReports';
@@ -64,9 +66,14 @@ function FocusAreaCard({
       </div>
       <ul className="space-y-1">
         {bullets.map((bullet, i) => (
-          <li key={i} className="text-sm leading-relaxed text-muted-foreground line-clamp-1">
+          <li key={i} className="text-sm leading-relaxed text-muted-foreground">
             <span className="mr-1.5 text-muted-foreground/50">&bull;</span>
-            {bullet}
+            <Markdown
+              remarkPlugins={[remarkGfm]}
+              components={{ p: ({ children }) => <>{children}</> }}
+            >
+              {bullet}
+            </Markdown>
           </li>
         ))}
       </ul>
@@ -131,7 +138,7 @@ export function InsightsPanel() {
   const hasFocusAreas = workingBullets.length > 0 || hazardBullets.length > 0;
 
   return (
-    <Card className="overflow-hidden">
+    <Card>
       {/* Section 1: Score + Summary */}
       <div className="flex flex-col items-center gap-4 px-4 py-4 md:flex-row md:items-start">
         {score != null && <ScoreRing score={score} />}
@@ -191,7 +198,12 @@ export function InsightsPanel() {
       {/* Section 3: Focus Areas */}
       {hasFocusAreas && (
         <div className="border-t border-border px-4 py-3">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div
+            className={cn(
+              'grid grid-cols-1 gap-3',
+              workingBullets.length > 0 && hazardBullets.length > 0 && 'md:grid-cols-2',
+            )}
+          >
             <FocusAreaCard
               title="What's Working"
               icon={CheckCircle2}

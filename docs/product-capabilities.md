@@ -72,8 +72,8 @@ and biometrics (Apple Health) in a single unified dashboard.
 - Score ring: SVG circular indicator showing overall AI score (color-coded: green ≥7, amber ≥5, red <5)
 - Full summary text (not truncated), period dates, "View Report →" link
 - Top 3 action items: interactive cards with accept/defer/reject actions (pending) or complete/defer (active); progress counter "X/Y done"; "View all actions →" link to `/reports/actions`
-- Focus areas: "What's Working" (emerald tint) and "Watch Out" (amber tint) cards with extracted bullet points from report sections
-- Desktop: 3-column action items grid, 2-column focus areas
+- Focus areas: "What's Working" (emerald tint) and "Watch Out" (amber tint) cards with extracted bullet points from report sections; bullet text renders inline markdown (bold labels); cards span full width when only one section has content, side-by-side when both present
+- Desktop: 3-column action items grid, 2-column focus areas (when both present)
 - Mobile: all sections stack vertically, score ring centered
 - If no report: "No report yet — Generate →"
 - If generating: spinner with "Generating report…"
