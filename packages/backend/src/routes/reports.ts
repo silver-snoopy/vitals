@@ -2,7 +2,11 @@ import type { FastifyInstance } from 'fastify';
 import type { EnvConfig } from '../config/env.js';
 import type { GenerateReportRequest } from '@vitals/shared';
 import { apiKeyMiddleware } from '../middleware/api-key.js';
-import { validateDateRange, isDateRangeError, getDefaultDateRange } from '../utils/validate-dates.js';
+import {
+  validateDateRange,
+  isDateRangeError,
+  getDefaultDateRange,
+} from '../utils/validate-dates.js';
 import { getReportById, listReports, createPendingReport } from '../db/queries/reports.js';
 import { generateWeeklyReport } from '../services/ai/report-generator.js';
 import { createAIProvider } from '../services/ai/ai-service.js';

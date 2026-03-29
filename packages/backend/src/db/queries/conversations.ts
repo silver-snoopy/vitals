@@ -56,19 +56,13 @@ export async function createConversation(
   return rowToConversation(rows[0] as Record<string, unknown>);
 }
 
-export async function getConversation(
-  pool: pg.Pool,
-  id: string,
-): Promise<ConversationRow | null> {
+export async function getConversation(pool: pg.Pool, id: string): Promise<ConversationRow | null> {
   const { rows } = await pool.query(`SELECT * FROM conversations WHERE id = $1`, [id]);
   if (rows.length === 0) return null;
   return rowToConversation(rows[0] as Record<string, unknown>);
 }
 
-export async function listConversations(
-  pool: pg.Pool,
-  userId: string,
-): Promise<ConversationRow[]> {
+export async function listConversations(pool: pg.Pool, userId: string): Promise<ConversationRow[]> {
   const { rows } = await pool.query(
     `SELECT * FROM conversations WHERE user_id = $1 ORDER BY updated_at DESC`,
     [userId],
@@ -81,10 +75,10 @@ export async function updateConversationTitle(
   id: string,
   title: string,
 ): Promise<void> {
-  await pool.query(
-    `UPDATE conversations SET title = $1, updated_at = NOW() WHERE id = $2`,
-    [title, id],
-  );
+  await pool.query(`UPDATE conversations SET title = $1, updated_at = NOW() WHERE id = $2`, [
+    title,
+    id,
+  ]);
 }
 
 export async function deleteConversation(pool: pg.Pool, id: string): Promise<void> {
@@ -117,10 +111,7 @@ export async function addMessage(
   return rowToMessage(rows[0] as Record<string, unknown>);
 }
 
-export async function getMessages(
-  pool: pg.Pool,
-  conversationId: string,
-): Promise<MessageRow[]> {
+export async function getMessages(pool: pg.Pool, conversationId: string): Promise<MessageRow[]> {
   const { rows } = await pool.query(
     `SELECT * FROM messages WHERE conversation_id = $1 ORDER BY created_at`,
     [conversationId],

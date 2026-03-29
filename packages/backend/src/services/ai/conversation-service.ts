@@ -30,11 +30,7 @@ export async function chat(
   history: AIMessage[],
 ): Promise<ChatResult> {
   const systemMessage: AIMessage = { role: 'system', content: buildSystemPrompt() };
-  const messages: AIMessage[] = [
-    systemMessage,
-    ...history,
-    { role: 'user', content: userMessage },
-  ];
+  const messages: AIMessage[] = [systemMessage, ...history, { role: 'user', content: userMessage }];
 
   const allToolCalls: ToolCallRecord[] = [];
   let totalTokens = 0;
@@ -106,11 +102,7 @@ export async function* chatStream(
   onToolCall?: (record: ToolCallRecord) => void,
 ): AsyncIterable<AIStreamChunk> {
   const systemMessage: AIMessage = { role: 'system', content: buildSystemPrompt() };
-  const messages: AIMessage[] = [
-    systemMessage,
-    ...history,
-    { role: 'user', content: userMessage },
-  ];
+  const messages: AIMessage[] = [systemMessage, ...history, { role: 'user', content: userMessage }];
 
   let iterations = 0;
 
@@ -138,7 +130,7 @@ export async function* chatStream(
         const partialJson =
           typeof chunk.toolCall?.input === 'string'
             ? chunk.toolCall.input
-            : (chunk.toolCall?.input as unknown as string) ?? '';
+            : ((chunk.toolCall?.input as unknown as string) ?? '');
         const entry = toolCallMap.get(activeToolCallId);
         if (entry) entry.inputJson += partialJson;
       }
@@ -169,7 +161,10 @@ export async function* chatStream(
         try {
           input = JSON.parse(tc.inputJson) as Record<string, unknown>;
         } catch {
-          console.error(`[chatStream] Failed to parse tool input JSON for ${tc.name}:`, tc.inputJson);
+          console.error(
+            `[chatStream] Failed to parse tool input JSON for ${tc.name}:`,
+            tc.inputJson,
+          );
         }
       }
       return { ...tc, resolvedInput: input };
@@ -179,14 +174,22 @@ export async function* chatStream(
     messages.push({
       role: 'assistant',
       content: assistantText,
-      toolUses: resolvedToolCalls.map((tc) => ({ id: tc.id, name: tc.name, input: tc.resolvedInput })),
+      toolUses: resolvedToolCalls.map((tc) => ({
+        id: tc.id,
+        name: tc.name,
+        input: tc.resolvedInput,
+      })),
     });
 
     // Execute each tool and push results
     for (const tc of resolvedToolCalls) {
       const toolResult = await executeTool(tc.name, tc.resolvedInput, db, userId);
 
-      const record: ToolCallRecord = { toolName: tc.name, input: tc.resolvedInput, result: toolResult };
+      const record: ToolCallRecord = {
+        toolName: tc.name,
+        input: tc.resolvedInput,
+        result: toolResult,
+      };
       onToolCall?.(record);
 
       messages.push({

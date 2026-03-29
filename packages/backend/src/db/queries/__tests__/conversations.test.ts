@@ -95,7 +95,10 @@ describe('conversation queries', () => {
   it('updateConversationTitle calls UPDATE', async () => {
     const pool = makePool([]);
     await updateConversationTitle(pool, 'uuid-1', 'New title');
-    const [sql, params] = (pool.query as ReturnType<typeof vi.fn>).mock.calls[0] as [string, unknown[]];
+    const [sql, params] = (pool.query as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      unknown[],
+    ];
     expect(sql).toMatch(/UPDATE/);
     expect(params).toContain('New title');
   });

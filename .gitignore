@@ -51,6 +51,7 @@ dist/
 
 # Screenshots (generated locally)
 docs/screenshots/current-ui/
+e2e/screenshots/
 
 # Playwright
 playwright-report/

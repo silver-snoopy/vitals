@@ -24,7 +24,9 @@ async function run() {
     const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
     const page = await context.newPage();
     for (const p of pages) {
-      await page.goto(`${BASE}${p.path}`, { waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+      await page
+        .goto(`${BASE}${p.path}`, { waitUntil: 'networkidle', timeout: 15000 })
+        .catch(() => {});
       await page.waitForTimeout(3000); // extra time for charts to render
       const filename = path.join(OUT, `${p.name}-${vp.name}.png`);
       await page.screenshot({ path: filename, fullPage: true });

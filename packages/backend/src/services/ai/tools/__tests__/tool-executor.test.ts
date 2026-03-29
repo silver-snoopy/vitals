@@ -3,12 +3,12 @@ import { executeTool } from '../tool-executor.js';
 import type pg from 'pg';
 
 vi.mock('../../../../db/queries/measurements.js', () => ({
-  queryDailyNutritionSummary: vi.fn().mockResolvedValue([
-    { date: '2026-03-01', calories: 2100, protein: 150, carbs: 220, fat: 70 },
-  ]),
-  queryMeasurementsByMetrics: vi.fn().mockResolvedValue([
-    { date: '2026-03-01', metric: 'body_weight_kg', value: 82.5, unit: 'kg' },
-  ]),
+  queryDailyNutritionSummary: vi
+    .fn()
+    .mockResolvedValue([{ date: '2026-03-01', calories: 2100, protein: 150, carbs: 220, fat: 70 }]),
+  queryMeasurementsByMetrics: vi
+    .fn()
+    .mockResolvedValue([{ date: '2026-03-01', metric: 'body_weight_kg', value: 82.5, unit: 'kg' }]),
 }));
 
 vi.mock('../../../../db/queries/workouts.js', () => ({

@@ -27,9 +27,7 @@ export class ClaudeProvider implements AIProvider {
     return 'claude';
   }
 
-  private buildAnthropicMessages(
-    messages: AIMessage[],
-  ): Anthropic.MessageParam[] {
+  private buildAnthropicMessages(messages: AIMessage[]): Anthropic.MessageParam[] {
     return messages
       .filter((m) => m.role !== 'system')
       .map((m) => {
@@ -46,7 +44,10 @@ export class ClaudeProvider implements AIProvider {
           };
         }
         if (m.role === 'assistant' && m.toolUses?.length) {
-          const content: Array<{ type: 'text'; text: string } | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }> = [];
+          const content: Array<
+            | { type: 'text'; text: string }
+            | { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }
+          > = [];
           if (m.content) content.push({ type: 'text', text: m.content });
           for (const tu of m.toolUses) {
             content.push({ type: 'tool_use', id: tu.id, name: tu.name, input: tu.input });
@@ -124,7 +125,12 @@ export class ClaudeProvider implements AIProvider {
     const toolCalls = response.content
       .filter((block) => block.type === 'tool_use')
       .map((block) => {
-        const tb = block as { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> };
+        const tb = block as {
+          type: 'tool_use';
+          id: string;
+          name: string;
+          input: Record<string, unknown>;
+        };
         return { id: tb.id, name: tb.name, input: tb.input };
       });
 

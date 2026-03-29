@@ -50,8 +50,7 @@ export const useChatStore = create<ChatState>((set) => ({
 
   startStreaming: () => set({ isStreaming: true, streamingText: '' }),
 
-  appendStreamChunk: (text) =>
-    set((s) => ({ streamingText: s.streamingText + text })),
+  appendStreamChunk: (text) => set((s) => ({ streamingText: s.streamingText + text })),
 
   appendToolCall: (tc) =>
     set((s) => {

@@ -1,4 +1,11 @@
-import { LayoutDashboard, Salad, Dumbbell, FileText, MessageCircle, CheckSquare } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Salad,
+  Dumbbell,
+  FileText,
+  MessageCircle,
+  CheckSquare,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

@@ -14,7 +14,9 @@ function makeProvider(responses: AIToolCompletionResult[]): AIProvider {
   return {
     name: () => 'mock',
     complete: vi.fn(),
-    completeWithTools: vi.fn().mockImplementation(async () => responses[call++] ?? responses[responses.length - 1]),
+    completeWithTools: vi
+      .fn()
+      .mockImplementation(async () => responses[call++] ?? responses[responses.length - 1]),
     stream: vi.fn(),
   };
 }
@@ -46,7 +48,13 @@ const toolUseResponse: AIToolCompletionResult = {
   content: '',
   model: 'mock',
   usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
-  toolCalls: [{ id: 'tc-1', name: 'query_nutrition', input: { startDate: '2026-03-01', endDate: '2026-03-07' } }],
+  toolCalls: [
+    {
+      id: 'tc-1',
+      name: 'query_nutrition',
+      input: { startDate: '2026-03-01', endDate: '2026-03-07' },
+    },
+  ],
   stopReason: 'tool_use',
 };
 
@@ -60,7 +68,11 @@ const textOnlyChunks: AIStreamChunk[] = [
 const toolCallChunks: AIStreamChunk[] = [
   {
     type: 'tool_call_start',
-    toolCall: { id: 'tc-stream-1', name: 'query_nutrition', input: { startDate: '2026-03-01', endDate: '2026-03-07' } },
+    toolCall: {
+      id: 'tc-stream-1',
+      name: 'query_nutrition',
+      input: { startDate: '2026-03-01', endDate: '2026-03-07' },
+    },
   },
   { type: 'done' },
 ];
@@ -102,7 +114,10 @@ describe('chat conversation service', () => {
       { role: 'assistant', content: 'Previous answer' },
     ];
     await chat(provider, mockDb, 'default', 'Follow-up', history);
-    const callArgs = (provider.completeWithTools as ReturnType<typeof vi.fn>).mock.calls[0] as [AIMessage[], unknown];
+    const callArgs = (provider.completeWithTools as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      AIMessage[],
+      unknown,
+    ];
     const messages = callArgs[0];
     expect(messages.some((m) => m.content === 'Previous question')).toBe(true);
     expect(messages.some((m) => m.content === 'Follow-up')).toBe(true);
@@ -149,7 +164,14 @@ describe('chatStream', () => {
     const provider = makeStreamingProvider([toolCallChunks, textAfterToolChunks]);
     const onToolCall = vi.fn();
 
-    for await (const _ of chatStream(provider, mockDb, 'default', 'What is my protein?', [], onToolCall)) {
+    for await (const _ of chatStream(
+      provider,
+      mockDb,
+      'default',
+      'What is my protein?',
+      [],
+      onToolCall,
+    )) {
       // consume
     }
 
@@ -163,7 +185,11 @@ describe('chatStream', () => {
     const infiniteToolChunks: AIStreamChunk[] = [
       {
         type: 'tool_call_start',
-        toolCall: { id: 'tc-inf', name: 'query_nutrition', input: { startDate: '2026-03-01', endDate: '2026-03-07' } },
+        toolCall: {
+          id: 'tc-inf',
+          name: 'query_nutrition',
+          input: { startDate: '2026-03-01', endDate: '2026-03-07' },
+        },
       },
       { type: 'done' },
     ];

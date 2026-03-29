@@ -21,8 +21,15 @@ export const messagesFixture = [
     id: 'msg-2',
     conversationId: 'conv-1',
     role: 'assistant' as const,
-    content: 'Your average protein intake last week was **162g per day**, which is excellent at 2.4 g/kg of body weight.',
-    toolCalls: [{ id: '', name: 'query_nutrition', input: { startDate: '2026-03-15', endDate: '2026-03-22' } }],
+    content:
+      'Your average protein intake last week was **162g per day**, which is excellent at 2.4 g/kg of body weight.',
+    toolCalls: [
+      {
+        id: '',
+        name: 'query_nutrition',
+        input: { startDate: '2026-03-15', endDate: '2026-03-22' },
+      },
+    ],
     toolName: null,
     createdAt: '2026-03-22T10:01:00Z',
   },
@@ -68,12 +75,14 @@ export async function mockChatWebSocket(page: Page) {
       ws.send(JSON.stringify({ type: 'conversation_id', conversationId: 'conv-new-1' }));
 
       await new Promise((r) => setTimeout(r, 50));
-      ws.send(JSON.stringify({
-        type: 'tool_call',
-        toolName: 'query_nutrition',
-        input: { startDate: '2026-03-15', endDate: '2026-03-22' },
-        result: JSON.stringify([{ date: '2026-03-15', protein: 165 }]),
-      }));
+      ws.send(
+        JSON.stringify({
+          type: 'tool_call',
+          toolName: 'query_nutrition',
+          input: { startDate: '2026-03-15', endDate: '2026-03-22' },
+          result: JSON.stringify([{ date: '2026-03-15', protein: 165 }]),
+        }),
+      );
 
       await new Promise((r) => setTimeout(r, 50));
       ws.send(JSON.stringify({ type: 'text', text: 'Your average protein intake ' }));

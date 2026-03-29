@@ -14,8 +14,20 @@ vi.mock('../../services/collectors/register.js', () => ({
 
 // Mock conversation queries so tests don't hit the DB
 vi.mock('../../db/queries/conversations.js', () => ({
-  createConversation: vi.fn().mockResolvedValue({ id: 'conv-1', title: null, userId: 'default', createdAt: new Date(), updatedAt: new Date() }),
-  getConversation: vi.fn().mockResolvedValue({ id: 'conv-1', title: null, userId: 'default', createdAt: new Date(), updatedAt: new Date() }),
+  createConversation: vi.fn().mockResolvedValue({
+    id: 'conv-1',
+    title: null,
+    userId: 'default',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  getConversation: vi.fn().mockResolvedValue({
+    id: 'conv-1',
+    title: null,
+    userId: 'default',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
   listConversations: vi.fn().mockResolvedValue([]),
   getMessages: vi.fn().mockResolvedValue([]),
   addMessage: vi.fn().mockResolvedValue(undefined),

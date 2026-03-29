@@ -22,10 +22,7 @@ interface SendMessageBody {
   conversationId?: string;
 }
 
-export async function chatRoutes(
-  app: FastifyInstance,
-  opts: { env: EnvConfig },
-): Promise<void> {
+export async function chatRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   // POST /api/chat — send a message, get a response
   app.post<{ Body: SendMessageBody }>(
     '/api/chat',
@@ -39,7 +36,9 @@ export async function chatRoutes(
       }
 
       if (message.length > MAX_MESSAGE_LENGTH) {
-        return reply.code(400).send({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` });
+        return reply
+          .code(400)
+          .send({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` });
       }
 
       let convId = conversationId;

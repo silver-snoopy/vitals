@@ -116,11 +116,7 @@ export function ChatPage() {
           </button>
         </div>
 
-        <MessageList
-          messages={messages}
-          streamingText={streamingText}
-          isStreaming={isStreaming}
-        />
+        <MessageList messages={messages} streamingText={streamingText} isStreaming={isStreaming} />
 
         <ChatInput onSend={handleSend} disabled={isStreaming} />
       </div>

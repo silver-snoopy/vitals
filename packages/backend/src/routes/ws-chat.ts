@@ -19,10 +19,7 @@ interface WsChatMessage {
   conversationId?: string;
 }
 
-export async function wsChatRoutes(
-  app: FastifyInstance,
-  opts: { env: EnvConfig },
-): Promise<void> {
+export async function wsChatRoutes(app: FastifyInstance, opts: { env: EnvConfig }): Promise<void> {
   app.get<{ Querystring: { token?: string } }>(
     '/ws/chat',
     { websocket: true },
@@ -42,7 +39,9 @@ export async function wsChatRoutes(
       socket.on('message', async (rawData: Buffer) => {
         // Guard against concurrent messages corrupting conversation state
         if (isProcessing) {
-          socket.send(JSON.stringify({ type: 'error', error: 'A message is already being processed' }));
+          socket.send(
+            JSON.stringify({ type: 'error', error: 'A message is already being processed' }),
+          );
           return;
         }
         isProcessing = true;
@@ -73,7 +72,12 @@ export async function wsChatRoutes(
         }
 
         if (message.length > MAX_MESSAGE_LENGTH) {
-          socket.send(JSON.stringify({ type: 'error', error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` }));
+          socket.send(
+            JSON.stringify({
+              type: 'error',
+              error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters`,
+            }),
+          );
           return;
         }
 
@@ -168,7 +172,11 @@ export async function wsChatRoutes(
             conversationId: convId,
             role: 'assistant',
             content: fullResponse,
-            toolCalls: toolCallRecords.map((tc) => ({ id: '', name: tc.toolName, input: tc.input })),
+            toolCalls: toolCallRecords.map((tc) => ({
+              id: '',
+              name: tc.toolName,
+              input: tc.input,
+            })),
             toolName: null,
             toolCallId: null,
             tokensUsed: null,
