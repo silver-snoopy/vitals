@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ApiResponse, WeeklyReport, GenerateReportResponse } from '@vitals/shared';
 import { QUERY_KEYS } from '@vitals/shared';
-import { format, subDays } from 'date-fns';
 import { apiFetch } from '../client';
 
 export function useReports() {
@@ -32,15 +31,8 @@ export function useReport(id: string) {
 export function useGenerateReport() {
   return useMutation({
     mutationFn: (params?: { userNotes?: string }) => {
-      const today = new Date();
-      const startDate = format(subDays(today, 6), 'yyyy-MM-dd');
-      const endDate = format(today, 'yyyy-MM-dd');
-
+      const payload: { userNotes?: string } = {};
       const trimmedUserNotes = params?.userNotes?.trim();
-      const payload: { startDate: string; endDate: string; userNotes?: string } = {
-        startDate,
-        endDate,
-      };
       if (trimmedUserNotes) {
         payload.userNotes = trimmedUserNotes;
       }
