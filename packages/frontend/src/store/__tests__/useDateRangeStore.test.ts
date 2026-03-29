@@ -2,6 +2,7 @@ import { useDateRangeStore } from '../useDateRangeStore';
 
 describe('useDateRangeStore', () => {
   beforeEach(() => {
+    localStorage.clear();
     const today = new Date();
     const fourteenDaysAgo = new Date(today);
     fourteenDaysAgo.setDate(today.getDate() - 14);

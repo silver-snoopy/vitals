@@ -3,6 +3,8 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { MobileHeader } from './MobileHeader';
 import { BottomNav } from './BottomNav';
+import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
+import { IosInstallPrompt } from '@/components/pwa/IosInstallPrompt';
 
 export function AppShell() {
   return (
@@ -15,6 +17,8 @@ export function AppShell() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <MobileHeader className="md:hidden" />
         <Topbar className="hidden md:flex" />
+        <OfflineIndicator />
+        <IosInstallPrompt />
         <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6">
           <Outlet />
         </main>
