@@ -15,6 +15,9 @@ import { ReportsPage } from '@/components/reports/ReportsPage';
 import { ChatPage } from '@/components/chat/ChatPage';
 import { ActionsPage } from '@/components/actions/ActionsPage';
 import { PwaUpdatePrompt } from '@/components/pwa/PwaUpdatePrompt';
+import { useHealthKitSync } from '@/api/hooks/useHealthKitSync';
+import { isNative } from '@/native/capacitor';
+import { initPushNotifications } from '@/native/push';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +53,53 @@ const idbPersister: Persister = {
   },
 };
 
+function NativeInitializer() {
+  useHealthKitSync();
+  const theme = useThemeStore((s) => s.theme);
+
+  // One-time push notification registration — returns cleanup to remove listeners
+  useEffect(() => {
+    if (!isNative()) return;
+
+    let cleanup: (() => void) | undefined;
+    initPushNotifications({
+      onTokenReceived: (token) => {
+        // TODO: Send token to backend for push notification targeting
+        console.log('Push token:', token.value);
+      },
+      onNotificationReceived: (notification) => {
+        console.log('Push notification received:', notification);
+      },
+    }).then((cleanupFn) => {
+      cleanup = cleanupFn;
+    });
+
+    return () => {
+      cleanup?.();
+    };
+  }, []);
+
+  // Status bar style — reactive to theme changes
+  useEffect(() => {
+    if (!isNative()) return;
+
+    let isMounted = true;
+    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+      if (!isMounted) return;
+      const isDark =
+        theme === 'dark' ||
+        (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light });
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [theme]);
+
+  return null;
+}
+
 function ThemeProvider({ children }: { children: ReactNode }) {
   const theme = useThemeStore((s) => s.theme);
 
@@ -75,6 +125,7 @@ export default function App() {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: idbPersister }}>
       <ThemeProvider>
+        <NativeInitializer />
         <BrowserRouter>
           <Routes>
             <Route element={<AppShell />}>
