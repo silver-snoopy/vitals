@@ -785,3 +785,75 @@ The date range picker on other pages is irrelevant to report generation.
 - Chat, report generation, and action item override states are NOT persisted (transient by design)
 
 **E2E Coverage:** Verified via unit tests (`useThemeStore.test.ts`, `useDateRangeStore.test.ts`)
+
+---
+
+## 10. iOS Native Wrapper — Capacitor (Phase B)
+
+| ID | Use Case | Status |
+|----|----------|--------|
+| UC-NAT-01 | HealthKit auto-sync on iOS native | Implemented (requires macOS + Xcode to test) |
+| UC-NAT-02 | Conditional upload UI (HealthKit vs XML) | Implemented |
+| UC-NAT-03 | Push notification registration | Implemented (backend APNS integration pending) |
+| UC-NAT-04 | Haptic feedback wrappers | Implemented (wrappers ready; integration points TBD) |
+| UC-NAT-05 | Native status bar theming | Implemented |
+| UC-NAT-06 | Web PWA unchanged by native wrapper | Implemented — verified via Playwright regression |
+
+### UC-NAT-01: HealthKit auto-sync on iOS native
+
+**As a** Vitals iOS app user, **I want** my health data synced automatically from Apple Health,
+**so that** I don't need to manually export and upload XML files.
+
+**Behavior:**
+- On iOS native (Capacitor), `useHealthKitSync` runs on mount, on app resume, and every 15 minutes
+- Requests HealthKit read authorization for: steps, heartRate, weight, calories, bodyFat, restingHeartRate, bloodPressure
+- Queries last 7 days of aggregated daily data per type
+- POSTs to `POST /api/health/native-sync` (backend route pending — Phase B follow-up)
+- Invalidates dashboard, measurements, and workouts query caches on success
+- On web: hook is a no-op — `isHealthKitAvailable()` returns false
+- Authorization denial handled gracefully — returns false, no sync attempted
+
+**Files:** `src/native/health.ts`, `src/api/hooks/useHealthKitSync.ts`
+
+### UC-NAT-02: Conditional upload UI
+
+**As a** user, **I want** the data upload experience appropriate to my platform,
+**so that** native iOS users get one-tap sync while web users keep the file upload.
+
+**Behavior:**
+- On iOS native: Upload modal shows "Sync from Apple Health" button
+- On web/PWA: Upload modal shows existing XML file drop zone (unchanged)
+- Modal title changes: "Sync Health Data" (native) vs "Upload Apple Health Data" (web)
+- Success toast shown only when sync returns true; error toast shown by hook on failure
+
+**E2E Coverage:** Playwright web regression — modal shows XML uploader on web (no HealthKit button)
+
+**Files:** `src/components/upload/UploadModal.tsx`
+
+### UC-NAT-03: Push notification registration
+
+**As a** native iOS user, **I want** to receive push notifications,
+**so that** I'm alerted when weekly reports are generated.
+
+**Behavior:**
+- On first native launch: requests APNS push permission
+- On grant: registers device, logs push token (backend storage + APNS integration pending)
+- Listeners registered for: `registration`, `pushNotificationReceived`, `pushNotificationActionPerformed`
+- Listeners properly cleaned up on component unmount
+- On web: no-op — web push uses the service worker instead
+
+**Files:** `src/native/push.ts`, `src/App.tsx` (`NativeInitializer`)
+
+### UC-NAT-06: Web PWA unchanged by native wrapper
+
+**As a** web/PWA user, **I want** Phase B changes to have zero impact on my experience,
+**so that** the native wrapper doesn't break the existing web app.
+
+**Behavior:**
+- All `isNative()` / `isHealthKitAvailable()` guards ensure native code is never called on web
+- Capacitor core library detects non-native context and no-ops all plugin calls
+- No console errors from Capacitor plugins in browser
+- Upload modal: shows XML uploader (not HealthKit button)
+- All existing pages, navigation, and data flows unchanged
+
+**E2E Coverage:** Playwright web regression — 3 tests passing (home load, upload modal, navigation)

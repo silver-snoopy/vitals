@@ -9,10 +9,22 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "cap:sync": "cap sync ios",
+    "cap:open": "cap open ios",
+    "cap:run": "cap run ios",
+    "build:ios": "npm run build && cap sync ios"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.3.0",
+    "@capacitor/push-notifications": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
+    "@capgo/capacitor-health": "^8.4.2",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.62.0",
@@ -39,6 +51,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
