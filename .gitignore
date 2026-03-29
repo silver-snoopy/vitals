@@ -66,5 +66,8 @@ Thumbs.db
 /data/
 .superpowers/
 
+# Capacitor iOS CocoaPods (reinstalled with `npx cap sync`)
+packages/frontend/ios/App/Pods/
+
 # Claude Code local settings (machine-specific permissions)
 .claude/settings.local.json
