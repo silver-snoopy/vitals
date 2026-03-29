@@ -4,6 +4,8 @@ Return ONLY a valid JSON object with no prose before or after. Use the exact str
 
 All markdown fields should use tables where data comparison is involved, bullet points for lists, and signal indicators (✅ ⚠️ 🔴) for status.
 
+**JSON escaping:** All double-quote characters within string values MUST be escaped as `\"`. Never use unescaped `"` inside a JSON string (e.g., write `\"adequate\"` not `"adequate"`).
+
 ```json
 {
   "summary": "1-2 sentence overview identifying the week's most significant finding and overall trajectory.",
