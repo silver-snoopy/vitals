@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 function toDateString(d: Date): string {
   const year = d.getFullYear();
@@ -17,8 +18,13 @@ interface DateRangeState {
   setRange: (startDate: string, endDate: string) => void;
 }
 
-export const useDateRangeStore = create<DateRangeState>((set) => ({
-  startDate: toDateString(fourteenDaysAgo),
-  endDate: toDateString(today),
-  setRange: (startDate, endDate) => set({ startDate, endDate }),
-}));
+export const useDateRangeStore = create<DateRangeState>()(
+  persist(
+    (set) => ({
+      startDate: toDateString(fourteenDaysAgo),
+      endDate: toDateString(today),
+      setRange: (startDate, endDate) => set({ startDate, endDate }),
+    }),
+    { name: 'vitals-date-range' },
+  ),
+);

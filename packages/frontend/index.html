@@ -2,9 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Vitals</title>
+    <meta name="description" content="Personal health data management dashboard" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+
+    <!-- iOS PWA meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Vitals" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png" />
+
+    <!-- Theme color (matches dark/light mode backgrounds in index.css) -->
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+
+    <!-- Note: <link rel="manifest"> is auto-injected by vite-plugin-pwa — do NOT add manually -->
   </head>
   <body>
     <div id="root"></div>

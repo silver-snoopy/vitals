@@ -689,3 +689,99 @@ The date range picker on other pages is irrelevant to report generation.
 - TanStack Query with 5-minute stale time
 - Query cache invalidated after mutations (upload, report generation)
 - Date range changes trigger automatic refetch
+
+---
+
+## 9. PWA & Offline Support (Phase A)
+
+| ID | Use Case | Status |
+|----|----------|--------|
+| UC-PWA-01 | App installable to Home Screen | Implemented |
+| UC-PWA-02 | Offline cached data viewing | Implemented |
+| UC-PWA-03 | Service worker update prompt | Implemented |
+| UC-PWA-04 | Offline status indicator | Implemented |
+| UC-PWA-05 | iOS install guidance banner | Implemented |
+| UC-PWA-06 | Persistent preferences across sessions | Implemented |
+
+### UC-PWA-01: App installable to Home Screen
+
+**As a** mobile user, **I want to** add Vitals to my Home Screen like a native app,
+**so that** I can launch it without browser chrome and get a full-screen experience.
+
+**Behavior:**
+- Web App Manifest generated at `manifest.webmanifest` by `vite-plugin-pwa`
+- `display: standalone` — no browser address bar when launched from Home Screen
+- `orientation: portrait` — locked to portrait on mobile
+- App icons: 192×192 and 512×512 PNG (maskable-compatible); 180×180 Apple Touch Icon
+- iOS meta tags: `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style: black-translucent`
+- Theme color matches dark/light system preference (`#0a0a0a` / `#ffffff`)
+
+**E2E Coverage:** Verified via live Playwright test against `http://localhost:3001` (build-time artifact)
+
+### UC-PWA-02: Offline cached data viewing
+
+**As a** user with no internet connection, **I want to** still see my previously loaded health data,
+**so that** I can reference my metrics without connectivity.
+
+**Behavior:**
+- Workbox service worker precaches all static assets (JS, CSS, HTML, fonts, icons)
+- API responses cached with `NetworkFirst` strategy (3s timeout, 24h TTL, 50 entries)
+- TanStack Query cache persisted to IndexedDB via `idb-keyval` (`PersistQueryClientProvider`)
+- Cache restored on next app open — data visible immediately without network
+- `networkMode: 'offlineFirst'` — cached data served without throwing network errors
+
+**E2E Coverage:** Playwright live test — offline banner visible, app loads from cache
+
+### UC-PWA-03: Service worker update prompt
+
+**As a** user with a cached version, **I want to** be notified when a new version is available,
+**so that** I can update without being surprised by a silent reload.
+
+**Behavior:**
+- `registerType: 'prompt'` — SW activation deferred until user action
+- Sonner toast appears: "New version available" with "Update" action button
+- Clicking Update triggers `skipWaiting` and page reload to new version
+- Hourly background update check via `registration.update()`
+- First install shows: "App ready for offline use" success toast
+
+**E2E Coverage:** Component-level (dev mode SW limitations prevent full E2E)
+
+### UC-PWA-04: Offline status indicator
+
+**As a** user who goes offline, **I want to** see a clear visual indicator,
+**so that** I know I'm viewing cached data and not live data.
+
+**Behavior:**
+- Orange warning banner renders above main content when `navigator.onLine === false`
+- Banner text: "You're offline — showing cached data" with WifiOff icon
+- Banner disappears automatically when connectivity is restored
+- Zero layout impact when online (renders `null`)
+
+**E2E Coverage:** `e2e/pwa-visual-check.spec.ts` (temporary live test, deleted post-verification) — confirmed working
+
+### UC-PWA-05: iOS install guidance banner
+
+**As an** iOS Safari user, **I want to** be guided through the Add to Home Screen flow,
+**so that** I know how to install the app since iOS doesn't support the Web Install API.
+
+**Behavior:**
+- Detects iOS Safari (not Chrome/Firefox on iOS, not already-installed standalone)
+- Shows after 3-second delay to avoid interrupting initial load
+- Banner: "Install Vitals — Tap Share then 'Add to Home Screen'"
+- Dismiss button stores dismissal in `localStorage` — never shows again after dismiss
+- Not shown on desktop or non-Safari iOS browsers
+
+**E2E Coverage:** Playwright test confirms NOT visible on desktop Chrome
+
+### UC-PWA-06: Persistent preferences across sessions
+
+**As a** returning user, **I want** my theme and date range to be remembered,
+**so that** I don't need to reconfigure them every visit.
+
+**Behavior:**
+- Theme preference (`system`/`light`/`dark`) persisted via Zustand `persist` middleware → `localStorage` key `vitals-theme`
+- Date range persisted → `localStorage` key `vitals-date-range`
+- Both restored on next app open before first render
+- Chat, report generation, and action item override states are NOT persisted (transient by design)
+
+**E2E Coverage:** Verified via unit tests (`useThemeStore.test.ts`, `useDateRangeStore.test.ts`)

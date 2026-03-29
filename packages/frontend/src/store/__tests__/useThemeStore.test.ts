@@ -2,6 +2,7 @@ import { useThemeStore } from '../useThemeStore';
 
 describe('useThemeStore', () => {
   beforeEach(() => {
+    localStorage.clear();
     useThemeStore.setState({ theme: 'system' });
   });
 
