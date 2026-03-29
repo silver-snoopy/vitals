@@ -14,6 +14,7 @@ import {
 import { queryWorkoutSessions } from '../../db/queries/workouts.js';
 import { getLatestReport, saveReport, logAiGeneration } from '../../db/queries/reports.js';
 import { promoteActionItems, listActionItems } from '../../db/queries/action-items.js';
+import { jsonrepair } from 'jsonrepair';
 import { buildReportPrompt } from './prompt-builder.js';
 import { measureOutcomes, determineOutcome } from '../action-items/outcome-measurer.js';
 import { expireStaleItems, supersedeItems } from '../action-items/lifecycle-manager.js';
@@ -101,14 +102,20 @@ function parseAIResponse(content: string): ParsedAIReport {
       .replace(/\s*```\s*$/i, '')
       .trim();
 
-    // Try direct parse first, fall back to brace-matching extraction
+    // 1. Fast path: direct parse
+    // 2. Repair path: jsonrepair handles unescaped quotes, trailing commas, etc.
+    // 3. Extraction path: brace-matching for responses with surrounding prose
     let parsed: Record<string, unknown>;
     try {
       parsed = JSON.parse(cleaned) as Record<string, unknown>;
     } catch {
-      const extracted = extractFirstJson(cleaned);
-      if (!extracted) throw new Error('No valid JSON found');
-      parsed = extracted;
+      try {
+        parsed = JSON.parse(jsonrepair(cleaned)) as Record<string, unknown>;
+      } catch {
+        const extracted = extractFirstJson(cleaned);
+        if (!extracted) throw new Error('No valid JSON found');
+        parsed = extracted;
+      }
     }
 
     const summary = typeof parsed.summary === 'string' ? parsed.summary : 'Weekly health summary.';

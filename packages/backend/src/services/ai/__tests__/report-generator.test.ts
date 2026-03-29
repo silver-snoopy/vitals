@@ -194,6 +194,33 @@ describe('generateWeeklyReport', () => {
     expect(result.insights).toContain('HRV drop');
   });
 
+  it('recovers summary when AI response contains unescaped quotes in JSON strings', async () => {
+    // AI writes "adequate" with straight double quotes inside a JSON string value,
+    // which breaks JSON.parse() — jsonrepair should fix this.
+    const brokenJson =
+      '{"summary": "Recovery was "adequate" this week.", "actionItems": [], ' +
+      '"biometricsOverview": "Weight stable.", "nutritionAnalysis": "", ' +
+      '"trainingLoad": "", "crossDomainCorrelation": "", ' +
+      '"whatsWorking": "", "hazards": "", "recommendations": ""}';
+
+    (mockAIProvider.complete as ReturnType<typeof vi.fn>).mockResolvedValue({
+      content: brokenJson,
+      model: 'claude-sonnet-4-20250514',
+      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+    });
+
+    const result = await generateWeeklyReport(
+      mockPool,
+      mockAIProvider,
+      'user-uuid',
+      new Date('2026-03-01'),
+      new Date('2026-03-07'),
+    );
+
+    expect(result.summary).not.toBe('AI-generated weekly summary.');
+    expect(result.summary).toContain('adequate');
+  });
+
   it('strips markdown code fences from AI response', async () => {
     (mockAIProvider.complete as ReturnType<typeof vi.fn>).mockResolvedValue({
       content: '```json\n' + validAIResponse + '\n```',
