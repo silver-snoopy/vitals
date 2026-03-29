@@ -158,7 +158,7 @@ and biometrics (Apple Health) in a single unified dashboard.
 - Reports page shows empty state: "No reports yet. Click the button above to generate your first weekly insights."
 - Refresh icon button next to "Reports" heading with tooltip "Generate Latest Insights"
 - Clicking opens a generation dialog with optional notes textarea (same dialog as re-generation)
-- Report always covers the **last 7 days** — computed at call time, independent of the date range picker
+- Report covers the **7 days ending yesterday** (today excluded) — date window is computed server-side at generation time, independent of the client date range picker; `periodEnd = yesterday UTC`, `periodStart = yesterday − 6 days UTC`
 - Button shows spinner while generating; toast on success/error
 - Error toasts are context-specific: rate limit (429), AI unavailable (502), not configured (503), or generic failure
 - Backend sanitizes all AI provider errors — no internal API details are exposed to the client
@@ -176,7 +176,7 @@ The date range picker on other pages is irrelevant to report generation.
 
 **Behavior:**
 - When reports exist, button tooltip reads "Re-Generate Latest Insights"
-- Clicking opens confirmation dialog: "This will generate a new report for the last 7 days, replacing the most recent one."
+- Clicking opens confirmation dialog: "This will generate a new report for the last 7 days, replacing the most recent one." (actual window: yesterday − 6 days to yesterday, server-calculated)
 - Cancel dismisses the dialog without triggering generation
 - Confirming triggers generation with spinner in the dialog button
 - Toast notification on success/error

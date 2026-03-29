@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { EnvConfig } from '../config/env.js';
 import type { GenerateReportRequest } from '@vitals/shared';
 import { apiKeyMiddleware } from '../middleware/api-key.js';
-import { validateDateRange, isDateRangeError } from '../utils/validate-dates.js';
+import { validateDateRange, isDateRangeError, getDefaultDateRange } from '../utils/validate-dates.js';
 import { getReportById, listReports, createPendingReport } from '../db/queries/reports.js';
 import { generateWeeklyReport } from '../services/ai/report-generator.js';
 import { createAIProvider } from '../services/ai/ai-service.js';
@@ -15,14 +15,22 @@ export async function reportRoutes(app: FastifyInstance, opts: { env: EnvConfig 
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (request, reply) => {
       const { startDate, endDate, userNotes, workoutPlan } = request.body ?? {};
-      const range = validateDateRange(startDate, endDate);
 
-      if (isDateRangeError(range)) {
-        return reply.code(400).send({
-          error: 'Bad Request',
-          message: range.error,
-          statusCode: 400,
-        });
+      // Use server-calculated window (yesterday − 6 days to yesterday) unless dates are provided as
+      // an explicit override (e.g. admin/backfill use cases).
+      let range;
+      if (startDate || endDate) {
+        const validated = validateDateRange(startDate, endDate);
+        if (isDateRangeError(validated)) {
+          return reply.code(400).send({
+            error: 'Bad Request',
+            message: validated.error,
+            statusCode: 400,
+          });
+        }
+        range = validated;
+      } else {
+        range = getDefaultDateRange();
       }
 
       // Validate AI provider is configured before accepting the request

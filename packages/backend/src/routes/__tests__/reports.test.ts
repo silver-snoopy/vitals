@@ -162,7 +162,19 @@ describe('POST /api/reports/generate', () => {
     await app.close();
   });
 
-  it('returns 400 when dates are missing', async () => {
+  it('returns 202 with no dates (uses server-calculated default window)', async () => {
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/reports/generate',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    expect(response.statusCode).toBe(202);
+    await app.close();
+  });
+
+  it('returns 400 when only one date override is provided', async () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'POST',
