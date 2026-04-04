@@ -39,15 +39,26 @@ describe('conversation queries', () => {
 
   it('getConversation returns null when no rows returned', async () => {
     const pool = makePool([]);
-    const result = await getConversation(pool, 'uuid-nonexistent');
+    const result = await getConversation(pool, 'uuid-nonexistent', 'default');
     expect(result).toBeNull();
   });
 
   it('getConversation returns mapped row when found', async () => {
     const pool = makePool([fakeConvRow]);
-    const result = await getConversation(pool, 'uuid-1');
+    const result = await getConversation(pool, 'uuid-1', 'default');
     expect(result?.id).toBe('uuid-1');
     expect(result?.title).toBe('My chat');
+  });
+
+  it('getConversation includes user_id in query', async () => {
+    const pool = makePool([fakeConvRow]);
+    await getConversation(pool, 'uuid-1', 'default');
+    const [sql, params] = (pool.query as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      unknown[],
+    ];
+    expect(sql).toMatch(/user_id/);
+    expect(params).toContain('default');
   });
 
   it('createConversation inserts and returns mapped row', async () => {
@@ -81,25 +92,44 @@ describe('conversation queries', () => {
 
   it('getMessages returns mapped array', async () => {
     const pool = makePool([fakeMsgRow]);
-    const result = await getMessages(pool, 'uuid-1');
+    const result = await getMessages(pool, 'uuid-1', 'default');
     expect(result[0].role).toBe('user');
     expect(result[0].content).toBe('Hello');
   });
 
-  it('deleteConversation calls DELETE', async () => {
-    const pool = makePool([]);
-    await deleteConversation(pool, 'uuid-1');
-    expect((pool.query as ReturnType<typeof vi.fn>).mock.calls[0][0]).toMatch(/DELETE/);
+  it('getMessages includes user_id via join', async () => {
+    const pool = makePool([fakeMsgRow]);
+    await getMessages(pool, 'uuid-1', 'default');
+    const [sql, params] = (pool.query as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      unknown[],
+    ];
+    expect(sql).toMatch(/user_id/);
+    expect(params).toContain('default');
   });
 
-  it('updateConversationTitle calls UPDATE', async () => {
+  it('deleteConversation calls DELETE with user_id', async () => {
     const pool = makePool([]);
-    await updateConversationTitle(pool, 'uuid-1', 'New title');
+    await deleteConversation(pool, 'uuid-1', 'default');
+    const [sql, params] = (pool.query as ReturnType<typeof vi.fn>).mock.calls[0] as [
+      string,
+      unknown[],
+    ];
+    expect(sql).toMatch(/DELETE/);
+    expect(sql).toMatch(/user_id/);
+    expect(params).toContain('default');
+  });
+
+  it('updateConversationTitle calls UPDATE with user_id', async () => {
+    const pool = makePool([]);
+    await updateConversationTitle(pool, 'uuid-1', 'New title', 'default');
     const [sql, params] = (pool.query as ReturnType<typeof vi.fn>).mock.calls[0] as [
       string,
       unknown[],
     ];
     expect(sql).toMatch(/UPDATE/);
+    expect(sql).toMatch(/user_id/);
     expect(params).toContain('New title');
+    expect(params).toContain('default');
   });
 });

@@ -101,7 +101,7 @@ describe('executeTool', () => {
     expect(parsed.sets).toBeDefined();
   });
 
-  it('invalid date returns error JSON without throwing', async () => {
+  it('invalid date returns generic error (no internals leaked)', async () => {
     const result = await executeTool(
       'query_nutrition',
       { startDate: 'not-a-date', endDate: '2026-03-07' },
@@ -109,6 +109,72 @@ describe('executeTool', () => {
       'default',
     );
     const parsed = JSON.parse(result) as { error: string };
-    expect(parsed.error).toBeDefined();
+    expect(parsed.error).toBe('Tool execution failed. Please try a different query.');
+  });
+
+  it('query_action_items clamps limit to 100', async () => {
+    vi.mock('../../../../db/queries/action-items.js', () => ({
+      listActionItems: vi.fn().mockResolvedValue([]),
+      getActionItem: vi.fn(),
+      getAttributionSummary: vi.fn(),
+    }));
+    const { listActionItems } = await import('../../../../db/queries/action-items.js');
+    await executeTool('query_action_items', { limit: 9999 }, mockDb, 'default');
+    const callArgs = (listActionItems as ReturnType<typeof vi.fn>).mock.calls[0] as unknown[];
+    const filters = callArgs[2] as { limit: number };
+    expect(filters.limit).toBe(100);
+  });
+
+  it('query_exercise_progress rejects exercise name over 200 chars', async () => {
+    const result = await executeTool(
+      'query_exercise_progress',
+      { exerciseName: 'x'.repeat(201) },
+      mockDb,
+      'default',
+    );
+    const parsed = JSON.parse(result) as { error: string };
+    expect(parsed.error).toMatch(/too long/i);
+  });
+
+  it('query_biometrics rejects more than 20 metrics', async () => {
+    const metrics = Array.from({ length: 21 }, (_, i) => `metric_${i}`);
+    const result = await executeTool(
+      'query_biometrics',
+      { metrics, startDate: '2026-03-01', endDate: '2026-03-07' },
+      mockDb,
+      'default',
+    );
+    const parsed = JSON.parse(result) as { error: string };
+    expect(parsed.error).toMatch(/too many metrics/i);
+  });
+
+  it('query_nutrition rejects date range exceeding 730 days', async () => {
+    const result = await executeTool(
+      'query_nutrition',
+      { startDate: '2024-01-01', endDate: '2026-03-07' },
+      mockDb,
+      'default',
+    );
+    const parsed = JSON.parse(result) as { error: string };
+    expect(parsed.error).toMatch(/cannot exceed/i);
+  });
+
+  it('query_biometrics shapes output to only date/metric/value/unit', async () => {
+    const result = await executeTool(
+      'query_biometrics',
+      { metrics: ['body_weight_kg'], startDate: '2026-03-01', endDate: '2026-03-07' },
+      mockDb,
+      'default',
+    );
+    const parsed = JSON.parse(result) as Record<string, unknown>[];
+    expect(parsed[0]).toEqual({
+      date: '2026-03-01',
+      metric: 'body_weight_kg',
+      value: 82.5,
+      unit: 'kg',
+    });
+    expect(parsed[0]).not.toHaveProperty('id');
+    expect(parsed[0]).not.toHaveProperty('userId');
+    expect(parsed[0]).not.toHaveProperty('source');
   });
 });

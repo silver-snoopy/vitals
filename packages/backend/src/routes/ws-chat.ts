@@ -11,6 +11,7 @@ import {
 } from '../db/queries/conversations.js';
 import type { AIMessage } from '@vitals/shared';
 import type { ToolCallRecord } from '../services/ai/tools/tool-executor.js';
+import { isValidUuid } from '../utils/uuid.js';
 
 const MAX_MESSAGE_LENGTH = 4000;
 
@@ -83,14 +84,21 @@ export async function wsChatRoutes(app: FastifyInstance, opts: { env: EnvConfig 
 
         let convId = conversationId;
 
+        if (convId && !isValidUuid(convId)) {
+          socket.send(JSON.stringify({ type: 'error', error: 'Invalid conversation ID format' }));
+          return;
+        }
+
         // DB setup — errors here must reach the client
         try {
+          const userId = opts.env.dbDefaultUserId;
+
           if (!convId) {
-            const conv = await createConversation(app.db, opts.env.dbDefaultUserId);
+            const conv = await createConversation(app.db, userId);
             convId = conv.id;
             socket.send(JSON.stringify({ type: 'conversation_id', conversationId: convId }));
           } else {
-            const existing = await getConversation(app.db, convId);
+            const existing = await getConversation(app.db, convId, userId);
             if (!existing) {
               socket.send(JSON.stringify({ type: 'error', error: 'Conversation not found' }));
               return;
@@ -98,7 +106,7 @@ export async function wsChatRoutes(app: FastifyInstance, opts: { env: EnvConfig 
           }
 
           // Load history
-          const dbMessages = await getMessages(app.db, convId);
+          const dbMessages = await getMessages(app.db, convId, userId);
           const history: AIMessage[] = dbMessages
             .filter((m) => m.role !== 'tool')
             .map((m) => ({ role: m.role, content: m.content }));
@@ -114,12 +122,16 @@ export async function wsChatRoutes(app: FastifyInstance, opts: { env: EnvConfig 
             tokensUsed: null,
           });
 
-          await streamResponse(provider, opts.env.dbDefaultUserId, convId, message, history);
+          await streamResponse(provider, userId, convId, message, history);
         } catch (err) {
-          const errMessage = err instanceof Error ? err.message : 'Unknown error';
           app.log.error({ err, convId }, 'ws-chat: setup or DB error');
           if (socket.readyState === socket.OPEN) {
-            socket.send(JSON.stringify({ type: 'error', error: errMessage }));
+            socket.send(
+              JSON.stringify({
+                type: 'error',
+                error: 'An internal error occurred. Please try again.',
+              }),
+            );
           }
         }
       }
@@ -158,10 +170,14 @@ export async function wsChatRoutes(app: FastifyInstance, opts: { env: EnvConfig 
             }
           }
         } catch (err) {
-          const errMessage = err instanceof Error ? err.message : 'Unknown error';
           app.log.error({ err, convId }, 'ws-chat: stream error');
           if (socket.readyState === socket.OPEN) {
-            socket.send(JSON.stringify({ type: 'error', error: errMessage }));
+            socket.send(
+              JSON.stringify({
+                type: 'error',
+                error: 'An internal error occurred. Please try again.',
+              }),
+            );
           }
           return;
         }
@@ -183,10 +199,10 @@ export async function wsChatRoutes(app: FastifyInstance, opts: { env: EnvConfig 
           });
 
           // Auto-title from first message
-          const conv = await getConversation(app.db, convId);
+          const conv = await getConversation(app.db, convId, userId);
           if (conv && !conv.title) {
             const title = message.slice(0, 60) + (message.length > 60 ? '…' : '');
-            await updateConversationTitle(app.db, convId, title);
+            await updateConversationTitle(app.db, convId, title, userId);
           }
         } catch (err) {
           app.log.error({ err, convId }, 'ws-chat: failed to persist assistant response');

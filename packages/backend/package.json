@@ -18,6 +18,7 @@
     "@anthropic-ai/sdk": "^0.78.0",
     "@fastify/cors": "^11.0.0",
     "@fastify/multipart": "^9.4.0",
+    "@fastify/rate-limit": "^10.3.0",
     "@fastify/websocket": "^11.2.0",
     "@google/generative-ai": "^0.24.1",
     "@vitals/shared": "*",

@@ -3,8 +3,7 @@ import type { EnvConfig } from '../config/env.js';
 import type { ReportStatusUpdate } from '@vitals/shared';
 import { getReportById } from '../db/queries/reports.js';
 import { reportEventBus } from '../services/report-event-bus.js';
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+import { isValidUuid } from '../utils/uuid.js';
 
 export async function wsReportRoutes(
   app: FastifyInstance,
@@ -27,7 +26,7 @@ export async function wsReportRoutes(
 
       const reportId = (request.query as { reportId?: string }).reportId;
 
-      if (!reportId || !UUID_RE.test(reportId)) {
+      if (!reportId || !isValidUuid(reportId)) {
         socket.send(JSON.stringify({ error: 'Missing or invalid reportId query parameter' }));
         socket.close(1008, 'Invalid reportId');
         return;

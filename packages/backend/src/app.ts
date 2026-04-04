@@ -13,6 +13,7 @@ import { wsChatRoutes } from './routes/ws-chat.js';
 import { uploadRoutes } from './routes/upload.js';
 import { actionItemRoutes } from './routes/action-items.js';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
 import { databasePlugin } from './plugins/database.js';
 import { registerProviders } from './services/collectors/register.js';
@@ -30,6 +31,7 @@ export async function buildApp(env: EnvConfig) {
   });
 
   await app.register(multipart);
+  await app.register(rateLimit, { max: 60, timeWindow: '1 minute' });
   await app.register(websocket);
   await app.register(databasePlugin, { env });
 
