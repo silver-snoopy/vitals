@@ -13,8 +13,8 @@ import {
   updateConversationTitle,
 } from '../db/queries/conversations.js';
 import type { AIMessage } from '@vitals/shared';
+import { isValidUuid } from '../utils/uuid.js';
 
-const DEFAULT_USER_ID = 'default';
 const MAX_MESSAGE_LENGTH = 4000;
 
 interface SendMessageBody {
@@ -26,7 +26,10 @@ export async function chatRoutes(app: FastifyInstance, opts: { env: EnvConfig })
   // POST /api/chat — send a message, get a response
   app.post<{ Body: SendMessageBody }>(
     '/api/chat',
-    { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
+    {
+      preHandler: apiKeyMiddleware(opts.env.xApiKey),
+      config: { rateLimit: { max: 15, timeWindow: '1 minute' } },
+    },
     async (request, reply) => {
       const provider = createAIProvider(opts.env);
       const { message, conversationId } = request.body;
@@ -41,21 +44,26 @@ export async function chatRoutes(app: FastifyInstance, opts: { env: EnvConfig })
           .send({ error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` });
       }
 
+      const userId = opts.env.dbDefaultUserId;
       let convId = conversationId;
+
+      if (convId && !isValidUuid(convId)) {
+        return reply.code(400).send({ error: 'Invalid conversation ID format' });
+      }
 
       // Create conversation if none provided
       if (!convId) {
-        const conv = await createConversation(app.db, DEFAULT_USER_ID);
+        const conv = await createConversation(app.db, userId);
         convId = conv.id;
       } else {
-        const existing = await getConversation(app.db, convId);
+        const existing = await getConversation(app.db, convId, userId);
         if (!existing) {
           return reply.code(404).send({ error: 'Conversation not found' });
         }
       }
 
       // Load history
-      const dbMessages = await getMessages(app.db, convId);
+      const dbMessages = await getMessages(app.db, convId, userId);
       const history: AIMessage[] = dbMessages
         .filter((m) => m.role !== 'tool')
         .map((m) => ({ role: m.role, content: m.content }));
@@ -72,7 +80,7 @@ export async function chatRoutes(app: FastifyInstance, opts: { env: EnvConfig })
       });
 
       // Run agentic chat
-      const result = await chat(provider, app.db, DEFAULT_USER_ID, message, history);
+      const result = await chat(provider, app.db, userId, message, history);
 
       // Persist tool call records
       for (const tc of result.toolCalls) {
@@ -99,10 +107,10 @@ export async function chatRoutes(app: FastifyInstance, opts: { env: EnvConfig })
       });
 
       // Auto-title conversation from first message
-      const conv = await getConversation(app.db, convId);
+      const conv = await getConversation(app.db, convId, userId);
       if (conv && !conv.title) {
         const title = message.slice(0, 60) + (message.length > 60 ? '…' : '');
-        await updateConversationTitle(app.db, convId, title);
+        await updateConversationTitle(app.db, convId, title, userId);
       }
 
       return reply.send({
@@ -118,7 +126,7 @@ export async function chatRoutes(app: FastifyInstance, opts: { env: EnvConfig })
     '/api/chat/conversations',
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (_request, reply) => {
-      const conversations = await listConversations(app.db, DEFAULT_USER_ID);
+      const conversations = await listConversations(app.db, opts.env.dbDefaultUserId);
       return reply.send({ conversations });
     },
   );
@@ -129,11 +137,15 @@ export async function chatRoutes(app: FastifyInstance, opts: { env: EnvConfig })
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (request, reply) => {
       const { id } = request.params;
-      const conversation = await getConversation(app.db, id);
+      if (!isValidUuid(id)) {
+        return reply.code(400).send({ error: 'Invalid conversation ID format' });
+      }
+      const userId = opts.env.dbDefaultUserId;
+      const conversation = await getConversation(app.db, id, userId);
       if (!conversation) {
         return reply.code(404).send({ error: 'Conversation not found' });
       }
-      const messages = await getMessages(app.db, id);
+      const messages = await getMessages(app.db, id, userId);
       return reply.send({ conversation, messages });
     },
   );
@@ -144,11 +156,15 @@ export async function chatRoutes(app: FastifyInstance, opts: { env: EnvConfig })
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (request, reply) => {
       const { id } = request.params;
-      const existing = await getConversation(app.db, id);
+      if (!isValidUuid(id)) {
+        return reply.code(400).send({ error: 'Invalid conversation ID format' });
+      }
+      const userId = opts.env.dbDefaultUserId;
+      const existing = await getConversation(app.db, id, userId);
       if (!existing) {
         return reply.code(404).send({ error: 'Conversation not found' });
       }
-      await deleteConversation(app.db, id);
+      await deleteConversation(app.db, id, userId);
       return reply.code(204).send();
     },
   );

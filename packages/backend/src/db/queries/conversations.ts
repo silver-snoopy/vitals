@@ -56,8 +56,15 @@ export async function createConversation(
   return rowToConversation(rows[0] as Record<string, unknown>);
 }
 
-export async function getConversation(pool: pg.Pool, id: string): Promise<ConversationRow | null> {
-  const { rows } = await pool.query(`SELECT * FROM conversations WHERE id = $1`, [id]);
+export async function getConversation(
+  pool: pg.Pool,
+  id: string,
+  userId: string,
+): Promise<ConversationRow | null> {
+  const { rows } = await pool.query(`SELECT * FROM conversations WHERE id = $1 AND user_id = $2`, [
+    id,
+    userId,
+  ]);
   if (rows.length === 0) return null;
   return rowToConversation(rows[0] as Record<string, unknown>);
 }
@@ -74,15 +81,16 @@ export async function updateConversationTitle(
   pool: pg.Pool,
   id: string,
   title: string,
+  userId: string,
 ): Promise<void> {
-  await pool.query(`UPDATE conversations SET title = $1, updated_at = NOW() WHERE id = $2`, [
-    title,
-    id,
-  ]);
+  await pool.query(
+    `UPDATE conversations SET title = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3`,
+    [title, id, userId],
+  );
 }
 
-export async function deleteConversation(pool: pg.Pool, id: string): Promise<void> {
-  await pool.query(`DELETE FROM conversations WHERE id = $1`, [id]);
+export async function deleteConversation(pool: pg.Pool, id: string, userId: string): Promise<void> {
+  await pool.query(`DELETE FROM conversations WHERE id = $1 AND user_id = $2`, [id, userId]);
 }
 
 export async function addMessage(
@@ -111,10 +119,17 @@ export async function addMessage(
   return rowToMessage(rows[0] as Record<string, unknown>);
 }
 
-export async function getMessages(pool: pg.Pool, conversationId: string): Promise<MessageRow[]> {
+export async function getMessages(
+  pool: pg.Pool,
+  conversationId: string,
+  userId: string,
+): Promise<MessageRow[]> {
   const { rows } = await pool.query(
-    `SELECT * FROM messages WHERE conversation_id = $1 ORDER BY created_at`,
-    [conversationId],
+    `SELECT m.* FROM messages m
+     JOIN conversations c ON m.conversation_id = c.id
+     WHERE m.conversation_id = $1 AND c.user_id = $2
+     ORDER BY m.created_at`,
+    [conversationId, userId],
   );
   return rows.map((r) => rowToMessage(r as Record<string, unknown>));
 }

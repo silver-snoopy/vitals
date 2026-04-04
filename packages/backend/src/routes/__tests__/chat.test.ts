@@ -15,14 +15,14 @@ vi.mock('../../services/collectors/register.js', () => ({
 // Mock conversation queries so tests don't hit the DB
 vi.mock('../../db/queries/conversations.js', () => ({
   createConversation: vi.fn().mockResolvedValue({
-    id: 'conv-1',
+    id: '00000000-0000-0000-0000-000000000001',
     title: null,
     userId: 'default',
     createdAt: new Date(),
     updatedAt: new Date(),
   }),
   getConversation: vi.fn().mockResolvedValue({
-    id: 'conv-1',
+    id: '00000000-0000-0000-0000-000000000001',
     title: null,
     userId: 'default',
     createdAt: new Date(),
@@ -98,6 +98,17 @@ describe('POST /api/chat', () => {
     await app.close();
   });
 
+  it('returns 400 when conversationId is not a valid UUID', async () => {
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/chat',
+      payload: { message: 'Hello', conversationId: 'not-a-uuid' },
+    });
+    expect(response.statusCode).toBe(400);
+    await app.close();
+  });
+
   it('returns 404 when conversationId does not exist', async () => {
     const { getConversation } = await import('../../db/queries/conversations.js');
     (getConversation as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
@@ -106,7 +117,10 @@ describe('POST /api/chat', () => {
     const response = await app.inject({
       method: 'POST',
       url: '/api/chat',
-      payload: { message: 'Hello', conversationId: 'nonexistent' },
+      payload: {
+        message: 'Hello',
+        conversationId: '00000000-0000-0000-0000-000000000099',
+      },
     });
     expect(response.statusCode).toBe(404);
     await app.close();
@@ -121,7 +135,7 @@ describe('POST /api/chat', () => {
     });
     expect(response.statusCode).toBe(200);
     const body = response.json<{ conversationId: string; response: string }>();
-    expect(body.conversationId).toBe('conv-1');
+    expect(body.conversationId).toBe('00000000-0000-0000-0000-000000000001');
     expect(body.response).toContain('150g');
     await app.close();
   });
@@ -142,6 +156,16 @@ describe('GET /api/chat/conversations', () => {
 });
 
 describe('GET /api/chat/conversations/:id', () => {
+  it('returns 400 for invalid UUID', async () => {
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/chat/conversations/not-a-uuid',
+    });
+    expect(response.statusCode).toBe(400);
+    await app.close();
+  });
+
   it('returns 404 when conversation does not exist', async () => {
     const { getConversation } = await import('../../db/queries/conversations.js');
     (getConversation as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
@@ -149,7 +173,7 @@ describe('GET /api/chat/conversations/:id', () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'GET',
-      url: '/api/chat/conversations/nonexistent',
+      url: '/api/chat/conversations/00000000-0000-0000-0000-000000000099',
     });
     expect(response.statusCode).toBe(404);
     await app.close();
@@ -159,7 +183,7 @@ describe('GET /api/chat/conversations/:id', () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'GET',
-      url: '/api/chat/conversations/conv-1',
+      url: '/api/chat/conversations/00000000-0000-0000-0000-000000000001',
     });
     expect(response.statusCode).toBe(200);
     const body = response.json<{ conversation: unknown; messages: unknown[] }>();
@@ -170,6 +194,16 @@ describe('GET /api/chat/conversations/:id', () => {
 });
 
 describe('DELETE /api/chat/conversations/:id', () => {
+  it('returns 400 for invalid UUID', async () => {
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/api/chat/conversations/not-a-uuid',
+    });
+    expect(response.statusCode).toBe(400);
+    await app.close();
+  });
+
   it('returns 404 when conversation does not exist', async () => {
     const { getConversation } = await import('../../db/queries/conversations.js');
     (getConversation as ReturnType<typeof vi.fn>).mockResolvedValueOnce(null);
@@ -177,7 +211,7 @@ describe('DELETE /api/chat/conversations/:id', () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'DELETE',
-      url: '/api/chat/conversations/nonexistent',
+      url: '/api/chat/conversations/00000000-0000-0000-0000-000000000099',
     });
     expect(response.statusCode).toBe(404);
     await app.close();
@@ -187,7 +221,7 @@ describe('DELETE /api/chat/conversations/:id', () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'DELETE',
-      url: '/api/chat/conversations/conv-1',
+      url: '/api/chat/conversations/00000000-0000-0000-0000-000000000001',
     });
     expect(response.statusCode).toBe(204);
     await app.close();

@@ -19,12 +19,25 @@ export interface ToolCallRecord {
   result: string;
 }
 
+const MAX_DATE_SPAN_DAYS = 730;
+const MAX_LIMIT = 100;
+const MAX_EXERCISE_NAME_LENGTH = 200;
+const MAX_METRICS_COUNT = 20;
+
 function parseDate(value: unknown): Date {
   if (typeof value === 'string') {
     const d = new Date(value);
     if (!isNaN(d.getTime())) return d;
   }
   throw new Error(`Invalid date: ${String(value)}`);
+}
+
+function validateDateSpan(start: Date, end: Date): string | null {
+  const diffMs = end.getTime() - start.getTime();
+  if (diffMs < 0) return 'Start date must be before end date';
+  if (diffMs > MAX_DATE_SPAN_DAYS * 86_400_000)
+    return `Date range cannot exceed ${MAX_DATE_SPAN_DAYS} days`;
+  return null;
 }
 
 export async function executeTool(
@@ -38,6 +51,8 @@ export async function executeTool(
       case 'query_nutrition': {
         const start = parseDate(input.startDate);
         const end = parseDate(input.endDate);
+        const spanErr = validateDateSpan(start, end);
+        if (spanErr) return JSON.stringify({ error: spanErr });
         const rows = await queryDailyNutritionSummary(db, userId, start, end);
         return JSON.stringify(rows);
       }
@@ -45,25 +60,75 @@ export async function executeTool(
       case 'query_workouts': {
         const start = parseDate(input.startDate);
         const end = parseDate(input.endDate);
+        const spanErr = validateDateSpan(start, end);
+        if (spanErr) return JSON.stringify({ error: spanErr });
         const sessions = await queryWorkoutSessions(db, userId, start, end);
-        return JSON.stringify(sessions);
+        return JSON.stringify(
+          sessions.map(({ date, title, durationSeconds, sets, source }) => ({
+            date,
+            title,
+            durationSeconds,
+            source,
+            sets: sets.map(
+              ({ exerciseName, setIndex, setType, weightKg, reps, volumeKg, rpe }) => ({
+                exerciseName,
+                setIndex,
+                setType,
+                weightKg,
+                reps,
+                volumeKg,
+                rpe,
+              }),
+            ),
+          })),
+        );
       }
 
       case 'query_biometrics': {
         const metrics = Array.isArray(input.metrics)
           ? (input.metrics as string[])
           : [String(input.metrics)];
+        if (metrics.length > MAX_METRICS_COUNT) {
+          return JSON.stringify({ error: `Too many metrics (max ${MAX_METRICS_COUNT})` });
+        }
         const start = parseDate(input.startDate);
         const end = parseDate(input.endDate);
+        const spanErr = validateDateSpan(start, end);
+        if (spanErr) return JSON.stringify({ error: spanErr });
         const readings = await queryMeasurementsByMetrics(db, userId, metrics, start, end);
-        return JSON.stringify(readings);
+        return JSON.stringify(
+          readings.map(({ date, metric, value, unit }) => ({ date, metric, value, unit })),
+        );
       }
 
       case 'query_exercise_progress': {
         const exerciseName = String(input.exerciseName);
+        if (exerciseName.length > MAX_EXERCISE_NAME_LENGTH) {
+          return JSON.stringify({
+            error: `Exercise name too long (max ${MAX_EXERCISE_NAME_LENGTH} chars)`,
+          });
+        }
         const start = input.startDate ? parseDate(input.startDate) : undefined;
         const end = input.endDate ? parseDate(input.endDate) : undefined;
-        const progress = await queryExerciseProgress(db, userId, exerciseName, start, end);
+        if (start && end) {
+          const spanErr = validateDateSpan(start, end);
+          if (spanErr) return JSON.stringify({ error: spanErr });
+        }
+        // Default missing bound to prevent unbounded table scans
+        const boundedStart =
+          start ?? (end ? new Date(end.getTime() - MAX_DATE_SPAN_DAYS * 86_400_000) : undefined);
+        const boundedEnd =
+          end ??
+          (start
+            ? new Date(Math.min(start.getTime() + MAX_DATE_SPAN_DAYS * 86_400_000, Date.now()))
+            : undefined);
+        const progress = await queryExerciseProgress(
+          db,
+          userId,
+          exerciseName,
+          boundedStart,
+          boundedEnd,
+        );
         return JSON.stringify(progress);
       }
 
@@ -83,7 +148,7 @@ export async function executeTool(
       case 'query_action_items': {
         const status = input.status as ActionItemStatus | 'all' | undefined;
         const category = input.category as string | undefined;
-        const limit = typeof input.limit === 'number' ? input.limit : 20;
+        const limit = Math.min(typeof input.limit === 'number' ? input.limit : 20, MAX_LIMIT);
         const filters: {
           status?: ActionItemStatus | ActionItemStatus[];
           category?: string;
@@ -134,9 +199,13 @@ export async function executeTool(
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    // Log unexpected errors (programming bugs, infrastructure failures) for observability
+    // Log full error for observability; return sanitized message to avoid leaking internals
     console.error(`[tool-executor] ${toolName} failed:`, err);
-    return JSON.stringify({ error: message });
+    const isValidationError = err instanceof Error && err.message.startsWith('Invalid date');
+    return JSON.stringify({
+      error: isValidationError
+        ? 'Invalid date format. Please use YYYY-MM-DD.'
+        : 'An internal error occurred while executing this tool.',
+    });
   }
 }
