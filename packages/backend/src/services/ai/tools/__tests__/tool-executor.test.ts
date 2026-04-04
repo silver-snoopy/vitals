@@ -101,7 +101,7 @@ describe('executeTool', () => {
     expect(parsed.sets).toBeDefined();
   });
 
-  it('invalid date returns generic error (no internals leaked)', async () => {
+  it('invalid date returns sanitized validation error (no internals leaked)', async () => {
     const result = await executeTool(
       'query_nutrition',
       { startDate: 'not-a-date', endDate: '2026-03-07' },
@@ -109,7 +109,7 @@ describe('executeTool', () => {
       'default',
     );
     const parsed = JSON.parse(result) as { error: string };
-    expect(parsed.error).toBe('Tool execution failed. Please try a different query.');
+    expect(parsed.error).toBe('Invalid date format. Please use YYYY-MM-DD.');
   });
 
   it('query_action_items clamps limit to 100', async () => {

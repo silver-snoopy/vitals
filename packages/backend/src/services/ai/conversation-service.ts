@@ -12,9 +12,11 @@ const chatPersona = readFileSync(resolve(__dirname, 'prompts/chat-persona.md'), 
 const MAX_ITERATIONS = 10;
 const MAX_HISTORY_MESSAGES = 50;
 
+// Heuristic detection for common prompt injection phrases. Defense-in-depth layer —
+// the system prompt's security boundaries are the primary defense.
 const INJECTION_PATTERNS = [
   /ignore (?:all |your |previous )?instructions/i,
-  /you are now/i,
+  /you are now (?:a |an |my )?(?:different|new|general|unrestricted)/i,
   /reveal (?:your|the) (?:instructions|prompt|rules|system)/i,
   /what (?:are|is) your (?:system ?prompt|instructions|rules)/i,
   /act as (?:a |an )?(?:different|new|general)/i,
@@ -186,6 +188,7 @@ export async function* chatStream(
     // include tool_use blocks (required by Claude's API before tool_result blocks)
     const resolvedToolCalls = assembledToolCalls.map((tc) => {
       let input: Record<string, unknown> = tc.inputFromStart;
+      let parseError = false;
       if (tc.inputJson) {
         try {
           input = JSON.parse(tc.inputJson) as Record<string, unknown>;
@@ -194,9 +197,10 @@ export async function* chatStream(
             `[chatStream] Failed to parse tool input JSON for ${tc.name}:`,
             tc.inputJson,
           );
+          parseError = true;
         }
       }
-      return { ...tc, resolvedInput: input };
+      return { ...tc, resolvedInput: input, parseError };
     });
 
     const assistantText = textChunks.map((c) => c.text ?? '').join('');
@@ -212,7 +216,9 @@ export async function* chatStream(
 
     // Execute each tool and push results
     for (const tc of resolvedToolCalls) {
-      const toolResult = await executeTool(tc.name, tc.resolvedInput, db, userId);
+      const toolResult = tc.parseError
+        ? JSON.stringify({ error: 'Failed to parse tool input from AI response.' })
+        : await executeTool(tc.name, tc.resolvedInput, db, userId);
 
       const record: ToolCallRecord = {
         toolName: tc.name,

@@ -114,7 +114,21 @@ export async function executeTool(
           const spanErr = validateDateSpan(start, end);
           if (spanErr) return JSON.stringify({ error: spanErr });
         }
-        const progress = await queryExerciseProgress(db, userId, exerciseName, start, end);
+        // Default missing bound to prevent unbounded table scans
+        const boundedStart =
+          start ?? (end ? new Date(end.getTime() - MAX_DATE_SPAN_DAYS * 86_400_000) : undefined);
+        const boundedEnd =
+          end ??
+          (start
+            ? new Date(Math.min(start.getTime() + MAX_DATE_SPAN_DAYS * 86_400_000, Date.now()))
+            : undefined);
+        const progress = await queryExerciseProgress(
+          db,
+          userId,
+          exerciseName,
+          boundedStart,
+          boundedEnd,
+        );
         return JSON.stringify(progress);
       }
 
@@ -185,8 +199,13 @@ export async function executeTool(
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
   } catch (err) {
-    // Log full error for observability; return generic message to avoid leaking internals
+    // Log full error for observability; return sanitized message to avoid leaking internals
     console.error(`[tool-executor] ${toolName} failed:`, err);
-    return JSON.stringify({ error: 'Tool execution failed. Please try a different query.' });
+    const isValidationError = err instanceof Error && err.message.startsWith('Invalid date');
+    return JSON.stringify({
+      error: isValidationError
+        ? 'Invalid date format. Please use YYYY-MM-DD.'
+        : 'An internal error occurred while executing this tool.',
+    });
   }
 }
