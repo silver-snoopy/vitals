@@ -7,3 +7,4 @@ export * from './types/report.js';
 export * from './types/measurement.js';
 export * from './constants/metrics.js';
 export * from './constants/query-keys.js';
+export * from './types/intelligence.js';

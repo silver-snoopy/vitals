@@ -12,6 +12,7 @@ import { chatRoutes } from './routes/chat.js';
 import { wsChatRoutes } from './routes/ws-chat.js';
 import { uploadRoutes } from './routes/upload.js';
 import { actionItemRoutes } from './routes/action-items.js';
+import { intelligenceRoutes } from './routes/intelligence.js';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import websocket from '@fastify/websocket';
@@ -52,6 +53,7 @@ export async function buildApp(env: EnvConfig) {
   await app.register(wsChatRoutes, { env });
   await app.register(uploadRoutes, { env });
   await app.register(actionItemRoutes, { env });
+  await app.register(intelligenceRoutes, { env });
 
   return app;
 }
