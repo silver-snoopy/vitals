@@ -1,0 +1,75 @@
+{
+  "data": {
+    "id": "batch-fixture-001",
+    "planId": "plan-fixture-001",
+    "sourceVersionId": "version-fixture-001",
+    "reportId": "report-fixture-001",
+    "createdAt": "2026-04-11T10:00:00.000Z",
+    "rationale": "Good recovery week — progress main lifts, hold accessories. Low HRV last 3 days suggests deload on secondary volume.",
+    "adjustments": [
+      {
+        "id": "adj-fixture-001",
+        "batchId": "batch-fixture-001",
+        "exerciseRef": { "dayIndex": 0, "exerciseOrder": 1 },
+        "changeType": "progress_load",
+        "oldValue": { "sets": [{ "type": "normal", "targetReps": [5, 8], "targetWeightKg": 80 }] },
+        "newValue": {
+          "sets": [{ "type": "normal", "targetReps": [5, 8], "targetWeightKg": 82.5 }]
+        },
+        "evidence": [
+          {
+            "kind": "exercise_progress",
+            "refId": null,
+            "excerpt": "Bench press: hit 8 reps at 80 kg in last 2 sessions (2-for-2 rule triggered)"
+          },
+          {
+            "kind": "metric",
+            "refId": null,
+            "excerpt": "Weekly average RPE for bench: 7.2 — well below the 9.0 guardrail"
+          }
+        ],
+        "confidence": 4,
+        "rationale": "Two-for-two rule met; load increase of 2.5 kg is within the 10% safety cap.",
+        "status": "pending"
+      },
+      {
+        "id": "adj-fixture-002",
+        "batchId": "batch-fixture-001",
+        "exerciseRef": { "dayIndex": 0, "exerciseOrder": 2 },
+        "changeType": "hold",
+        "oldValue": { "sets": [{ "type": "normal", "targetReps": [8, 12], "targetWeightKg": 30 }] },
+        "newValue": { "sets": [{ "type": "normal", "targetReps": [8, 12], "targetWeightKg": 30 }] },
+        "evidence": [
+          {
+            "kind": "hazard",
+            "refId": null,
+            "excerpt": "Report hazards: 'mild shoulder fatigue noted mid-week — avoid increasing pressing volume'"
+          }
+        ],
+        "confidence": 3,
+        "rationale": "Shoulder fatigue flagged in hazards; hold incline press load as a precaution.",
+        "status": "pending"
+      },
+      {
+        "id": "adj-fixture-003",
+        "batchId": "batch-fixture-001",
+        "exerciseRef": { "dayIndex": 1, "exerciseOrder": 1 },
+        "changeType": "progress_load",
+        "oldValue": { "sets": [{ "type": "normal", "targetReps": [6, 10], "targetWeightKg": 80 }] },
+        "newValue": {
+          "sets": [{ "type": "normal", "targetReps": [6, 10], "targetWeightKg": 82.5 }]
+        },
+        "evidence": [
+          {
+            "kind": "exercise_progress",
+            "refId": null,
+            "excerpt": "Barbell row: hit 10 reps at 80 kg last session — top of rep range reached"
+          }
+        ],
+        "confidence": 4,
+        "rationale": "Double progression triggered; rep range top hit, increment load by 2.5 kg.",
+        "status": "pending"
+      }
+    ]
+  }
+}

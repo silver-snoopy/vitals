@@ -22,6 +22,7 @@ export const navItems: NavItem[] = [
   { to: '/workouts', label: 'Workouts', icon: Dumbbell, end: false },
   { to: '/reports', label: 'Reports', icon: FileText, end: false },
   { to: '/actions', label: 'Actions', icon: CheckSquare, end: false },
+  { to: '/plan', label: 'Plan', icon: Dumbbell, end: false },
   { to: '/chat', label: 'Chat', icon: MessageCircle, end: false },
 ];
 

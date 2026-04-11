@@ -14,6 +14,7 @@ import { WorkoutsPage } from '@/components/workouts/WorkoutsPage';
 import { ReportsPage } from '@/components/reports/ReportsPage';
 import { ChatPage } from '@/components/chat/ChatPage';
 import { ActionsPage } from '@/components/actions/ActionsPage';
+import { PlanPage } from '@/components/plan/PlanPage';
 import { PwaUpdatePrompt } from '@/components/pwa/PwaUpdatePrompt';
 import { useHealthKitSync } from '@/api/hooks/useHealthKitSync';
 import { isNative } from '@/native/capacitor';
@@ -134,6 +135,7 @@ export default function App() {
               <Route path="workouts" element={<WorkoutsPage />} />
               <Route path="reports" element={<ReportsPage />} />
               <Route path="actions" element={<ActionsPage />} />
+              <Route path="plan" element={<PlanPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
