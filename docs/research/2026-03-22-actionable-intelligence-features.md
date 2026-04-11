@@ -433,3 +433,20 @@ No subscription. No data sharing. Your data, your infrastructure, your intellige
 - Exist.io: exist.io (correlations without recommendations)
 - Beeminder: beeminder.com (commitment contracts)
 - Academic: PMC articles on AI coaching effectiveness, streak psychology
+
+---
+
+## Implementation Update — 2026-04-11
+
+F2 "Workout Training Intelligence" has been sliced: its first concrete deliverable — the **Workout Plan Fine Tuner** — has shipped as a standalone feature. See:
+- Use cases: `docs/product-capabilities.md` §7 (UC-PLAN-01 through UC-PLAN-05)
+- ADE task artifacts: `.ade/tasks/workout-plan-tuner/` (intent, research, plan, verification, retro)
+- Migration: `packages/backend/src/db/migrations/011_workout_plans.sql`
+
+The v1 scope is a **fine tuner** (modifies an existing plan) rather than the full F2 "training intelligence layer". Key architectural decisions that emerged during implementation:
+- **Rule-first candidate generation** — backend code emits the legal candidate set per exercise (hold / progress / deload / swap), LLM picks one and writes rationale. Eliminates hallucinated unsafe loads.
+- **Structural evidence requirement** — every LLM selection must cite ≥1 evidence reference or the tuner retries once then errors.
+- **Plan-level safety caps** — ±10% load per exercise, ≤1.3× weekly volume (ACWR), max 40% of exercises changed per batch. Hard-coded, not prompt-level.
+- **Prompt-injection defense** — PR #58's `flagSuspiciousInput` is applied to all user-pasted plan fields before LLM prompting.
+
+F2 items still open for future phases: full program generation, Hevy routine two-way bridge (needs pagination bug fix first), training-phase detection, F3 action-item coupling.

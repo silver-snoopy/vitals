@@ -648,7 +648,129 @@ tool dispatch.
 
 ---
 
-## 7. Data Upload
+## 7. Workout Plan Fine Tuner
+
+AI-powered plan versioning system. User pastes a workout plan; backend
+parses it into a structured schema. After a weekly report is generated,
+a one-click CTA runs the tuner service — rule-first candidate generation
+followed by LLM selection — and presents a reviewable diff. Accepting
+adjustments creates an immutable new plan version.
+
+| ID | Use Case | Status |
+|----|----------|--------|
+| UC-PLAN-01 | Create workout plan from free text | Implemented |
+| UC-PLAN-02 | View current plan and version history | Implemented |
+| UC-PLAN-03 | Optimize plan from weekly report | Implemented |
+| UC-PLAN-04 | Review plan adjustments | Implemented |
+| UC-PLAN-05 | Accept adjustments → new plan version | Implemented |
+
+### UC-PLAN-01: Create workout plan from free text
+
+**As a** user, **I want to** paste my current training plan into the app,
+**so that** the system has a structured record of my program to tune.
+
+**Behavior:**
+- Route: `POST /api/workout-plans` with `{ text }` body
+- `plan-parser.ts` uses regex heuristics to extract days, exercises, sets × reps, target load, RPE, and notes; falls back to a single "Notes" day when structure isn't recognized
+- Persisted as `plan_versions` row with `source = 'user'`, `version_number = 1`
+- Input capped at 50 000 chars (HTTP 413 if exceeded); unstructured fallback blob capped at 10 000 chars
+- `workout_plans` unique constraint enforces one plan per user in v1
+- `GET /api/workout-plans/current` returns the active plan with version data
+- `PUT /api/workout-plans/:id` replaces the plan text and re-parses
+
+**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
+
+### UC-PLAN-02: View current plan and version history
+
+**As a** user, **I want to** see my current training plan laid out by day,
+**so that** I can verify the plan was parsed correctly and review past versions.
+
+**Behavior:**
+- Route: `/plan`
+- Day cards show: day name, exercise rows with sets × reps, target load/RPE, notes
+- Collapsible version history panel lists all prior versions with source badge (`user` or `tuner`) and version number
+- Empty state: paste prompt with textarea and submit button
+- `PlanVersionHistory` component renders list-only (no per-version diff view in v1)
+
+**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
+
+### UC-PLAN-03: Optimize plan from weekly report
+
+**As a** user, **I want to** trigger a plan tune from my latest report,
+**so that** next week's training reflects my actual performance data.
+
+**Behavior:**
+- Expanded `ReportCard` renders `OptimizePlanButton`
+- When no plan exists: button disabled with tooltip "Create a workout plan to unlock" and link to `/plan`
+- When a plan exists: button enabled — "Optimize next week's plan"
+- Click calls `POST /api/workout-plans/:id/tune` with `{ reportId }`
+- Tuner service loads: current plan version, target report, recent Hevy workout sessions, PHIE correlations
+
+**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
+
+### UC-PLAN-04: Review plan adjustments
+
+**As a** user, **I want to** review the proposed changes before committing,
+**so that** I can reject adjustments that don't fit my training context.
+
+**Behavior:**
+- `AdjustmentReviewModal` opens after tune completes
+- Adjustments grouped by training day; each row shows:
+  - Change type badge: `hold` / `progress_load` / `progress_reps` / `deload` / `swap` / `remove` / `add`
+  - Old → new value summary
+  - Confidence score 1–5
+  - Expandable rationale text and evidence chips (at least 1 evidence reference required per LLM selection)
+- Triage row: "Accept all" / "Reject all" / per-row toggle; all accepted by default
+- Batch `rationale` field shows the LLM's overall intensity/volume narrative
+
+**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
+
+### UC-PLAN-05: Accept adjustments → new plan version
+
+**As a** user, **I want to** commit accepted changes as my new plan,
+**so that** the tuned version becomes the source of truth for next week.
+
+**Behavior:**
+- `PATCH /api/workout-plans/adjustments/:batchId` with per-row accept/reject flags
+- Backend reloads the source `plan_versions` row, applies accepted changes to produce new `PlanData`
+- New `plan_versions` row inserted with `source = 'tuner'` and `parentVersionId` pointing at the source version
+- `workout_plans.active_version_id` updated atomically; prior versions retained (immutable)
+- `version_number` increments by plan; prior versions remain accessible via version history
+
+**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
+
+### Under the Hood
+
+**Rule-first / LLM-selects architecture:**
+- `progression-rules.ts` generates the legal candidate set per exercise: `hold`, double progression (2-for-2), deload
+- `safety-caps.ts` enforces hard limits before LLM sees any candidate: ±10% load cap per exercise, ≤1.3× weekly volume (ACWR), max 40% of exercises changed per batch, injury keyword regex locks affected muscle groups
+- LLM receives only the pre-filtered candidates, picks one per exercise, and writes rationale; must cite ≥1 structural evidence reference or the tuner retries once then errors
+- PR #58 `flagSuspiciousInput` sanitizer applied to all user-pasted plan fields before LLM prompting
+- Every "Accept" creates a new immutable `plan_versions` row — no in-place mutation
+
+### v1 Limitations
+
+- Paste-only input — no file upload
+- One plan per user (DB unique constraint)
+- Day count locked — tuner modifies exercises within existing days only; cannot add or remove training days
+- Free-text parser defaults every exercise to `progressionRule: 'double'`; the 2-for-2 rule (`'linear'`) never activates on parsed plans without manual schema edit
+- Single progression personality ("balanced") — schema supports `conservative` / `aggressive` but no UI to select
+- No F3 action-item coupling — accepted changes are version-tracked but not outcome-measured via the F3 machinery
+- No chat tool — "tune my plan" not yet supported; CTA-only trigger
+- No Hevy routine import or push-back
+
+### Future Work
+
+See [`docs/research/2026-03-22-actionable-intelligence-features.md`](research/2026-03-22-actionable-intelligence-features.md) §5.3 for the full F2 specification. Phase 2 candidates:
+- F3 coupling (accepted load changes → trackable action items with outcome measurement)
+- Chat tool: "tune my plan" triggers the tuner inline
+- Hevy two-way bridge: read current Hevy routine → tune → push modified routine back via Hevy API
+- Per-exercise "suggest alternative" micro-interaction in the review modal
+- Progression personality selector (conservative / balanced / aggressive) in plan settings
+
+---
+
+## 8. Data Upload
 
 | ID | Use Case | Status |
 |----|----------|--------|
@@ -674,7 +796,7 @@ tool dispatch.
 
 ---
 
-## 8. Appearance
+## 9. Appearance
 
 | ID | Use Case | Status |
 |----|----------|--------|
@@ -695,7 +817,7 @@ tool dispatch.
 
 ---
 
-## 9. Conversational AI Chat (Phase 6A)
+## 10. Conversational AI Chat (Phase 6A)
 
 | ID | Use Case | Status |
 |----|----------|--------|
