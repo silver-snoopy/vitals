@@ -86,10 +86,7 @@ export async function getProjections(
   return rows.map(rowToProjection);
 }
 
-export async function getLatestProjections(
-  pool: pg.Pool,
-  userId: string,
-): Promise<Projection[]> {
+export async function getLatestProjections(pool: pg.Pool, userId: string): Promise<Projection[]> {
   const { rows } = await pool.query(
     `SELECT DISTINCT ON (metric)
             id, user_id, metric, projection_date,

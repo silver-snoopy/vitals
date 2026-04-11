@@ -47,13 +47,13 @@ describe('GET /api/correlations', () => {
     vi.clearAllMocks();
   });
 
-  it('returns 401 without API key', async () => {
+  it('returns 200 without API key (GET routes are open)', async () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'GET',
       url: '/api/correlations',
     });
-    expect(response.statusCode).toBe(401);
+    expect(response.statusCode).toBe(200);
     await app.close();
   });
 
@@ -62,7 +62,6 @@ describe('GET /api/correlations', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/correlations',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
@@ -77,7 +76,6 @@ describe('GET /api/correlations', () => {
     await app.inject({
       method: 'GET',
       url: '/api/correlations?category=nutrition',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
 
     const calls = (listCorrelations as ReturnType<typeof vi.fn>).mock.calls;
@@ -93,7 +91,6 @@ describe('GET /api/correlations', () => {
     await app.inject({
       method: 'GET',
       url: '/api/correlations?confidenceLevel=high',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
 
     const calls = (listCorrelations as ReturnType<typeof vi.fn>).mock.calls;
@@ -109,7 +106,6 @@ describe('GET /api/correlations', () => {
     await app.inject({
       method: 'GET',
       url: '/api/correlations?status=active',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
 
     const calls = (listCorrelations as ReturnType<typeof vi.fn>).mock.calls;
@@ -125,7 +121,6 @@ describe('GET /api/correlations', () => {
     await app.inject({
       method: 'GET',
       url: '/api/correlations?top=5',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
 
     const calls = (getTopCorrelations as ReturnType<typeof vi.fn>).mock.calls;
@@ -139,9 +134,28 @@ describe('GET /api/correlations', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/correlations?top=abc',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
     expect(response.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 400 when top param exceeds maximum of 100', async () => {
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/correlations?top=101',
+    });
+    expect(response.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('returns 200 when top param is exactly 100 (boundary)', async () => {
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/correlations?top=100',
+    });
+    expect(response.statusCode).toBe(200);
     await app.close();
   });
 
@@ -175,7 +189,6 @@ describe('GET /api/correlations', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/correlations',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
 
     expect(response.statusCode).toBe(200);
@@ -192,13 +205,13 @@ describe('GET /api/projections/:metric', () => {
     vi.clearAllMocks();
   });
 
-  it('returns 401 without API key', async () => {
+  it('returns 200 without API key (GET routes are open)', async () => {
     const app = await buildApp(testEnv);
     const response = await app.inject({
       method: 'GET',
       url: '/api/projections/body_weight',
     });
-    expect(response.statusCode).toBe(401);
+    expect(response.statusCode).toBe(200);
     await app.close();
   });
 
@@ -207,7 +220,6 @@ describe('GET /api/projections/:metric', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/projections/body_weight',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
@@ -222,12 +234,24 @@ describe('GET /api/projections/:metric', () => {
     await app.inject({
       method: 'GET',
       url: '/api/projections/weight_kg',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
 
     const calls = (getProjections as ReturnType<typeof vi.fn>).mock.calls;
     expect(calls[0][1]).toBe(testEnv.dbDefaultUserId);
     expect(calls[0][2]).toBe('weight_kg');
+    await app.close();
+  });
+
+  it('returns 400 when metric name is 100 or more characters (length-bound defense)', async () => {
+    // Fastify default maxParamLength is 100 chars (>100 → 404 at router level).
+    // Our handler rejects >= 100 chars, so test with exactly 100 chars which Fastify routes.
+    const app = await buildApp(testEnv);
+    const longMetric = 'a'.repeat(100);
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/projections/${longMetric}`,
+    });
+    expect(response.statusCode).toBe(400);
     await app.close();
   });
 
@@ -251,7 +275,6 @@ describe('GET /api/projections/:metric', () => {
     const response = await app.inject({
       method: 'GET',
       url: '/api/projections/weight_kg',
-      headers: { 'x-api-key': testEnv.xApiKey },
     });
 
     expect(response.statusCode).toBe(200);

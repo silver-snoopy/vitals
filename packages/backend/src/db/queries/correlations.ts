@@ -1,5 +1,10 @@
 import type pg from 'pg';
-import type { Correlation, ConfidenceLevel, CorrelationCategory, CorrelationStatus } from '@vitals/shared';
+import type {
+  Correlation,
+  ConfidenceLevel,
+  CorrelationCategory,
+  CorrelationStatus,
+} from '@vitals/shared';
 
 function rowToCorrelation(r: Record<string, unknown>): Correlation {
   return {
@@ -28,13 +33,9 @@ function rowToCorrelation(r: Record<string, unknown>): Correlation {
     summary: String(r['summary']),
     category: String(r['category']) as CorrelationCategory,
     createdAt:
-      r['created_at'] instanceof Date
-        ? r['created_at'].toISOString()
-        : String(r['created_at']),
+      r['created_at'] instanceof Date ? r['created_at'].toISOString() : String(r['created_at']),
     updatedAt:
-      r['updated_at'] instanceof Date
-        ? r['updated_at'].toISOString()
-        : String(r['updated_at']),
+      r['updated_at'] instanceof Date ? r['updated_at'].toISOString() : String(r['updated_at']),
   };
 }
 
@@ -64,6 +65,7 @@ export async function upsertCorrelation(
        summary              = EXCLUDED.summary,
        category             = EXCLUDED.category,
        updated_at           = now()
+       -- first_detected_at is intentionally excluded: preserve the original detection timestamp
      RETURNING id`,
     [
       correlation.userId,
@@ -96,9 +98,7 @@ export async function listCorrelations(
     category?: CorrelationCategory | string;
     confidenceLevel?: ConfidenceLevel | string;
     status?: CorrelationStatus | string;
-    /** @deprecated use factorMetric filter via SQL instead */
     metric?: string;
-    /** @deprecated use confidenceLevel instead */
     minConfidence?: string;
   },
 ): Promise<Correlation[]> {
@@ -117,6 +117,15 @@ export async function listCorrelations(
   if (filters?.status) {
     conditions.push(`status = $${idx++}`);
     params.push(filters.status);
+  }
+  if (filters?.metric) {
+    conditions.push(`(factor_metric = $${idx} OR outcome_metric = $${idx})`);
+    params.push(filters.metric);
+    idx++;
+  }
+  if (filters?.minConfidence) {
+    conditions.push(`ABS(correlation_coefficient) >= $${idx++}`);
+    params.push(Number(filters.minConfidence));
   }
 
   const sql = `

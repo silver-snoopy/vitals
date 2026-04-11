@@ -152,18 +152,26 @@ export function classifyConfidence(r: number, n: number, pValue: number): Confid
   return 'suggestive';
 }
 
+export interface LinearRegressionResult {
+  slope: number;
+  intercept: number;
+  r2: number;
+  /** Mean of the x values — used for proper OLS prediction intervals. */
+  meanX: number;
+  /** Sum of squared deviations of x: Σ(xᵢ − meanX)² — used for prediction intervals. */
+  ssXX: number;
+}
+
 /**
  * Fits a simple linear regression y = slope * x + intercept to the data.
  * x values are numeric indices (0, 1, 2, ...) derived from the data order.
- * Returns slope, intercept, and coefficient of determination (r²).
+ * Returns slope, intercept, coefficient of determination (r²), meanX, and ssXX
+ * for use in proper OLS prediction interval calculation.
  */
-export function linearRegression(
-  xs: number[],
-  ys: number[],
-): { slope: number; intercept: number; r2: number } {
+export function linearRegression(xs: number[], ys: number[]): LinearRegressionResult {
   const n = xs.length;
   if (n < 2 || n !== ys.length) {
-    return { slope: 0, intercept: ys[0] ?? 0, r2: 0 };
+    return { slope: 0, intercept: ys[0] ?? 0, r2: 0, meanX: xs[0] ?? 0, ssXX: 0 };
   }
 
   const meanX = xs.reduce((acc, x) => acc + x, 0) / n;
@@ -178,7 +186,7 @@ export function linearRegression(
   }
 
   if (ssXX === 0) {
-    return { slope: 0, intercept: meanY, r2: 0 };
+    return { slope: 0, intercept: meanY, r2: 0, meanX, ssXX: 0 };
   }
 
   const slope = ssXY / ssXX;
@@ -192,15 +200,17 @@ export function linearRegression(
     ssRes += (ys[i] - (slope * xs[i] + intercept)) ** 2;
   }
 
-  const r2 = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+  // M-L1: when all y-values are identical (ssTot === 0), r² is 0 (no variance to explain)
+  const r2 = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
 
-  return { slope, intercept, r2 };
+  return { slope, intercept, r2, meanX, ssXX };
 }
 
 /**
  * Projects future values forward from a time series using linear regression.
  * Returns an array of { date, value, low, high } objects for the next daysForward days.
- * confidence interval width is ±1 standard error of regression residuals.
+ * Confidence interval uses the proper OLS prediction interval formula:
+ *   CI(x*) = residualStdDev * sqrt(1 + 1/n + (x* - meanX)² / ssXX)
  */
 export function projectForward(
   data: { date: string; value: number }[],
@@ -210,15 +220,16 @@ export function projectForward(
 
   const xs = data.map((_, i) => i);
   const ys = data.map((d) => d.value);
+  const n = xs.length;
 
-  const { slope, intercept } = linearRegression(xs, ys);
+  const { slope, intercept, meanX, ssXX } = linearRegression(xs, ys);
 
   // Compute residual standard deviation
   let ssRes = 0;
-  for (let i = 0; i < xs.length; i++) {
+  for (let i = 0; i < n; i++) {
     ssRes += (ys[i] - (slope * xs[i] + intercept)) ** 2;
   }
-  const residualStdDev = Math.sqrt(ssRes / Math.max(1, xs.length - 2));
+  const residualStdDev = Math.sqrt(ssRes / Math.max(1, n - 2));
 
   // Parse the last date
   const lastDate = new Date(data[data.length - 1].date);
@@ -230,8 +241,9 @@ export function projectForward(
     const futureX = lastX + d;
     const projectedValue = slope * futureX + intercept;
 
-    // Confidence interval widens with distance from last data point
-    const ci = residualStdDev * Math.sqrt(d);
+    // Proper OLS prediction interval: widens with distance from meanX
+    const leverage = ssXX > 0 ? (futureX - meanX) ** 2 / ssXX : 0;
+    const ci = residualStdDev * Math.sqrt(1 + 1 / n + leverage);
 
     const projDate = new Date(lastDate);
     projDate.setDate(projDate.getDate() + d);

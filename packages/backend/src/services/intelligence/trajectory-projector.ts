@@ -19,10 +19,9 @@ const MIN_DATA_POINTS = 7;
  * Queries the distinct metrics available for a user in the measurements table.
  */
 async function queryDistinctMetrics(pool: pg.Pool, userId: string): Promise<string[]> {
-  const { rows } = await pool.query(
-    `SELECT DISTINCT metric FROM measurements WHERE user_id = $1`,
-    [userId],
-  );
+  const { rows } = await pool.query(`SELECT DISTINCT metric FROM measurements WHERE user_id = $1`, [
+    userId,
+  ]);
   return rows.map((r) => String(r['metric']));
 }
 
@@ -50,10 +49,7 @@ async function queryDailyValues(
   );
 
   return rows.map((r) => ({
-    date:
-      r['day'] instanceof Date
-        ? r['day'].toISOString().split('T')[0]
-        : String(r['day']),
+    date: r['day'] instanceof Date ? r['day'].toISOString().split('T')[0] : String(r['day']),
     value: Number(r['avg_value']),
   }));
 }
@@ -72,8 +68,8 @@ export async function runTrajectoryProjections(
   userId: string,
   metrics?: string[],
 ): Promise<void> {
-  // Resolve metrics: use provided list, or fall back to querying distinct metrics
-  // filtered by the default biometric set
+  // Resolve metrics: use provided list, or query distinct metrics filtered by the biometric set.
+  // If the user has no matching metrics, return early — no point firing DB queries per metric.
   let targetMetrics: string[];
   if (metrics && metrics.length > 0) {
     targetMetrics = metrics;
@@ -81,7 +77,7 @@ export async function runTrajectoryProjections(
     const available = await queryDistinctMetrics(pool, userId);
     targetMetrics = available.filter((m) => DEFAULT_BIOMETRIC_METRICS.includes(m));
     if (targetMetrics.length === 0) {
-      targetMetrics = DEFAULT_BIOMETRIC_METRICS;
+      return;
     }
   }
 

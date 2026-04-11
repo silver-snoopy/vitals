@@ -1,7 +1,11 @@
 import type pg from 'pg';
 import type { CorrelationCategory } from '@vitals/shared';
 import { pearsonCorrelation, calculatePValue, classifyConfidence } from './stats.js';
-import { upsertCorrelation, listCorrelations, markWeakening } from '../../db/queries/correlations.js';
+import {
+  upsertCorrelation,
+  listCorrelations,
+  markWeakening,
+} from '../../db/queries/correlations.js';
 
 /** Candidate pair: a factor metric and an outcome metric to test for correlation. */
 interface CandidatePair {
@@ -67,7 +71,8 @@ async function loadDailyAverages(
   const result = new Map<string, Map<string, number>>();
   for (const row of rows) {
     const metric = String(row['metric']);
-    const day = row['day'] instanceof Date ? row['day'].toISOString().split('T')[0] : String(row['day']);
+    const day =
+      row['day'] instanceof Date ? row['day'].toISOString().split('T')[0] : String(row['day']);
     const value = Number(row['avg_value']);
 
     if (!result.has(metric)) result.set(metric, new Map());
@@ -103,7 +108,13 @@ function buildLabels(
   factorMetric: string,
   outcomeMetric: string,
   r: number,
-): { factorCondition: string; factorLabel: string; outcomeEffect: string; outcomeLabel: string; summary: string } {
+): {
+  factorCondition: string;
+  factorLabel: string;
+  outcomeEffect: string;
+  outcomeLabel: string;
+  summary: string;
+} {
   const direction = r > 0 ? 'higher' : 'lower';
   const strength = Math.abs(r) >= 0.5 ? 'strongly' : 'moderately';
 

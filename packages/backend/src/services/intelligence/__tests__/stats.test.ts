@@ -43,8 +43,8 @@ describe('pearsonCorrelation', () => {
   it('returns exactly 0 for perfectly uncorrelated data', () => {
     // xs is monotone increasing; ys is symmetric around mean — zero correlation by construction
     // sum((xi - meanX)*(yi - meanY)) = 0 when ys are symmetric: [-2, -1, 0, 1, 2] reversed on matched half
-    const xs = [1, 2, 3, 4, 5, 6, 7];
-    const ys = [3, 3, 3, 3, 3, 3, 3]; // constant — but this gives NaN; use a different approach
+    const _xs = [1, 2, 3, 4, 5, 6, 7];
+    const _ys = [3, 3, 3, 3, 3, 3, 3]; // constant — but this gives NaN; use a different approach
     // Build ys so cov(X,Y) = 0 exactly: pair high x with symmetric ys
     // xs = [1,2,3,4,5], ys = [5,1,3,1,5] — mean(ys)=3, deviations: 2,-2,0,-2,2
     // cov = (1-3)*2 + (2-3)*(-2) + (3-3)*0 + (4-3)*(-2) + (5-3)*2 = -4+2+0-2+4 = 0
@@ -161,6 +161,20 @@ describe('linearRegression', () => {
     const result = linearRegression(xs, ys);
     expect(result.r2).toBeGreaterThan(0.9);
     expect(result.r2).toBeLessThanOrEqual(1);
+  });
+
+  it('returns r2 = 0 when all y-values are identical (zero variance)', () => {
+    // M-L1: flat y series has no variance to explain — r² should be 0, not 1
+    const result = linearRegression([1, 2, 3], [5, 5, 5]);
+    expect(result.r2).toBe(0);
+  });
+
+  it('returns meanX and ssXX for use in prediction intervals', () => {
+    const xs = [0, 1, 2, 3, 4];
+    const result = linearRegression(xs, [1, 3, 5, 7, 9]);
+    expect(result.meanX).toBeCloseTo(2, 5);
+    // ssXX = (0-2)² + (1-2)² + (2-2)² + (3-2)² + (4-2)² = 4+1+0+1+4 = 10
+    expect(result.ssXX).toBeCloseTo(10, 5);
   });
 });
 
