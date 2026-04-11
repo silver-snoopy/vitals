@@ -77,21 +77,6 @@ async function mockPlanV2(page: Page) {
   });
 }
 
-/** Mock POST /api/workout-plans (parse-and-create). */
-async function mockCreatePlan(page: Page) {
-  await page.route('**/api/workout-plans', async (route) => {
-    if (route.request().method() === 'POST') {
-      await route.fulfill({
-        status: 201,
-        contentType: 'application/json',
-        body: JSON.stringify(parsedPlanFixture),
-      });
-    } else {
-      await route.fallback();
-    }
-  });
-}
-
 /** Mock GET /api/reports. */
 async function mockReportsWithReport(page: Page) {
   await page.route('**/api/reports', async (route) => {

@@ -23,6 +23,12 @@ export const QUERY_KEYS = {
   collection: {
     status: ['collection', 'status'] as const,
   },
+  workoutPlan: {
+    current: ['workout-plan', 'current'] as const,
+    versions: (planId: string) => ['workout-plan', 'versions', planId] as const,
+    version: (versionId: string) => ['workout-plan', 'version', versionId] as const,
+    batch: (batchId: string) => ['workout-plan', 'batch', batchId] as const,
+  },
   actionItems: {
     all: ['action-items'] as const,
     list: (filters?: Record<string, string>) => ['action-items', 'list', filters] as const,
