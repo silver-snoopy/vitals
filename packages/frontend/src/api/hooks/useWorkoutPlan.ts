@@ -5,6 +5,7 @@ import type {
   WorkoutPlan,
   PlanVersion,
   PlanAdjustmentBatch,
+  PlanData,
   TunePlanRequest,
   CreatePlanRequest,
   DecideAdjustmentsRequest,
@@ -64,6 +65,14 @@ export function useTunePlan(planId: string) {
   });
 }
 
+/** Shape returned by PATCH /api/workout-plans/adjustments/:batchId */
+interface DecideAdjustmentsResponse {
+  versionNumber: number;
+  data: PlanData;
+  /** Present on the zero-accept path — indicates plan was not changed. */
+  message?: string;
+}
+
 /**
  * Submits accept/reject decisions for an adjustment batch.
  * On success, invalidates the current plan (new version may be active).
@@ -72,14 +81,17 @@ export function useDecideAdjustments(batchId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: DecideAdjustmentsRequest) =>
-      apiFetch<ApiResponse<PlanVersion>>(`/api/workout-plans/adjustments/${batchId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      }),
+      apiFetch<ApiResponse<DecideAdjustmentsResponse>>(
+        `/api/workout-plans/adjustments/${batchId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+      ),
     onSuccess: (response) => {
-      const version = response.data;
-      toast.success(`Plan updated to version ${version.versionNumber}`);
+      const { versionNumber } = response.data;
+      toast.success(`Plan updated to version ${versionNumber ?? 'unchanged'}`);
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workoutPlan.current });
     },
   });

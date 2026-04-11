@@ -174,6 +174,9 @@ export async function getPlanVersion(
 /**
  * Creates a new plan if none exists for the user, or updates the existing plan's
  * name/splitType/notes. Returns the upserted plan row (without version).
+ *
+ * Uses ON CONFLICT (user_id) DO UPDATE — relies on the UNIQUE (user_id) constraint
+ * added in migration 011. One plan per user is a v1 design invariant.
  */
 export async function upsertPlan(
   pool: pg.Pool,
@@ -183,24 +186,15 @@ export async function upsertPlan(
   const { rows } = await pool.query(
     `INSERT INTO workout_plans (user_id, name, split_type, notes)
      VALUES ($1, $2, $3, $4)
-     ON CONFLICT DO NOTHING
+     ON CONFLICT (user_id) DO UPDATE
+       SET name = EXCLUDED.name,
+           split_type = EXCLUDED.split_type,
+           notes = EXCLUDED.notes,
+           updated_at = now()
      RETURNING ${PLAN_COLUMNS}`,
     [userId, fields.name, fields.splitType, fields.notes ?? null],
   );
-
-  if (rows.length > 0) {
-    return mapPlanRow(rows[0] as Record<string, unknown>);
-  }
-
-  // Plan already exists for this user — update it
-  const { rows: updateRows } = await pool.query(
-    `UPDATE workout_plans
-     SET name = $2, split_type = $3, notes = $4, updated_at = now()
-     WHERE user_id = $1
-     RETURNING ${PLAN_COLUMNS}`,
-    [userId, fields.name, fields.splitType, fields.notes ?? null],
-  );
-  return mapPlanRow(updateRows[0] as Record<string, unknown>);
+  return mapPlanRow(rows[0] as Record<string, unknown>);
 }
 
 /**
@@ -260,6 +254,10 @@ export async function listPlanVersions(pool: pg.Pool, planId: string): Promise<P
 /**
  * Inserts an adjustment batch (without individual adjustments).
  * Returns the batch ID.
+ *
+ * NOTE: This only inserts the batch header row. Individual adjustments are inserted
+ * separately via insertAdjustment. The caller (tuner.ts) is responsible for
+ * wrapping batch + adjustment inserts in a transaction if atomicity is needed.
  */
 export async function insertAdjustmentBatch(
   pool: pg.Pool,
@@ -287,6 +285,81 @@ export async function insertAdjustmentBatch(
     ],
   );
   return String(rows[0]['id']);
+}
+
+/**
+ * Inserts an adjustment batch header + all its adjustment rows in a single transaction.
+ * A mid-loop failure rolls back the entire batch — no partial batches.
+ * Returns the batch ID.
+ */
+export async function insertAdjustmentBatchWithAdjustments(
+  pool: pg.Pool,
+  batchFields: {
+    planId: string;
+    sourceVersionId: string;
+    reportId: string;
+    aiProvider: string;
+    aiModel: string;
+    rationale: string;
+  },
+  adjustments: Array<{
+    exerciseRef: ExerciseRef;
+    changeType: PlanAdjustment['changeType'];
+    oldValue: unknown;
+    newValue: unknown;
+    evidence: PlanAdjustment['evidence'];
+    confidence: PlanAdjustment['confidence'];
+    rationale: string;
+  }>,
+): Promise<string> {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Insert batch header row
+    const { rows: batchRows } = await client.query(
+      `INSERT INTO plan_adjustment_batches
+         (plan_id, source_version_id, report_id, ai_provider, ai_model, rationale)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id`,
+      [
+        batchFields.planId,
+        batchFields.sourceVersionId,
+        batchFields.reportId,
+        batchFields.aiProvider,
+        batchFields.aiModel,
+        batchFields.rationale,
+      ],
+    );
+    const batchId = String(batchRows[0]['id']);
+
+    // Insert each adjustment row inside the same transaction
+    for (const adj of adjustments) {
+      await client.query(
+        `INSERT INTO plan_adjustments
+           (batch_id, exercise_ref, change_type, old_value, new_value, evidence, confidence, rationale)
+         VALUES ($1, $2::jsonb, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7, $8)`,
+        [
+          batchId,
+          JSON.stringify(adj.exerciseRef),
+          adj.changeType,
+          JSON.stringify(adj.oldValue),
+          JSON.stringify(adj.newValue),
+          JSON.stringify(adj.evidence),
+          adj.confidence,
+          adj.rationale,
+        ],
+      );
+    }
+
+    await client.query('COMMIT');
+    return batchId;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 /** Returns all adjustments for a batch, ordered by exercise_ref position. */
@@ -347,18 +420,21 @@ export async function updateAdjustmentStatus(
 /**
  * Bulk-updates adjustment statuses within a single transaction.
  * decisions is a map of adjustmentId → 'accepted' | 'rejected'.
+ * batchId is required to scope updates and prevent cross-batch mutation.
  */
 export async function bulkUpdateAdjustmentStatus(
   pool: pg.Pool,
+  batchId: string,
   decisions: Record<string, 'accepted' | 'rejected'>,
 ): Promise<void> {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     for (const [adjustmentId, status] of Object.entries(decisions)) {
+      // AND batch_id = $3 ensures we only update adjustments belonging to this batch
       await client.query(
-        `UPDATE plan_adjustments SET status = $1, decided_at = now() WHERE id = $2`,
-        [status, adjustmentId],
+        `UPDATE plan_adjustments SET status = $1, decided_at = now() WHERE id = $2 AND batch_id = $3`,
+        [status, adjustmentId, batchId],
       );
     }
     await client.query('COMMIT');

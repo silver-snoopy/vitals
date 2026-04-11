@@ -15,7 +15,8 @@ const INJURY_MUSCLE_MAPS: InjuryMuscleMap[] = [
     muscles: ['front deltoid', 'lateral deltoid', 'rear deltoid', 'rotator cuff'],
   },
   { keywords: ['knee'], muscles: ['quads', 'hamstrings', 'calves'] },
-  { keywords: ['back', 'lumbar', 'spine'], muscles: ['lower back', 'upper back', 'lats'] },
+  // 'back' narrowed to 'lower back' / 'lumbar' to avoid false-positive on day names like "Back Day"
+  { keywords: ['lower back', 'lumbar', 'spine'], muscles: ['lower back', 'upper back', 'lats'] },
   { keywords: ['elbow'], muscles: ['biceps', 'triceps', 'brachialis'] },
   { keywords: ['wrist'], muscles: ['biceps', 'triceps', 'forearms'] },
   { keywords: ['hip'], muscles: ['glutes', 'hip flexors', 'quads'] },
@@ -195,13 +196,14 @@ export function applyInjuryLock(
     return originalCandidate;
   }
 
-  const lower = hazardText.toLowerCase();
-
   for (const { keywords, muscles } of INJURY_MUSCLE_MAPS) {
-    const hasKeyword = keywords.some((kw) => lower.includes(kw));
+    // Use word-boundary regex to avoid false-positives (e.g. 'back' in 'Back Day')
+    const hasKeyword = keywords.some((kw) => new RegExp('\\b' + kw + '\\b', 'i').test(hazardText));
     if (!hasKeyword) continue;
 
-    const matchesMuscle = muscles.some((m) => m.toLowerCase() === exerciseMuscle.toLowerCase());
+    const matchesMuscle = muscles.some(
+      (m) => m.toLowerCase() === exerciseMuscle.toLowerCase(),
+    );
     if (matchesMuscle) {
       return {
         ...holdCandidate,

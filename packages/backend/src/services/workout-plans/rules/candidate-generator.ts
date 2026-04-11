@@ -14,7 +14,7 @@ import {
   generateDeloadCandidate,
   applyRpeGuardrail,
 } from './progression-rules.js';
-import { applyLoadCap, applyInjuryLock } from './safety-caps.js';
+import { applyLoadCap, applyVolumeCap, applyInjuryLock } from './safety-caps.js';
 
 /**
  * All inputs consumed by the candidate generator.
@@ -109,6 +109,10 @@ export function generateCandidates(input: CandidateInput): Map<string, Candidate
   for (let dayIndex = 0; dayIndex < planData.days.length; dayIndex++) {
     const day = planData.days[dayIndex];
 
+    // Compute current total set count for the day (summed across all exercises).
+    // Used as the baseline for applyVolumeCap before handing candidates to the LLM.
+    const currentDayVolume = day.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+
     for (const exercise of day.exercises) {
       const key = `${dayIndex}:${exercise.orderInDay}`;
       const snapshot = buildSnapshot(exercise.exerciseName, exercise.sets, recentSessions);
@@ -145,7 +149,11 @@ export function generateCandidates(input: CandidateInput): Map<string, Candidate
       // Hold is always the last fallback
       candidates.push(hold);
 
-      result.set(key, candidates);
+      // Apply volume cap per exercise before the LLM sees the candidates.
+      // Drops any candidate that would push the day's total set count beyond 130% of baseline.
+      const volumeCapped = applyVolumeCap(candidates, currentDayVolume, exercise.primaryMuscle);
+
+      result.set(key, volumeCapped);
     }
   }
 

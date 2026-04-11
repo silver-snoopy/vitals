@@ -53,6 +53,12 @@ function isValidPlanDay(v: unknown): v is PlanDay {
   return true;
 }
 
+const VALID_PROGRESSION_PERSONALITIES = ['conservative', 'balanced', 'aggressive'] as const;
+
+function isValidProgressionPersonality(v: unknown): boolean {
+  return VALID_PROGRESSION_PERSONALITIES.includes(v as (typeof VALID_PROGRESSION_PERSONALITIES)[number]);
+}
+
 /**
  * Type guard: returns true if the value is a valid PlanData shape.
  * Used to validate JSONB round-trips and AI-parsed plan structures.
@@ -61,7 +67,8 @@ export function isPlanData(value: unknown): value is PlanData {
   if (typeof value !== 'object' || value === null) return false;
   const d = value as Record<string, unknown>;
   if (typeof d['splitType'] !== 'string') return false;
-  if (d['progressionPersonality'] !== 'balanced') return false;
+  // progressionPersonality is optional; if present must be a valid value
+  if (d['progressionPersonality'] !== undefined && !isValidProgressionPersonality(d['progressionPersonality'])) return false;
   if (!Array.isArray(d['days'])) return false;
   if (!d['days'].every(isValidPlanDay)) return false;
   return true;
@@ -71,6 +78,9 @@ export function isPlanData(value: unknown): value is PlanData {
  * Validates that an unknown value conforms to PlanData.
  * Throws a descriptive error if validation fails.
  * Used after JSON.parse on stored JSONB or AI output.
+ *
+ * progressionPersonality accepts 'conservative' | 'balanced' | 'aggressive'.
+ * Missing value defaults to 'balanced'.
  */
 export function validatePlanData(data: unknown): PlanData {
   if (typeof data !== 'object' || data === null) {
@@ -81,11 +91,16 @@ export function validatePlanData(data: unknown): PlanData {
   if (typeof d['splitType'] !== 'string') {
     throw new Error('invalid plan data: splitType must be a string');
   }
-  if (d['progressionPersonality'] !== 'balanced') {
+
+  // Default missing progressionPersonality to 'balanced'
+  if (d['progressionPersonality'] === undefined || d['progressionPersonality'] === null) {
+    d['progressionPersonality'] = 'balanced';
+  } else if (!isValidProgressionPersonality(d['progressionPersonality'])) {
     throw new Error(
-      `invalid plan data: progressionPersonality must be "balanced", got ${String(d['progressionPersonality'])}`,
+      `invalid plan data: progressionPersonality must be "conservative", "balanced", or "aggressive", got ${String(d['progressionPersonality'])}`,
     );
   }
+
   if (!Array.isArray(d['days'])) {
     throw new Error('invalid plan data: days must be an array');
   }

@@ -212,6 +212,13 @@ export function parseFreeTextPlan(rawText: string): PlanData {
 
 /** Fallback plan: single "Notes" day with raw text stored in exercises[0].notes. */
 function buildFallback(rawText: string): PlanData {
+  // NOTE: user health data — truncate to prevent unbounded growth in stored JSONB
+  const FALLBACK_NOTES_MAX = 10_000;
+  const truncatedNotes =
+    rawText && rawText.length > FALLBACK_NOTES_MAX
+      ? rawText.slice(0, FALLBACK_NOTES_MAX)
+      : rawText;
+
   return {
     splitType: 'Custom',
     progressionPersonality: 'balanced',
@@ -231,7 +238,7 @@ function buildFallback(rawText: string): PlanData {
             pattern: 'other',
             equipment: 'unknown',
             sfrTier: 'B',
-            notes: rawText,
+            notes: truncatedNotes,
           },
         ],
       },

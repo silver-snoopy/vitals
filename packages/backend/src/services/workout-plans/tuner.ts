@@ -21,8 +21,10 @@ import { queryWorkoutSessions } from '../../db/queries/workouts.js';
 import { generateCandidates } from './rules/candidate-generator.js';
 import type { CandidateInput } from './rules/candidate-generator.js';
 import type { Candidate } from './rules/progression-rules.js';
+import { applyMaxChangeRatio } from './rules/safety-caps.js';
 import { buildTunePrompt } from './tuner-prompt-builder.js';
 import { validatePlanData } from './plan-schema.js';
+import { flagSuspiciousInput } from '../ai/conversation-service.js';
 
 // ---------------------------------------------------------------------------
 // Types for AI output
@@ -280,7 +282,58 @@ export async function tunePlan(
   };
   const candidates = generateCandidates(candidateInput);
 
-  // Step 6: Build prompt + call AI
+  // Step 6: Sanitize plan content for prompt-injection patterns (H5 — defense in depth).
+  // User-supplied text (day names, exercise notes, plan notes) is embedded in the LLM prompt.
+  // Strip offending content rather than rejecting the tune run.
+  const fieldsToScan: Array<{ label: string; value: string | undefined }> = [
+    { label: 'plan.notes', value: plan.notes },
+  ];
+  for (const day of planData.days) {
+    fieldsToScan.push({ label: `day.name:${day.name}`, value: day.name });
+    for (const exercise of day.exercises) {
+      fieldsToScan.push({ label: `exercise.name:${exercise.exerciseName}`, value: exercise.exerciseName });
+      if (exercise.notes) {
+        fieldsToScan.push({ label: `exercise.notes:${exercise.exerciseName}`, value: exercise.notes });
+      }
+    }
+  }
+
+  const suspiciousFields: string[] = [];
+  for (const { label, value } of fieldsToScan) {
+    if (value && flagSuspiciousInput(value)) {
+      suspiciousFields.push(label);
+    }
+  }
+
+  if (suspiciousFields.length > 0) {
+    // Log warning but continue — strip the offending fields from candidateInput
+    const logContext = { planId: plan.id, fields: suspiciousFields };
+    // Use console.warn since we don't have a logger at this layer; caller logs on error
+    console.warn('[tuner] suspicious input detected — stripping fields', logContext);
+
+    // Strip suspicious content in planData (deep copy) before embedding in the LLM prompt
+    const sanitizedPlanData: PlanData = {
+      ...planData,
+      days: planData.days.map((day) => ({
+        ...day,
+        name: flagSuspiciousInput(day.name) ? '[content removed for safety]' : day.name,
+        exercises: day.exercises.map((exercise) => ({
+          ...exercise,
+          exerciseName: flagSuspiciousInput(exercise.exerciseName)
+            ? '[content removed for safety]'
+            : exercise.exerciseName,
+          notes:
+            exercise.notes && flagSuspiciousInput(exercise.notes)
+              ? '[content removed for safety]'
+              : exercise.notes,
+        })),
+      })),
+    };
+    // Rebuild candidateInput with sanitized data
+    candidateInput.planData = sanitizedPlanData;
+  }
+
+  // Build prompt + call AI
   const messages = buildTunePrompt({ candidateInput, candidates, correlations, report });
 
   let aiResult = await completeWithRetry(aiProvider, messages);
@@ -314,7 +367,35 @@ export async function tunePlan(
     throw new Error('tuner: LLM output failed evidence validation after 1 retry');
   }
 
-  // Step 8: Persist batch + adjustments
+  // Step 8a: Apply max-change-ratio cap (40% of exercises may change per batch).
+  // Build a Map<exerciseKey, selected Candidate> from the LLM's selections, run the cap,
+  // then force any demoted selections back to 'hold'. This prevents the LLM from changing
+  // too many exercises at once, which could destabilise the programme.
+  const totalExerciseCount = planData.days.reduce((sum, d) => sum + d.exercises.length, 0);
+  const selectedByKey = new Map<string, Candidate>();
+  for (const selection of parsed.adjustments) {
+    const key = `${selection.exerciseRef.dayIndex}:${selection.exerciseRef.exerciseOrder}`;
+    const exCandidates = candidates.get(key);
+    if (exCandidates) {
+      selectedByKey.set(key, exCandidates[selection.selectedCandidateIndex]);
+    }
+  }
+  const cappedSelection = applyMaxChangeRatio(selectedByKey, totalExerciseCount);
+
+  // Reflect cap in parsed.adjustments — demoted entries become hold (last candidate in list)
+  parsed.adjustments = parsed.adjustments.map((selection) => {
+    const key = `${selection.exerciseRef.dayIndex}:${selection.exerciseRef.exerciseOrder}`;
+    const cappedCandidate = cappedSelection.get(key);
+    if (cappedCandidate && cappedCandidate.changeType === 'hold') {
+      const exCandidates = candidates.get(key);
+      // Re-map to the hold candidate index (always last in the list)
+      const holdIndex = exCandidates ? exCandidates.length - 1 : selection.selectedCandidateIndex;
+      return { ...selection, selectedCandidateIndex: holdIndex };
+    }
+    return selection;
+  });
+
+  // Persist batch + adjustments
   const batchId = await insertAdjustmentBatch(pool, {
     planId: plan.id,
     sourceVersionId: planVersion.id,

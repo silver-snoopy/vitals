@@ -6,7 +6,9 @@ import type {
   DecideAdjustmentsRequest,
   PlanData,
   PlanSet,
+  PlanAdjustmentBatch,
 } from '@vitals/shared';
+import type { AIProvider } from '@vitals/shared';
 import { apiKeyMiddleware } from '../middleware/api-key.js';
 import {
   getCurrentPlan,
@@ -44,6 +46,16 @@ export async function workoutPlanRoutes(
     { preHandler: apiKeyMiddleware(opts.env.xApiKey) },
     async (request, reply) => {
       const { rawText, plan: planBody } = request.body ?? {};
+
+      // Hard cap on rawText size to prevent DoS of the parser and limit stored health data
+      const RAW_TEXT_MAX_CHARS = 50_000;
+      if (rawText && rawText.length > RAW_TEXT_MAX_CHARS) {
+        return reply.code(413).send({
+          error: 'Payload Too Large',
+          message: 'Plan text too large',
+          statusCode: 413,
+        });
+      }
 
       let planData: PlanData;
       if (planBody?.activeVersionId !== undefined) {
@@ -183,7 +195,7 @@ export async function workoutPlanRoutes(
         });
       }
 
-      let aiProvider;
+      let aiProvider: AIProvider;
       try {
         aiProvider = createAIProvider(opts.env);
       } catch {
@@ -194,7 +206,7 @@ export async function workoutPlanRoutes(
         });
       }
 
-      let batch;
+      let batch: PlanAdjustmentBatch;
       try {
         batch = await tunePlan(
           app.db,
@@ -225,7 +237,10 @@ export async function workoutPlanRoutes(
           });
         }
 
-        request.log.error({ err }, 'Plan tuner failed');
+        // Avoid logging the full prompt — only log planId and error message
+        const planId = request.params.id;
+        const errMsg = err instanceof Error ? err.message : String(err);
+        request.log.error({ planId, errMsg }, 'Plan tuner failed');
         return reply.code(502).send({
           error: 'Bad Gateway',
           message: 'AI service failed to generate the plan adjustment. Please try again later.',
@@ -261,10 +276,8 @@ export async function workoutPlanRoutes(
         });
       }
 
-      // Bulk update statuses
-      await bulkUpdateAdjustmentStatus(app.db, decisions);
-
-      // Compute new plan data by applying accepted adjustments to source version
+      // Verify the source version exists BEFORE committing any status updates.
+      // If the source version is missing, we must not mutate adjustment statuses.
       const sourceVersion = await getPlanVersion(app.db, batch.sourceVersionId);
       if (!sourceVersion) {
         return reply.code(404).send({
@@ -273,6 +286,9 @@ export async function workoutPlanRoutes(
           statusCode: 404,
         });
       }
+
+      // Bulk-update statuses scoped to this batch (transactional)
+      await bulkUpdateAdjustmentStatus(app.db, request.params.batchId, decisions);
 
       const acceptedAdjustments = batch.adjustments.filter(
         (adj) => decisions[adj.id] === 'accepted',

@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS workout_plans (
   -- FK to the currently active version; NULL until the first version is accepted.
   active_version_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- v1 design: one plan per user
+  CONSTRAINT workout_plans_user_id_unique UNIQUE (user_id)
 );
 
 CREATE TABLE IF NOT EXISTS plan_versions (

@@ -32,17 +32,19 @@ vi.mock('../../db/queries/workout-plans.js', () => ({
   insertPlanVersion: vi.fn().mockResolvedValue({
     id: 'version-uuid',
     planId: 'plan-uuid',
-    versionNumber: 1,
-    source: 'user',
-    parentVersionId: null,
+    versionNumber: 2,
+    source: 'tuner',
+    parentVersionId: 'version-uuid',
     data: { splitType: 'Custom', progressionPersonality: 'balanced', days: [] },
     createdAt: new Date().toISOString(),
     acceptedAt: null,
   }),
   listPlanVersions: vi.fn().mockResolvedValue([]),
   getAdjustmentBatch: vi.fn().mockResolvedValue(null),
+  // bulkUpdateAdjustmentStatus now takes (pool, batchId, decisions)
   bulkUpdateAdjustmentStatus: vi.fn().mockResolvedValue(undefined),
   insertAdjustment: vi.fn().mockResolvedValue({}),
+  insertAdjustmentBatchWithAdjustments: vi.fn().mockResolvedValue('batch-uuid'),
   mapPlanRow: vi.fn(),
   mapVersionRow: vi.fn(),
   mapAdjustmentRow: vi.fn(),
@@ -505,6 +507,61 @@ describe('PUT /api/workout-plans/:id', () => {
       body: JSON.stringify({ rawText: 'Push\nBench Press 3x10' }),
     });
     expect(response.statusCode).toBe(401);
+    await app.close();
+  });
+});
+
+describe('POST /api/workout-plans — upsertPlan duplicate user_id (H2)', () => {
+  it('second POST for same user returns 201 (upsert does not crash on duplicate user_id)', async () => {
+    // Both calls hit the same upsertPlan mock — the mock always returns the plan row.
+    // This proves the route calls upsertPlan (not a raw INSERT) and doesn't crash on duplicates.
+    const { upsertPlan } = await import('../../db/queries/workout-plans.js');
+    vi.mocked(upsertPlan).mockResolvedValue({
+      id: 'plan-uuid',
+      userId: 'user-uuid',
+      name: 'My Workout Plan',
+      splitType: 'Custom',
+      activeVersionId: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const app = await buildApp(testEnv);
+
+    // First call
+    const r1 = await app.inject({
+      method: 'POST',
+      url: '/api/workout-plans',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ rawText: 'Push\nBench Press 3x10 @ 80kg' }),
+    });
+    expect(r1.statusCode).toBe(201);
+
+    // Second call for same user — upsert must not throw
+    const r2 = await app.inject({
+      method: 'POST',
+      url: '/api/workout-plans',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ rawText: 'Pull\nDeadlift 3x5 @ 100kg' }),
+    });
+    expect(r2.statusCode).toBe(201);
+
+    await app.close();
+  });
+});
+
+describe('POST /api/workout-plans — rawText size cap (M4)', () => {
+  it('rawText > 50,000 chars → 413 Payload Too Large', async () => {
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/workout-plans',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ rawText: 'x'.repeat(50_001) }),
+    });
+    expect(response.statusCode).toBe(413);
+    const body = JSON.parse(response.body);
+    expect(body.message).toContain('too large');
     await app.close();
   });
 });
