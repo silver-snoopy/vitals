@@ -9,8 +9,7 @@ import type { AIProvider, AICompletionResult, PlanData } from '@vitals/shared';
 vi.mock('../../../db/queries/workout-plans.js', () => ({
   getPlanVersion: vi.fn(),
   getPlanById: vi.fn(),
-  insertAdjustmentBatch: vi.fn().mockResolvedValue('batch-uuid'),
-  insertAdjustment: vi.fn().mockResolvedValue({}),
+  insertAdjustmentBatchWithAdjustments: vi.fn().mockResolvedValue('batch-uuid'),
   getAdjustmentBatch: vi.fn(),
   listAdjustmentsForBatch: vi.fn().mockResolvedValue([]),
   mapAdjustmentRow: vi.fn(),
@@ -347,13 +346,12 @@ describe('tunePlan', () => {
     ).rejects.toThrow('Report not found');
   });
 
-  it('batch and adjustments rows are persisted after successful generation', async () => {
+  it('batch and adjustments rows are persisted atomically after successful generation', async () => {
     const {
       getPlanVersion,
       getPlanById,
       getAdjustmentBatch,
-      insertAdjustmentBatch,
-      insertAdjustment,
+      insertAdjustmentBatchWithAdjustments,
     } = await import('../../../db/queries/workout-plans.js');
     const { getReportById } = await import('../../../db/queries/reports.js');
 
@@ -366,9 +364,11 @@ describe('tunePlan', () => {
     const { tunePlan } = await import('../tuner.js');
     await tunePlan(mockPool, aiProvider, 'user-uuid', 'version-uuid', 'report-uuid');
 
-    expect(insertAdjustmentBatch).toHaveBeenCalledOnce();
-    // insertAdjustment called once per adjustment in the response
-    expect(insertAdjustment).toHaveBeenCalledTimes(1);
+    // Single transactional call replaces old two-step insertAdjustmentBatch + insertAdjustment loop
+    expect(insertAdjustmentBatchWithAdjustments).toHaveBeenCalledOnce();
+    // Verify the adjustments array passed matches the one adjustment in VALID_AI_RESPONSE
+    const [, , adjustments] = vi.mocked(insertAdjustmentBatchWithAdjustments).mock.calls[0];
+    expect(adjustments).toHaveLength(1);
   });
 
   it('H5: plan text with injection pattern → tuner still runs, offending text stripped from prompt', async () => {

@@ -11,8 +11,7 @@ import { jsonrepair } from 'jsonrepair';
 import {
   getPlanVersion,
   getPlanById,
-  insertAdjustmentBatch,
-  insertAdjustment,
+  insertAdjustmentBatchWithAdjustments,
   getAdjustmentBatch,
 } from '../../db/queries/workout-plans.js';
 import { getReportById, logAiGeneration } from '../../db/queries/reports.js';
@@ -186,7 +185,7 @@ function buildAdjustmentFields(
   selection: TunerAdjustmentSelection,
   candidates: Map<string, Candidate[]>,
   planData: PlanData,
-): Omit<Parameters<typeof insertAdjustment>[1], 'batchId'> & { batchId: string } {
+): Parameters<typeof insertAdjustmentBatchWithAdjustments>[2][number] & { batchId: string } {
   const key = `${selection.exerciseRef.dayIndex}:${selection.exerciseRef.exerciseOrder}`;
   const exCandidates = candidates.get(key)!;
   const chosen = exCandidates[selection.selectedCandidateIndex];
@@ -395,20 +394,29 @@ export async function tunePlan(
     return selection;
   });
 
-  // Persist batch + adjustments
-  const batchId = await insertAdjustmentBatch(pool, {
-    planId: plan.id,
-    sourceVersionId: planVersion.id,
-    reportId,
-    aiProvider: aiProvider.name(),
-    aiModel: aiResult.model,
-    rationale: parsed.rationale,
+  // Persist batch + adjustments atomically in a single transaction
+  const adjustmentRows = parsed.adjustments.map((selection) => {
+    const { batchId: _ignored, ...fields } = buildAdjustmentFields(
+      '', // batchId not needed here — insertAdjustmentBatchWithAdjustments assigns it
+      selection,
+      candidates,
+      planData,
+    );
+    return fields;
   });
 
-  for (const selection of parsed.adjustments) {
-    const fields = buildAdjustmentFields(batchId, selection, candidates, planData);
-    await insertAdjustment(pool, fields);
-  }
+  const batchId = await insertAdjustmentBatchWithAdjustments(
+    pool,
+    {
+      planId: plan.id,
+      sourceVersionId: planVersion.id,
+      reportId,
+      aiProvider: aiProvider.name(),
+      aiModel: aiResult.model,
+      rationale: parsed.rationale,
+    },
+    adjustmentRows,
+  );
 
   // Step 9: Log via logAiGeneration
   await logAiGeneration(pool, {
