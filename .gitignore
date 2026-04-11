@@ -48,6 +48,7 @@ dist/
 
 # Git worktrees
 .worktrees/
+.claude/worktrees/
 
 # Screenshots (generated locally)
 docs/screenshots/current-ui/

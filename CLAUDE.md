@@ -108,3 +108,78 @@ These are stored in `.mcp.json` and shared with all team members.
 - **User gate:** Agent MUST stop after Phase 3 (Research) to get user approval before writing code
 - **Plan gate:** Phase 4 writes implementation plan to `docs/plans/` before any code is written
 - **Documentation gate:** Phase 8 requires updating `docs/product-capabilities.md` for all user-facing changes
+
+## ADE — Agentic Development Environment (v4)
+
+### Workflow
+
+When asked to implement a feature or fix a bug using the ADE workflow
+(triggered by /ade-full or when the user says "use ADE"):
+
+**Phase 0 — INTENT**: Extract structured requirements from the task:
+- Type: feature | bugfix | refactor
+- Goal: one-sentence summary
+- Acceptance criteria: bullet list of what "done" looks like
+- Affected areas: which packages/features are likely impacted
+- Estimated scope: S (< 3 files) | M (3-10 files) | L (> 10 files)
+- Save to `.ade/tasks/<task-id>/intent.md`
+
+**Phase 1 — RESEARCH**: Launch up to 3 Explore agents in parallel:
+1. Existing implementation — files, functions, execution paths involved
+2. Related patterns — how similar features work elsewhere in the codebase
+3. Reusable utilities — shared helpers, hooks, components that can be reused
+
+**◆ USER GATE ◆**: STOP. Present research findings and proposed approach.
+Get explicit approval before proceeding.
+
+**Phase 2 — PLAN**: Write implementation plan to `.ade/tasks/<task-id>/plan.md`
+with 6 mandatory sections: Context, Ordered task list, Files to create/modify,
+Dependencies, Test strategy, Risk areas.
+
+**◆ PLAN GATE ◆**: Verify plan completeness before proceeding.
+
+**Phase 3 — DESIGN CHECK**: Dispatch a Sonnet subagent in a worktree to
+create file stubs. Review for plan alignment (max 2 iterations).
+
+**Phase 4 — IMPLEMENT**: Dispatch 1-3 Sonnet subagents in the worktree.
+Each agent owns specific files — no overlap.
+Enforce build order: shared types → backend → frontend.
+
+**Phase 5 — QUALITY GATE**: Dispatch Haiku subagent to run build + tests.
+If failures, dispatch Sonnet fixer subagent (max 3 attempts).
+
+**Phase 6 — REVIEW**: Launch 3 parallel Sonnet review subagents:
+- Logic: errors, edge cases, null handling, race conditions
+- Conventions: project patterns, naming, structure
+- Security: OWASP top 10, injection, auth bypass, secrets
+Fix all HIGH and MEDIUM findings before proceeding.
+
+**Phase 7 — VERIFY**: Run full test suite. Capture evidence for each
+acceptance criterion from Phase 0.
+
+**Phase 8 — DOCUMENTATION**: Update affected project documentation.
+
+**Phase 9 — COMMIT & PR**: Stage, commit, push, open PR.
+
+**◆ MERGE GATE ◆**: Present PR to user for review and merge decision.
+
+**Phase 10 — RETROSPECTIVE**: Record metrics and learnings.
+Save to `.ade/tasks/<task-id>/retro.json`. Clean up worktree.
+
+### Circuit Breaker
+- Design check: max 2 iterations
+- Code→review loop: max 3 cycles
+- QA fix: max 3 iterations
+- Verify→review reject: max 2 cycles
+After any limit, escalate to user. Do NOT retry silently.
+
+### Orchestrator Rules
+- The orchestrator NEVER writes application code — only dispatches subagents
+- All code changes flow through subagents (Sonnet for coding/review, Haiku for tests)
+- Verify subagent output independently — don't trust self-reports
+- Update `.ade/tasks/<task-id>/status.md` at each phase transition
+
+### Models
+- Orchestration, planning, review, verification: Claude Opus (this session)
+- Coding, fixing, design review: Claude Sonnet (subagents)
+- Test execution: Claude Haiku (subagents)
