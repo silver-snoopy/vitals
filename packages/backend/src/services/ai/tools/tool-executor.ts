@@ -12,6 +12,8 @@ import {
   getAttributionSummary,
 } from '../../../db/queries/action-items.js';
 import { measureOutcomes } from '../../action-items/outcome-measurer.js';
+import { listCorrelations } from '../../../db/queries/correlations.js';
+import { getProjections } from '../../../db/queries/projections.js';
 
 export interface ToolCallRecord {
   toolName: string;
@@ -193,6 +195,43 @@ export async function executeTool(
         );
         const metrics = rows.map((r: { metric: string }) => r.metric);
         return JSON.stringify({ metrics });
+      }
+
+      case 'query_correlations': {
+        const filters: {
+          metric?: string;
+          category?: string;
+          minConfidence?: string;
+        } = {};
+        if (input.metric) filters.metric = String(input.metric);
+        if (input.category) filters.category = String(input.category);
+        if (input.minConfidence) filters.minConfidence = String(input.minConfidence);
+        const correlations = await listCorrelations(db, userId, filters);
+        return JSON.stringify(correlations);
+      }
+
+      case 'predict_trajectory': {
+        if (!input.metric) return JSON.stringify({ error: 'metric is required' });
+        const metric = String(input.metric);
+        const rawDays = typeof input.daysForward === 'number' ? input.daysForward : 30;
+        const daysForward = Math.min(Math.max(1, rawDays), 90);
+        const projections = await getProjections(db, userId, metric, daysForward);
+        return JSON.stringify(projections);
+      }
+
+      case 'simulate_change': {
+        if (!input.changeDescription)
+          return JSON.stringify({ error: 'changeDescription is required' });
+        if (!input.factorMetric) return JSON.stringify({ error: 'factorMetric is required' });
+        const factorMetric = String(input.factorMetric);
+        const correlations = await listCorrelations(db, userId, { metric: factorMetric });
+        const impactEstimates = {
+          changeDescription: String(input.changeDescription),
+          factorMetric,
+          newValue: input.newValue !== undefined ? String(input.newValue) : undefined,
+          relatedCorrelations: correlations,
+        };
+        return JSON.stringify(impactEstimates);
       }
 
       default:

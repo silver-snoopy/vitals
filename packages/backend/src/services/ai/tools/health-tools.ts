@@ -132,4 +132,74 @@ export const HEALTH_TOOLS: AITool[] = [
       required: [],
     },
   },
+  {
+    name: 'query_correlations',
+    description:
+      "Find personal health correlations discovered from the user's data. Returns patterns like 'Higher protein days correlate with +15% next-day training volume.'",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        metric: {
+          type: 'string',
+          description: 'Filter correlations involving this metric name. Omit to return all.',
+        },
+        category: {
+          type: 'string',
+          enum: ['nutrition', 'training', 'recovery', 'cross-domain'],
+          description: 'Filter by correlation category. Omit to return all categories.',
+        },
+        minConfidence: {
+          type: 'string',
+          enum: ['high', 'moderate', 'suggestive'],
+          description:
+            'Minimum confidence level to include. "high" returns only strong correlations; "suggestive" returns all.',
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: 'predict_trajectory',
+    description:
+      'Project a health metric forward based on personal data trends. Returns projected values with confidence bands.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        metric: {
+          type: 'string',
+          description: 'Metric name to project (e.g. "body_weight_kg", "protein_g").',
+        },
+        daysForward: {
+          type: 'number',
+          description: 'Number of days to project into the future. Default: 30. Max: 90.',
+        },
+      },
+      required: ['metric'],
+    },
+  },
+  {
+    name: 'simulate_change',
+    description:
+      "Estimate impact of a behavior change using personal correlations. Use when the user asks 'what if I increase protein' or similar.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        changeDescription: {
+          type: 'string',
+          description:
+            'Plain-language description of the proposed change (e.g. "increase daily protein to 180g").',
+        },
+        factorMetric: {
+          type: 'string',
+          description: 'The metric being changed (e.g. "protein_g", "sleep_hours").',
+        },
+        newValue: {
+          type: 'string',
+          description:
+            'The proposed new value for the factor metric (e.g. "180"). Omit if unknown.',
+        },
+      },
+      required: ['changeDescription', 'factorMetric'],
+    },
+  },
 ];
