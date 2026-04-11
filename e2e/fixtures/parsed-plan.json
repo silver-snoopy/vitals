@@ -1,0 +1,123 @@
+{
+  "data": {
+    "plan": {
+      "id": "plan-fixture-001",
+      "userId": "default",
+      "name": "My PPL Plan",
+      "splitType": "PPL",
+      "notes": null,
+      "activeVersionId": "version-fixture-001",
+      "createdAt": "2026-04-11T09:00:00.000Z",
+      "updatedAt": "2026-04-11T09:00:00.000Z"
+    },
+    "latestVersion": {
+      "id": "version-fixture-001",
+      "planId": "plan-fixture-001",
+      "versionNumber": 1,
+      "source": "user",
+      "parentVersionId": null,
+      "data": {
+        "splitType": "PPL",
+        "progressionPersonality": "balanced",
+        "days": [
+          {
+            "name": "Push A",
+            "targetMuscles": ["chest", "front deltoid", "triceps"],
+            "exercises": [
+              {
+                "id": "ex-001",
+                "exerciseName": "Bench Press",
+                "orderInDay": 1,
+                "sets": [
+                  { "type": "warmup", "targetReps": 8, "targetWeightKg": 60 },
+                  { "type": "normal", "targetReps": [5, 8], "targetWeightKg": 80 },
+                  { "type": "normal", "targetReps": [5, 8], "targetWeightKg": 80 },
+                  { "type": "normal", "targetReps": [5, 8], "targetWeightKg": 80 }
+                ],
+                "progressionRule": "double",
+                "primaryMuscle": "chest",
+                "secondaryMuscles": ["front deltoid", "triceps"],
+                "pattern": "push",
+                "equipment": "barbell",
+                "sfrTier": "S"
+              },
+              {
+                "id": "ex-002",
+                "exerciseName": "Incline Dumbbell Press",
+                "orderInDay": 2,
+                "sets": [
+                  { "type": "normal", "targetReps": [8, 12], "targetWeightKg": 30 },
+                  { "type": "normal", "targetReps": [8, 12], "targetWeightKg": 30 },
+                  { "type": "normal", "targetReps": [8, 12], "targetWeightKg": 30 }
+                ],
+                "progressionRule": "double",
+                "primaryMuscle": "chest",
+                "secondaryMuscles": ["front deltoid"],
+                "pattern": "push",
+                "equipment": "dumbbell",
+                "sfrTier": "A"
+              },
+              {
+                "id": "ex-003",
+                "exerciseName": "Overhead Press",
+                "orderInDay": 3,
+                "sets": [
+                  { "type": "normal", "targetReps": [6, 10], "targetWeightKg": 50 },
+                  { "type": "normal", "targetReps": [6, 10], "targetWeightKg": 50 },
+                  { "type": "normal", "targetReps": [6, 10], "targetWeightKg": 50 }
+                ],
+                "progressionRule": "linear",
+                "primaryMuscle": "front deltoid",
+                "secondaryMuscles": ["triceps"],
+                "pattern": "push",
+                "equipment": "barbell",
+                "sfrTier": "A"
+              }
+            ]
+          },
+          {
+            "name": "Pull A",
+            "targetMuscles": ["back", "rear deltoid", "biceps"],
+            "exercises": [
+              {
+                "id": "ex-004",
+                "exerciseName": "Barbell Row",
+                "orderInDay": 1,
+                "sets": [
+                  { "type": "normal", "targetReps": [6, 10], "targetWeightKg": 80 },
+                  { "type": "normal", "targetReps": [6, 10], "targetWeightKg": 80 },
+                  { "type": "normal", "targetReps": [6, 10], "targetWeightKg": 80 }
+                ],
+                "progressionRule": "double",
+                "primaryMuscle": "back",
+                "secondaryMuscles": ["rear deltoid", "biceps"],
+                "pattern": "pull",
+                "equipment": "barbell",
+                "sfrTier": "S"
+              },
+              {
+                "id": "ex-005",
+                "exerciseName": "Pull-ups",
+                "orderInDay": 2,
+                "sets": [
+                  { "type": "normal", "targetReps": [6, 10] },
+                  { "type": "normal", "targetReps": [6, 10] },
+                  { "type": "normal", "targetReps": [6, 10] }
+                ],
+                "progressionRule": "double",
+                "primaryMuscle": "back",
+                "secondaryMuscles": ["biceps"],
+                "pattern": "pull",
+                "equipment": "bodyweight",
+                "sfrTier": "S"
+              }
+            ]
+          }
+        ]
+      },
+      "createdAt": "2026-04-11T09:00:00.000Z",
+      "acceptedAt": "2026-04-11T09:00:00.000Z",
+      "notes": "Parsed from user paste"
+    }
+  }
+}

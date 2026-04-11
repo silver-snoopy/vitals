@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { AIInsights } from './AIInsights';
 import { ActionItemList } from './ActionItemList';
+import { OptimizePlanButton } from './OptimizePlanButton';
 
 export function ReportCard({ report }: { report: WeeklyReport }) {
   const [expanded, setExpanded] = useState(false);
@@ -54,6 +55,7 @@ export function ReportCard({ report }: { report: WeeklyReport }) {
           <>
             <AIInsights insights={report.insights} />
             <ActionItemList items={report.actionItems} />
+            <OptimizePlanButton reportId={report.id} />
           </>
         )}
       </CardContent>
