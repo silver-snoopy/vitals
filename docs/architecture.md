@@ -108,6 +108,8 @@ src/
 | `conversations` | Chat conversation sessions (Phase 6A) | PK: UUID, FK: user_id |
 | `messages` | Individual chat messages (Phase 6A) | role CHECK: user/assistant/tool, JSONB tool_calls |
 | `action_items` | Persistent tracked action items from weekly reports (F3) | FK: weekly_reports(id) CASCADE; status CHECK with 7 states; 3 indexes |
+| `correlations` | PHIE: discovered Pearson correlations across nutrition/training/biometric data | Unique: `(user_id, factor_metric, factor_condition, outcome_metric)`; CHECK on `confidence_level`, `status`, `category`; `first_detected_at` preserved across re-runs |
+| `projections` | PHIE: 30-day trajectory projections with OLS confidence bands | Unique: `(user_id, metric, projection_date)`; CHECK on `method` |
 
 ### EAV Pattern (measurements table)
 
@@ -176,6 +178,8 @@ POST /api/reports/generate
         │
         ├── emit('completed') → completeReport()
         │   └── Report saved with full content
+        │   └── runCorrelationAnalysis() + runTrajectoryProjections()
+        │       └── non-blocking; failures logged under [intelligence]
         │
         └── on error: emit('failed') → updateReportStatus()
 
@@ -215,6 +219,8 @@ POST /api/reports/generate
 | GET | `/api/action-items/summary` | X-API-Key | F3 |
 | GET | `/api/action-items/:id` | X-API-Key | F3 |
 | PATCH | `/api/action-items/:id/status` | X-API-Key | F3 |
+| GET | `/api/correlations` | None | PHIE Phase 1 |
+| GET | `/api/projections/:metric` | None | PHIE Phase 1 |
 
 ## Authentication
 
