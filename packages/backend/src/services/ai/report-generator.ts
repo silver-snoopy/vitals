@@ -18,6 +18,8 @@ import { jsonrepair } from 'jsonrepair';
 import { buildReportPrompt } from './prompt-builder.js';
 import { measureOutcomes, determineOutcome } from '../action-items/outcome-measurer.js';
 import { expireStaleItems, supersedeItems } from '../action-items/lifecycle-manager.js';
+import { runCorrelationAnalysis } from '../intelligence/correlation-engine.js';
+import { runTrajectoryProjections } from '../intelligence/trajectory-projector.js';
 
 const BIOMETRIC_METRICS = [
   'weight_kg',
@@ -417,6 +419,17 @@ export async function generateWeeklyReport(
     await promoteActionItems(pool, userId, reportId, gen.actionItems);
     // Supersede old pending items that are replaced by new report items
     await supersedeItems(pool, userId, reportId, gen.actionItems);
+  }
+
+  // Run intelligence pipeline (correlations + projections). Non-blocking:
+  // failures here must not block the report from being returned.
+  try {
+    await Promise.all([
+      runCorrelationAnalysis(pool, userId),
+      runTrajectoryProjections(pool, userId),
+    ]);
+  } catch (err) {
+    console.error('[intelligence] pipeline failed after report generation:', err);
   }
 
   return {

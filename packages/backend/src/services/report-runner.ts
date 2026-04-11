@@ -8,6 +8,8 @@ import { gatherAndGenerate } from './ai/report-generator.js';
 import { createAIProvider } from './ai/ai-service.js';
 import { runCollection } from './collectors/pipeline.js';
 import { reportEventBus } from './report-event-bus.js';
+import { runCorrelationAnalysis } from './intelligence/correlation-engine.js';
+import { runTrajectoryProjections } from './intelligence/trajectory-projector.js';
 
 function emitStatus(
   reportId: string,
@@ -86,6 +88,16 @@ export function runReportInBackground(
       // Promote action items to persistent tracked entities
       if (gen.actionItems.length > 0) {
         await promoteActionItems(pool, params.userId, reportId, gen.actionItems);
+      }
+
+      // Run intelligence pipeline (correlations + projections). Non-blocking.
+      try {
+        await Promise.all([
+          runCorrelationAnalysis(pool, params.userId),
+          runTrajectoryProjections(pool, params.userId),
+        ]);
+      } catch (err: unknown) {
+        log.error({ err }, '[intelligence] pipeline failed after report generation');
       }
 
       emitStatus(reportId, 'completed', 'Report ready');
