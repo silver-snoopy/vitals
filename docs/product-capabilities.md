@@ -454,6 +454,128 @@ The date range picker on other pages is irrelevant to report generation.
 
 ---
 
+## 4. Personal Health Intelligence Engine (PHIE Phase 1 — Backend)
+
+Backend-only intelligence layer that discovers Pearson correlations across
+nutrition/training/biometric data, projects metric trajectories 30 days
+forward with OLS confidence bands, and exposes results through REST +
+AI chat tools. No dedicated UI in Phase 1 — surfaced via the existing
+chat experience and consumed by the report generator.
+
+| ID | Use Case | Status |
+|----|----------|--------|
+| UC-INT-01 | Automatic correlation discovery across user health data | Implemented |
+| UC-INT-02 | 30-day trajectory projection with confidence bands | Implemented |
+| UC-INT-03 | REST API to list and filter correlations | Implemented |
+| UC-INT-04 | REST API to fetch metric projections | Implemented |
+| UC-INT-05 | AI chat tools for pattern discovery and what-if simulation | Implemented |
+
+### UC-INT-01: Automatic correlation discovery
+
+**As the system,** after a weekly report is generated, I want to run a
+correlation analysis across the user's nutrition, training, and biometric
+history, **so that** the chat and future reports can surface personalised
+patterns the user didn't explicitly ask about.
+
+**Behavior:**
+- Runs automatically at the end of both the sync (`?sync=true`) and async
+  report generation paths, inside a non-blocking `try/catch` — failures
+  are logged under `[intelligence]` and do not affect the returned report
+- Loads up to 90 days of daily averages for a fixed set of candidate
+  factor→outcome metric pairs (e.g., protein_g → muscle_mass_kg)
+- Skips pairs with fewer than `MIN_DATA_POINTS` (14) aligned dates
+- Computes Pearson r + p-value, classifies confidence (high / moderate /
+  suggestive) per `(|r|, n, p)` thresholds, persists via
+  `ON CONFLICT DO UPDATE` keyed on `(user_id, factor_metric, factor_condition, outcome_metric)`
+- `first_detected_at` is set only on the initial INSERT so historical
+  detection time is preserved across re-runs
+- Correlations not re-confirmed in a run are marked `weakening`
+
+**Test Coverage:** `packages/backend/src/services/intelligence/__tests__/correlation-engine.test.ts`
+(14-day positive case, <MIN_DATA_POINTS skip, zero-data graceful path)
+
+### UC-INT-02: 30-day trajectory projection
+
+**As the system,** I want to project each biometric metric forward 30
+days with confidence bands, **so that** the AI can answer "where is my
+weight heading?" questions and the user sees honest uncertainty.
+
+**Behavior:**
+- Queries distinct metrics for the user, intersects with the default
+  biometric set (`weight_kg`, `body_fat_pct`, `resting_hr`, sleep, steps,
+  etc.); returns early if no matching metrics exist
+- For each metric with ≥`MIN_DATA_POINTS` (7) daily values, fits a
+  linear regression via least squares and projects 30 days forward
+- Confidence bands use the proper OLS prediction interval formula
+  `σ_res · √(1 + 1/n + (x* − mean_x)² / Σ(xᵢ − mean_x)²)` — not the
+  earlier `σ · √d` heuristic. Bands widen with distance from the
+  observed mean
+- Persists to `projections` table with `method = 'linear_regression'`
+
+**Test Coverage:** `packages/backend/src/services/intelligence/__tests__/trajectory-projector.test.ts`
+(30-day projection with widening bands, min-data-points skip,
+empty-metric early return)
+
+### UC-INT-03: List and filter correlations
+
+**As a** consumer (chat, future UI), **I want to** query stored
+correlations by category, confidence level, or strength, **so that** I
+can show relevant patterns without fetching everything.
+
+**Behavior:**
+- `GET /api/correlations` — unauth'd (consistent with other read
+  endpoints), default user
+- Query filters: `category`, `confidenceLevel`, `status`, `metric`
+  (matches factor OR outcome), `minConfidence` (|r| ≥ threshold)
+- `?top=N` returns top-N by absolute coefficient, capped at 100 to
+  prevent DoS
+
+**Test Coverage:** `packages/backend/src/routes/__tests__/intelligence.test.ts`
+(15 tests covering each filter + `top` boundary cases)
+
+### UC-INT-04: Fetch trajectory projections for a metric
+
+**As a** consumer, **I want to** fetch projections for a named metric,
+**so that** I can render a forward-looking trajectory.
+
+**Behavior:**
+- `GET /api/projections/:metric`
+- Metric name bounded to 100 chars (400 on oversize); stored values
+  returned as-is with confidence bands
+
+**Test Coverage:** Same route test file (oversized-metric 400, happy
+path, user-not-found empty-list case)
+
+### UC-INT-05: AI chat intelligence tools
+
+**As a** user, **I want to** ask the AI "what patterns have you found?"
+or "what happens to my weight if I hit 2200 kcal every day?", **so that**
+I get personalised answers grounded in my own data.
+
+**Behavior:**
+- `query_correlations` — filter by `metric`, `category`, `minConfidence`;
+  filter values are length-bounded to defend against prompt-injected
+  giant strings
+- `predict_trajectory` — delegates to `getProjections` for a named metric
+- `simulate_change` — returns relevant stored correlations for a given
+  factor/delta pair (does NOT re-invoke the LLM, so no prompt-injection
+  re-entry path)
+- `parseDate` used by these tools throws a generic `'Invalid date'` to
+  avoid leaking raw user-supplied (potentially injected) values to logs
+
+**E2E Coverage:** End-to-end value emerges once correlations table is
+populated by the post-report intelligence run — verified indirectly by
+UC-INT-01 test coverage plus the existing chat route tests asserting
+tool dispatch.
+
+**Limitations (Phase 1):**
+- Backend-only — no dedicated correlations/projections UI
+- Trigger is post-report only; no scheduled cron yet. Users who don't
+  generate reports will never see correlations discovered. Follow-up
+  ticket should add a nightly scheduled run.
+
+---
+
 ## 5. Nutrition
 
 | ID | Use Case | Status |

@@ -54,6 +54,14 @@ vi.mock('../../services/report-runner.js', () => ({
   runReportInBackground: vi.fn(),
 }));
 
+vi.mock('../../services/intelligence/correlation-engine.js', () => ({
+  runCorrelationAnalysis: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../services/intelligence/trajectory-projector.js', () => ({
+  runTrajectoryProjections: vi.fn().mockResolvedValue(undefined),
+}));
+
 const testEnv: EnvConfig = {
   port: 3001,
   databaseUrl: 'postgresql://test:test@localhost:5432/test',
@@ -312,6 +320,27 @@ describe('POST /api/reports/generate', () => {
     const { runCollection } = await import('../../services/collectors/pipeline.js');
     (runCollection as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
       new Error('Cronometer auth failed'),
+    );
+
+    const app = await buildApp(testEnv);
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/reports/generate?sync=true',
+      headers: { 'x-api-key': 'test-api-key', 'content-type': 'application/json' },
+      body: JSON.stringify({ startDate: '2026-03-01', endDate: '2026-03-07' }),
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = JSON.parse(response.body);
+    expect(body.data.summary).toBe('Great week!');
+    await app.close();
+  });
+
+  it('returns 200 even when intelligence pipeline (correlation analysis) rejects (AC5)', async () => {
+    const { runCorrelationAnalysis } =
+      await import('../../services/intelligence/correlation-engine.js');
+    vi.mocked(runCorrelationAnalysis).mockRejectedValueOnce(
+      new Error('simulated intelligence failure'),
     );
 
     const app = await buildApp(testEnv);

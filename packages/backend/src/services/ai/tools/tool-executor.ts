@@ -12,6 +12,8 @@ import {
   getAttributionSummary,
 } from '../../../db/queries/action-items.js';
 import { measureOutcomes } from '../../action-items/outcome-measurer.js';
+import { listCorrelations } from '../../../db/queries/correlations.js';
+import { getProjections } from '../../../db/queries/projections.js';
 
 export interface ToolCallRecord {
   toolName: string;
@@ -23,13 +25,15 @@ const MAX_DATE_SPAN_DAYS = 730;
 const MAX_LIMIT = 100;
 const MAX_EXERCISE_NAME_LENGTH = 200;
 const MAX_METRICS_COUNT = 20;
+const MAX_METRIC_NAME_LENGTH = 100;
 
 function parseDate(value: unknown): Date {
   if (typeof value === 'string') {
     const d = new Date(value);
     if (!isNaN(d.getTime())) return d;
   }
-  throw new Error(`Invalid date: ${String(value)}`);
+  // Throw generic message to avoid leaking raw (potentially prompt-injected) input
+  throw new Error('Invalid date');
 }
 
 function validateDateSpan(start: Date, end: Date): string | null {
@@ -195,13 +199,71 @@ export async function executeTool(
         return JSON.stringify({ metrics });
       }
 
+      case 'query_correlations': {
+        const filters: {
+          metric?: string;
+          category?: string;
+          minConfidence?: string;
+        } = {};
+        if (input.metric) {
+          const metric = String(input.metric);
+          if (metric.length >= MAX_METRIC_NAME_LENGTH) {
+            return JSON.stringify({
+              error: `metric name too long (max ${MAX_METRIC_NAME_LENGTH - 1} chars)`,
+            });
+          }
+          filters.metric = metric;
+        }
+        if (input.category) {
+          const category = String(input.category);
+          if (category.length >= MAX_METRIC_NAME_LENGTH) {
+            return JSON.stringify({
+              error: `category too long (max ${MAX_METRIC_NAME_LENGTH - 1} chars)`,
+            });
+          }
+          filters.category = category;
+        }
+        if (input.minConfidence) filters.minConfidence = String(input.minConfidence);
+        const correlations = await listCorrelations(db, userId, filters);
+        return JSON.stringify(correlations);
+      }
+
+      case 'predict_trajectory': {
+        if (!input.metric) return JSON.stringify({ error: 'metric is required' });
+        const metric = String(input.metric);
+        const rawDays = typeof input.daysForward === 'number' ? input.daysForward : 30;
+        const daysForward = Math.min(Math.max(1, rawDays), 90);
+        const projections = await getProjections(db, userId, metric, daysForward);
+        return JSON.stringify(projections);
+      }
+
+      case 'simulate_change': {
+        if (!input.changeDescription)
+          return JSON.stringify({ error: 'changeDescription is required' });
+        if (!input.factorMetric) return JSON.stringify({ error: 'factorMetric is required' });
+        const factorMetric = String(input.factorMetric);
+        if (factorMetric.length >= MAX_METRIC_NAME_LENGTH) {
+          return JSON.stringify({
+            error: `factorMetric name too long (max ${MAX_METRIC_NAME_LENGTH - 1} chars)`,
+          });
+        }
+        const correlations = await listCorrelations(db, userId, { metric: factorMetric });
+        const impactEstimates = {
+          changeDescription: String(input.changeDescription),
+          factorMetric,
+          newValue: input.newValue !== undefined ? String(input.newValue) : undefined,
+          relatedCorrelations: correlations,
+        };
+        return JSON.stringify(impactEstimates);
+      }
+
       default:
         return JSON.stringify({ error: `Unknown tool: ${toolName}` });
     }
   } catch (err) {
     // Log full error for observability; return sanitized message to avoid leaking internals
     console.error(`[tool-executor] ${toolName} failed:`, err);
-    const isValidationError = err instanceof Error && err.message.startsWith('Invalid date');
+    const isValidationError = err instanceof Error && err.message === 'Invalid date';
     return JSON.stringify({
       error: isValidationError
         ? 'Invalid date format. Please use YYYY-MM-DD.'
