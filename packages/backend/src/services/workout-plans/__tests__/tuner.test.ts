@@ -398,11 +398,8 @@ describe('tunePlan', () => {
 
     const versionWithInjection = { ...MOCK_VERSION, data: injectionPlanData };
 
-    const {
-      getPlanVersion,
-      getPlanById,
-      getAdjustmentBatch,
-    } = await import('../../../db/queries/workout-plans.js');
+    const { getPlanVersion, getPlanById, getAdjustmentBatch } =
+      await import('../../../db/queries/workout-plans.js');
     const { getReportById } = await import('../../../db/queries/reports.js');
 
     vi.mocked(getPlanVersion).mockResolvedValue(versionWithInjection);

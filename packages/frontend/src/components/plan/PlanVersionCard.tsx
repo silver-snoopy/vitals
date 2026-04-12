@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import type { PlanVersion } from '@vitals/shared';
-import { ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,10 @@ interface PlanVersionCardProps {
   version: PlanVersion;
   isActive: boolean;
   defaultExpanded?: boolean;
+  onOptimize?: () => void;
+  optimizeDisabled?: boolean;
+  optimizeLoading?: boolean;
+  optimizeTooltip?: string;
 }
 
 const SOURCE_LABELS: Record<PlanVersion['source'], string> = {
@@ -32,6 +36,10 @@ export function PlanVersionCard({
   version,
   isActive,
   defaultExpanded = false,
+  onOptimize,
+  optimizeDisabled,
+  optimizeLoading,
+  optimizeTooltip,
 }: PlanVersionCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const days = version.data.days ?? [];
@@ -54,6 +62,23 @@ export function PlanVersionCard({
                   <CheckCircle2 className="mr-1 h-3 w-3" />
                   Active
                 </Badge>
+              )}
+              {onOptimize && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOptimize();
+                  }}
+                  disabled={optimizeDisabled || optimizeLoading}
+                  title={optimizeTooltip ?? 'Optimize with AI'}
+                  className="ml-2 rounded-md p-1 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  {optimizeLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-4 w-4" />
+                  )}
+                </button>
               )}
               <Badge variant={SOURCE_VARIANTS[version.source]} className="text-xs">
                 {SOURCE_LABELS[version.source]}

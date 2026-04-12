@@ -7,8 +7,8 @@ import type {
   PlanData,
   PlanSet,
   PlanAdjustmentBatch,
+  AIProvider,
 } from '@vitals/shared';
-import type { AIProvider } from '@vitals/shared';
 import { apiKeyMiddleware } from '../middleware/api-key.js';
 import {
   getCurrentPlan,
@@ -23,6 +23,29 @@ import {
 import { parseFreeTextPlan } from '../services/workout-plans/plan-parser.js';
 import { tunePlan } from '../services/workout-plans/tuner.js';
 import { createAIProvider } from '../services/ai/ai-service.js';
+
+const VALID_SET_TYPES = new Set(['warmup', 'normal', 'drop', 'failure', 'amrap']);
+
+/** Validate that a value is a well-formed PlanSet array (guards overrideValue from client). */
+function isValidPlanSetArray(v: unknown): v is PlanSet[] {
+  if (!Array.isArray(v) || v.length === 0 || v.length > 20) return false;
+  return v.every((s) => {
+    if (s === null || typeof s !== 'object') return false;
+    const set = s as Record<string, unknown>;
+    if (!VALID_SET_TYPES.has(set.type as string)) return false;
+    const reps = set.targetReps;
+    if (typeof reps !== 'number' && !Array.isArray(reps)) return false;
+    if (
+      Array.isArray(reps) &&
+      (reps.length !== 2 || typeof reps[0] !== 'number' || typeof reps[1] !== 'number')
+    )
+      return false;
+    if (set.targetWeightKg !== undefined && typeof set.targetWeightKg !== 'number') return false;
+    if (set.targetRpe !== undefined && typeof set.targetRpe !== 'number') return false;
+    if (set.restSec !== undefined && typeof set.restSec !== 'number') return false;
+    return true;
+  });
+}
 
 /**
  * Workout Plan Fine Tuner routes.
@@ -287,11 +310,24 @@ export async function workoutPlanRoutes(
         });
       }
 
-      // Bulk-update statuses scoped to this batch (transactional)
-      await bulkUpdateAdjustmentStatus(app.db, request.params.batchId, decisions);
+      const invalidDecisions = Object.entries(decisions).filter(
+        ([, d]) => !d || !['accepted', 'rejected'].includes(d.status),
+      );
+      if (invalidDecisions.length > 0) {
+        return reply.code(400).send({
+          error: 'Each decision must have a status of "accepted" or "rejected"',
+        });
+      }
+
+      // Map AdjustmentDecision objects to plain status strings for DB
+      const statusMap: Record<string, 'accepted' | 'rejected'> = {};
+      for (const [id, decision] of Object.entries(decisions)) {
+        statusMap[id] = decision.status;
+      }
+      await bulkUpdateAdjustmentStatus(app.db, request.params.batchId, statusMap);
 
       const acceptedAdjustments = batch.adjustments.filter(
-        (adj) => decisions[adj.id] === 'accepted',
+        (adj) => decisions[adj.id]?.status === 'accepted',
       );
 
       if (acceptedAdjustments.length === 0) {
@@ -320,8 +356,15 @@ export async function workoutPlanRoutes(
           adj.changeType === 'deload' ||
           adj.changeType === 'hold'
         ) {
-          if (Array.isArray(adj.newValue)) {
-            exercise.sets = adj.newValue as PlanSet[];
+          const decision = decisions[adj.id];
+          const effectiveValue = decision?.overrideValue ?? adj.newValue;
+          if (Array.isArray(effectiveValue) && isValidPlanSetArray(effectiveValue)) {
+            exercise.sets = effectiveValue;
+          } else if (Array.isArray(effectiveValue)) {
+            // Fallback: ignore invalid override, use AI's original value
+            if (Array.isArray(adj.newValue)) {
+              exercise.sets = adj.newValue as PlanSet[];
+            }
           }
         }
       }
