@@ -125,11 +125,13 @@ function mapAdjustmentRow(r: Record<string, unknown>): PlanAdjustment {
 /**
  * Returns the single current plan for a user along with its latest version,
  * or null if the user has no plan yet.
+ *
+ * Response shape matches the frontend CurrentPlanResponse: { plan, latestVersion }.
  */
 export async function getCurrentPlan(
   pool: pg.Pool,
   userId: string,
-): Promise<(WorkoutPlan & { latestVersion: PlanVersion }) | null> {
+): Promise<{ plan: WorkoutPlan; latestVersion: PlanVersion } | null> {
   // Get the most recent plan for the user
   const { rows: planRows } = await pool.query(
     `SELECT ${PLAN_COLUMNS} FROM workout_plans WHERE user_id = $1
@@ -149,7 +151,7 @@ export async function getCurrentPlan(
   if (versionRows.length === 0) return null;
 
   const latestVersion = mapVersionRow(versionRows[0] as Record<string, unknown>);
-  return { ...plan, latestVersion };
+  return { plan, latestVersion };
 }
 
 /** Returns a plan by ID, or null if not found. */

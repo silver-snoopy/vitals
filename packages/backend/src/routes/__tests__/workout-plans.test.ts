@@ -178,13 +178,15 @@ describe('GET /api/workout-plans/current', () => {
   it('when user has a plan → 200 with plan + latestVersion', async () => {
     const { getCurrentPlan } = await import('../../db/queries/workout-plans.js');
     vi.mocked(getCurrentPlan).mockResolvedValueOnce({
-      id: 'plan-uuid',
-      userId: 'user-uuid',
-      name: 'My Plan',
-      splitType: 'Custom',
-      activeVersionId: 'version-uuid',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      plan: {
+        id: 'plan-uuid',
+        userId: 'user-uuid',
+        name: 'My Plan',
+        splitType: 'Custom',
+        activeVersionId: 'version-uuid',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
       latestVersion: {
         id: 'version-uuid',
         planId: 'plan-uuid',
@@ -204,7 +206,7 @@ describe('GET /api/workout-plans/current', () => {
     });
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
-    expect(body.data.id).toBe('plan-uuid');
+    expect(body.data.plan.id).toBe('plan-uuid');
     expect(body.data.latestVersion).toBeDefined();
     await app.close();
   });
