@@ -45,9 +45,6 @@ vi.mock('../../db/queries/workout-plans.js', () => ({
   bulkUpdateAdjustmentStatus: vi.fn().mockResolvedValue(undefined),
   insertAdjustment: vi.fn().mockResolvedValue({}),
   insertAdjustmentBatchWithAdjustments: vi.fn().mockResolvedValue('batch-uuid'),
-  mapPlanRow: vi.fn(),
-  mapVersionRow: vi.fn(),
-  mapAdjustmentRow: vi.fn(),
 }));
 
 vi.mock('../../services/workout-plans/plan-parser.js', () => ({

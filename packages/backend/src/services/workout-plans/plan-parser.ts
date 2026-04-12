@@ -1,5 +1,14 @@
-import type { PlanData, PlanDay, PlanExercise, PlanSet } from '@vitals/shared';
+import type { PlanData, PlanDay, PlanExercise, PlanSet, ProgressionRule, SfrTier } from '@vitals/shared';
 import { getExerciseMeta } from './exercise-metadata.js';
+
+/**
+ * Infer progressionRule from SFR tier.
+ * S-tier compounds (bench, squat, deadlift) → 'linear' (2-for-2 rule).
+ * A/B/C-tier accessories/isolation → 'double' (double-progression).
+ */
+function inferProgressionRule(sfrTier: SfrTier): ProgressionRule {
+  return sfrTier === 'S' ? 'linear' : 'double';
+}
 
 // ---------------------------------------------------------------------------
 // Regex patterns
@@ -87,7 +96,7 @@ function parseExerciseLine(line: string, order: number): PlanExercise | null {
     exerciseName,
     orderInDay: order,
     sets,
-    progressionRule: 'double',
+    progressionRule: inferProgressionRule(meta.sfrTier),
     primaryMuscle: meta.primaryMuscle,
     secondaryMuscles: meta.secondaryMuscles,
     pattern: meta.pattern,

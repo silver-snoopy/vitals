@@ -73,6 +73,23 @@ Bench Press 3x8-12 @ 70kg`;
     expect(reps[1]).toBe(12);
   });
 
+  it('S-tier exercises get progressionRule "linear", others get "double"', () => {
+    const text = `Push
+Bench Press 3x5 @ 100kg
+Tricep Pushdown 3x12`;
+
+    const result = parseFreeTextPlan(text);
+    const day = result.days[0];
+    const bench = day.exercises.find((e) => e.exerciseName.toLowerCase().includes('bench'));
+    const pushdown = day.exercises.find((e) => e.exerciseName.toLowerCase().includes('pushdown'));
+    expect(bench).toBeDefined();
+    expect(pushdown).toBeDefined();
+    // Bench press is S-tier → linear (2-for-2 rule)
+    expect(bench!.progressionRule).toBe('linear');
+    // Tricep pushdown is A/B/C-tier → double progression
+    expect(pushdown!.progressionRule).toBe('double');
+  });
+
   it('exercises with RPE targets (e.g. "3×5 @RPE 8") → targetRpe is 8', () => {
     const text = `Push
 Bench Press 3x5 @RPE 8`;
