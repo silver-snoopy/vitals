@@ -670,13 +670,14 @@ adjustments creates an immutable new plan version.
 **so that** the system has a structured record of my program to tune.
 
 **Behavior:**
-- Route: `POST /api/workout-plans` with `{ text }` body
+- Frontend: "New Plan" button in page header opens a modal Dialog containing `PlanEditor` textarea
+- Route: `POST /api/workout-plans` with `{ rawText }` body
 - `plan-parser.ts` uses regex heuristics to extract days, exercises, sets × reps, target load, RPE, and notes; falls back to a single "Notes" day when structure isn't recognized
 - Persisted as `plan_versions` row with `source = 'user'`, `version_number = 1`
 - Input capped at 50 000 chars (HTTP 413 if exceeded); unstructured fallback blob capped at 10 000 chars
 - `workout_plans` unique constraint enforces one plan per user in v1
 - `GET /api/workout-plans/current` returns the active plan with version data
-- `PUT /api/workout-plans/:id` replaces the plan text and re-parses
+- `PUT /api/workout-plans/:id` replaces the plan text and re-parses (creates new version)
 
 **E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
 
@@ -687,12 +688,16 @@ adjustments creates an immutable new plan version.
 
 **Behavior:**
 - Route: `/plan`
-- Day cards show: day name, exercise rows with sets × reps, target load/RPE, notes
-- Collapsible version history panel lists all prior versions with source badge (`user` or `tuner`) and version number
-- Empty state: paste prompt with textarea and submit button
-- `PlanVersionHistory` component renders list-only (no per-version diff view in v1)
+- Active version displayed as an expanded card with green ring indicator (`ring-2 ring-green-500/70`) and "Active" badge with CheckCircle2 icon
+- Previous versions shown as collapsed cards below, each showing: version number, source badge (Manual edit / AI tuned / Imported), creation date, notes
+- Clicking a collapsed version card expands it to reveal full day/exercise breakdown via `PlanDayCard` components
+- Day cards show: day name, target muscles badges, exercise rows with sets × reps, target load/RPE, notes
+- All versions fetched from `GET /api/workout-plans/:id/versions` via `usePlanVersions` hook
+- Empty state: centered message with "Create your first plan" button that opens the create modal
+- Plan creation is a modal Dialog triggered by "New Plan" button in the page header (matching Reports page pattern)
+- Loading state: skeleton cards (consistent with other pages)
 
-**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
+**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts` — empty state, create modal flow, active indicator, version list, expand/collapse
 
 ### UC-PLAN-03: Optimize plan from weekly report
 
