@@ -46,6 +46,7 @@ export function useCreatePlan() {
     onSuccess: () => {
       toast.success('Plan created successfully');
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workoutPlan.current });
+      queryClient.invalidateQueries({ queryKey: ['workout-plan', 'versions'] });
     },
   });
 }
@@ -93,6 +94,19 @@ export function useDecideAdjustments(batchId: string) {
       const { versionNumber } = response.data;
       toast.success(`Plan updated to version ${versionNumber ?? 'unchanged'}`);
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workoutPlan.current });
+      queryClient.invalidateQueries({ queryKey: ['workout-plan', 'versions'] });
     },
+  });
+}
+
+/**
+ * Fetches all versions for a given plan, ordered by version_number DESC.
+ * Only enabled when planId is provided.
+ */
+export function usePlanVersions(planId: string | undefined) {
+  return useQuery({
+    queryKey: QUERY_KEYS.workoutPlan.versions(planId!),
+    queryFn: () => apiFetch<ApiResponse<PlanVersion[]>>(`/api/workout-plans/${planId}/versions`),
+    enabled: !!planId,
   });
 }

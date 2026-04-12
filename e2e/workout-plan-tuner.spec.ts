@@ -4,6 +4,7 @@ import { PlanPagePOM } from './pages/PlanPage';
 import { ReportsPage } from './pages/reports.page';
 import parsedPlanFixture from './fixtures/parsed-plan.json' with { type: 'json' };
 import adjustmentBatchFixture from './fixtures/plan-adjustment-batch.json' with { type: 'json' };
+import planVersionsFixture from './fixtures/plan-versions.json' with { type: 'json' };
 
 // ---------------------------------------------------------------------------
 // Fixtures & mocks
@@ -126,6 +127,21 @@ async function mockDecideAdjustments(page: Page) {
   });
 }
 
+/** Mock GET /api/workout-plans/:id/versions returning version list. */
+async function mockPlanVersions(page: Page) {
+  await page.route('**/api/workout-plans/*/versions', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(planVersionsFixture),
+      });
+    } else {
+      await route.fallback();
+    }
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -139,12 +155,11 @@ test.describe('UC-PLAN-01: Workout Plan Fine Tuner', () => {
 
       await expect(planPage.heading).toBeVisible();
       await expect(planPage.emptyState).toBeVisible();
-      // Textarea for pasting plan text should be present
-      await expect(planPage.pasteTextarea).toBeVisible();
+      // "Create your first plan" button should be present
+      await expect(planPage.createFirstPlanButton).toBeVisible();
     });
 
     test('pasting plan text and submitting parses and displays days', async ({ page }) => {
-      // First response: no plan; after POST create: return plan v1
       let planCreated = false;
 
       await page.route('**/api/workout-plans/current', async (route) => {
@@ -155,7 +170,6 @@ test.describe('UC-PLAN-01: Workout Plan Fine Tuner', () => {
         });
       });
 
-      // Mock POST — toggle planCreated flag so subsequent GETs return the plan
       await page.route('**/api/workout-plans', async (route) => {
         if (route.request().method() === 'POST') {
           planCreated = true;
@@ -169,19 +183,86 @@ test.describe('UC-PLAN-01: Workout Plan Fine Tuner', () => {
         }
       });
 
+      // Mock versions endpoint for after plan creation
+      await page.route('**/api/workout-plans/*/versions', async (route) => {
+        if (route.request().method() === 'GET') {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              data: [parsedPlanFixture.data.latestVersion],
+            }),
+          });
+        } else {
+          await route.fallback();
+        }
+      });
+
       const planPage = new PlanPagePOM(page);
       await planPage.goto();
       await expect(planPage.emptyState).toBeVisible();
 
-      // Fill and submit — planCreated is still false here, so the textarea is visible
+      // Open create modal and fill
+      await planPage.createFirstPlanButton.click();
+      await expect(planPage.createDialog).toBeVisible();
+
       await planPage.pasteTextarea.fill(
         'Push A\nBench Press 3x8 @ 80kg\n\nPull A\nBarbell Row 3x8 @ 80kg',
       );
       await planPage.submitButton.click();
 
-      // Day cards should appear after successful parse (planCreated is now true → GET returns plan)
+      // Day cards should appear inside the active version card
       await expect(planPage.getDayCard('Push A')).toBeVisible({ timeout: 8000 });
       await expect(planPage.getDayCard('Pull A')).toBeVisible({ timeout: 8000 });
+    });
+  });
+
+  test.describe('Version list display', () => {
+    test('shows active version with green indicator and expanded content', async ({ page }) => {
+      await mockPlanV2(page);
+      await mockPlanVersions(page);
+      const planPage = new PlanPagePOM(page);
+      await planPage.goto();
+
+      // Active version card should be visible with indicator
+      await expect(planPage.activeIndicator).toBeVisible({ timeout: 5000 });
+      await expect(planPage.getVersionCard(2)).toBeVisible();
+
+      // Active card should be expanded — day cards visible
+      await expect(planPage.getDayCard('Push A')).toBeVisible();
+      await expect(planPage.getDayCard('Pull A')).toBeVisible();
+    });
+
+    test('shows previous versions as collapsed cards', async ({ page }) => {
+      await mockPlanV2(page);
+      await mockPlanVersions(page);
+      const planPage = new PlanPagePOM(page);
+      await planPage.goto();
+
+      // Both version cards should be visible
+      await planPage.expectVersionCount(2);
+
+      // v1 should be visible but collapsed (exercise names not visible inside it)
+      await expect(planPage.getVersionCard(1)).toBeVisible({ timeout: 5000 });
+      // The v1 card should show "Manual edit" badge
+      const v1Card = planPage.getVersionCard(1);
+      await expect(v1Card.getByText('Manual edit')).toBeVisible();
+    });
+
+    test('clicking previous version expands to show exercises', async ({ page }) => {
+      await mockPlanV2(page);
+      await mockPlanVersions(page);
+      const planPage = new PlanPagePOM(page);
+      await planPage.goto();
+
+      // Click expand on v1 card
+      const v1Card = planPage.getVersionCard(1);
+      await v1Card.getByRole('button').first().click();
+
+      // Now exercises from v1 should be visible within v1's card
+      // v1 has Bench Press, Incline Dumbbell Press, Overhead Press, Barbell Row, Pull-ups
+      await expect(v1Card.getByText('Incline Dumbbell Press')).toBeVisible({ timeout: 5000 });
+      await expect(v1Card.getByText('Overhead Press')).toBeVisible();
     });
   });
 
@@ -280,13 +361,15 @@ test.describe('UC-PLAN-01: Workout Plan Fine Tuner', () => {
 
     test('after accepting, /plan shows new version number and history entry', async ({ page }) => {
       await mockPlanV2(page);
+      await mockPlanVersions(page);
 
       const planPage = new PlanPagePOM(page);
       await planPage.goto();
 
-      // Should display version 2 badge
+      // Should display version 2 as active
       await expect(planPage.activeVersionBadge).toBeVisible({ timeout: 5000 });
-      await expect(planPage.activeVersionBadge).toContainText('2');
+      await expect(planPage.activeIndicator).toBeVisible();
+      await expect(planPage.getVersionCard(2)).toBeVisible();
     });
   });
 });
