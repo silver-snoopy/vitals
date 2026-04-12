@@ -70,7 +70,7 @@ export function PlanDayCard({ day, dayIndex: _dayIndex }: PlanDayCardProps) {
                   <td className="py-1.5 pr-4 text-muted-foreground hidden sm:table-cell">
                     {exercise.sets.find((s) => s.targetRpe !== undefined)?.targetRpe ?? '—'}
                   </td>
-                  <td className="py-1.5 text-muted-foreground hidden md:table-cell">
+                  <td className="py-1.5 text-muted-foreground hidden md:table-cell whitespace-pre-wrap max-w-md">
                     {exercise.notes ?? '—'}
                   </td>
                 </tr>

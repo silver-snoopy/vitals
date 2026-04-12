@@ -15,11 +15,11 @@ function inferProgressionRule(sfrTier: SfrTier): ProgressionRule {
 // ---------------------------------------------------------------------------
 
 /**
- * Matches day header lines — e.g. "Day 1:", "Monday:", "Push A:", "# Pull"
+ * Matches day header lines — e.g. "Day 1:", "Monday:", "Push A:", "# Pull", "D1 — UPPER"
  * A day header must NOT look like an exercise line (no set×rep pattern).
  */
 const DAY_HEADER_RE =
-  /^(?:#{1,3}\s*)?(?:day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday|push|pull|legs|upper|lower|full body|chest|back|arms|shoulders|core)\b/i;
+  /^(?:#{1,3}\s*)?(?:d\d+\b|day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday|push|pull|legs|upper|lower|full body|chest|back|arms|shoulders|core)\b/i;
 
 /** Matches set×rep patterns — e.g. "3x8", "3×8-12", "4×5", "3 x 10" */
 const SET_REP_RE = /(\d+)\s*[x×]\s*(\d+)(?:\s*[–-]\s*(\d+))?/i;
@@ -27,8 +27,8 @@ const SET_REP_RE = /(\d+)\s*[x×]\s*(\d+)(?:\s*[–-]\s*(\d+))?/i;
 /** Matches weight annotation — e.g. "@ 70kg", "@70 kg", "70kg", "70lbs" */
 const WEIGHT_RE = /@?\s*([\d.]+)\s*(?:kg|lbs?)/i;
 
-/** Matches RPE annotation — e.g. "@RPE 8", "RPE8", "@8", "@ 8 RPE" */
-const RPE_RE = /@\s*(?:rpe\s*)?(\d(?:\.\d)?)\s*(?:rpe)?(?!\s*k?g)/i;
+/** Matches RPE/RIR annotation — e.g. "@RPE 8", "RPE8", "@8", "@ 8 RPE", "@1 RIR", "@1–2 RIR" */
+const RPE_RE = /@\s*(?:(?:rpe|rir)\s*)?(\d(?:\.\d)?)\s*(?:rpe|rir)?(?!\s*k?g)/i;
 
 /** Matches a leading bullet or dash */
 const BULLET_RE = /^[-*•]\s*/;
@@ -79,8 +79,8 @@ function parseExerciseLine(line: string, order: number): PlanExercise | null {
 
   // Extract exercise name: everything before the set×rep pattern
   const nameRaw = stripped.substring(0, stripped.search(SET_REP_RE)).trim();
-  // Remove trailing punctuation
-  const exerciseName = nameRaw.replace(/[,.:]+$/, '').trim() || 'Exercise';
+  // Remove trailing punctuation and em dashes (common separator: "Bench Press — 3×8")
+  const exerciseName = nameRaw.replace(/[,.:\u2014\u2013-]+$/, '').trim() || 'Exercise';
 
   const meta = getExerciseMeta(exerciseName);
 
