@@ -90,6 +90,31 @@ Tricep Pushdown 3x12`;
     expect(pushdown!.progressionRule).toBe('double');
   });
 
+  it('"D1 — UPPER" day header format → parsed as day with exercises', () => {
+    const text = `D1 — UPPER (HEAVY | ~1 RIR)
+Iso-Lateral HS Bench — 4×5–7 @1 RIR
+Weighted Pull-Ups — 4×4–6 @1 RIR
+
+D2 — LEGS (HYPERTROPHY | 1–2 RIR)
+Leg Extension — 3×12–15 @1 RIR
+Seated Leg Curl — 3×12–15 @1 RIR`;
+
+    const result = parseFreeTextPlan(text);
+    expect(result.days).toHaveLength(2);
+    expect(result.days[0].name).toContain('UPPER');
+    expect(result.days[0].exercises.length).toBeGreaterThanOrEqual(2);
+    // Exercise name should NOT include trailing em dash
+    expect(result.days[0].exercises[0].exerciseName).not.toContain('—');
+    expect(result.days[0].exercises[0].exerciseName).toContain('Bench');
+    // RIR parsed as RPE value
+    expect(result.days[0].exercises[0].sets[0].targetRpe).toBe(1);
+    // Rep ranges parsed correctly
+    const reps = result.days[0].exercises[0].sets[0].targetReps;
+    expect(Array.isArray(reps)).toBe(true);
+    expect((reps as [number, number])[0]).toBe(5);
+    expect((reps as [number, number])[1]).toBe(7);
+  });
+
   it('exercises with RPE targets (e.g. "3×5 @RPE 8") → targetRpe is 8', () => {
     const text = `Push
 Bench Press 3x5 @RPE 8`;
