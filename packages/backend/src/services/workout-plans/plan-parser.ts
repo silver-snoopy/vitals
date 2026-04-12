@@ -1,4 +1,11 @@
-import type { PlanData, PlanDay, PlanExercise, PlanSet, ProgressionRule, SfrTier } from '@vitals/shared';
+import type {
+  PlanData,
+  PlanDay,
+  PlanExercise,
+  PlanSet,
+  ProgressionRule,
+  SfrTier,
+} from '@vitals/shared';
 import { getExerciseMeta } from './exercise-metadata.js';
 
 /**
@@ -224,9 +231,7 @@ function buildFallback(rawText: string): PlanData {
   // NOTE: user health data — truncate to prevent unbounded growth in stored JSONB
   const FALLBACK_NOTES_MAX = 10_000;
   const truncatedNotes =
-    rawText && rawText.length > FALLBACK_NOTES_MAX
-      ? rawText.slice(0, FALLBACK_NOTES_MAX)
-      : rawText;
+    rawText && rawText.length > FALLBACK_NOTES_MAX ? rawText.slice(0, FALLBACK_NOTES_MAX) : rawText;
 
   return {
     splitType: 'Custom',

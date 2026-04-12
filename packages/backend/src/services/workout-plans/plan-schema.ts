@@ -56,7 +56,9 @@ function isValidPlanDay(v: unknown): v is PlanDay {
 const VALID_PROGRESSION_PERSONALITIES = ['conservative', 'balanced', 'aggressive'] as const;
 
 function isValidProgressionPersonality(v: unknown): boolean {
-  return VALID_PROGRESSION_PERSONALITIES.includes(v as (typeof VALID_PROGRESSION_PERSONALITIES)[number]);
+  return VALID_PROGRESSION_PERSONALITIES.includes(
+    v as (typeof VALID_PROGRESSION_PERSONALITIES)[number],
+  );
 }
 
 /**
@@ -68,7 +70,11 @@ export function isPlanData(value: unknown): value is PlanData {
   const d = value as Record<string, unknown>;
   if (typeof d['splitType'] !== 'string') return false;
   // progressionPersonality is optional; if present must be a valid value
-  if (d['progressionPersonality'] !== undefined && !isValidProgressionPersonality(d['progressionPersonality'])) return false;
+  if (
+    d['progressionPersonality'] !== undefined &&
+    !isValidProgressionPersonality(d['progressionPersonality'])
+  )
+    return false;
   if (!Array.isArray(d['days'])) return false;
   if (!d['days'].every(isValidPlanDay)) return false;
   return true;

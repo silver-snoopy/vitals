@@ -1,11 +1,16 @@
 import { useState } from 'react';
 import { Plus } from 'lucide-react';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import type { PlanAdjustmentBatch } from '@vitals/shared';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useCurrentPlan, usePlanVersions } from '@/api/hooks/useWorkoutPlan';
+import { useCurrentPlan, usePlanVersions, useTunePlan } from '@/api/hooks/useWorkoutPlan';
+import { useLatestReport } from '@/api/hooks/useReports';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { PlanEditor } from './PlanEditor';
 import { PlanVersionCard } from './PlanVersionCard';
+import { AdjustmentReviewModal } from './AdjustmentReviewModal';
 
 export function PlanPage() {
   const { data, isLoading } = useCurrentPlan();
@@ -14,11 +19,46 @@ export function PlanPage() {
   const planResponse = data?.data;
   const plan = planResponse?.plan ?? null;
 
+  const latestReport = useLatestReport();
+  const tunePlan = useTunePlan(plan?.id ?? '');
+  const [batch, setBatch] = useState<PlanAdjustmentBatch | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
   const { data: versionsData, isLoading: versionsLoading } = usePlanVersions(plan?.id);
   const versions = versionsData?.data ?? [];
 
   const activeVersion = versions.find((v) => v.id === plan?.activeVersionId);
   const previousVersions = versions.filter((v) => v.id !== plan?.activeVersionId);
+
+  const report = latestReport.data;
+  const hasReport = !!report;
+  const optimizeTooltip = hasReport
+    ? `Optimize based on report from ${format(new Date(report.createdAt), 'MMM d, yyyy')}`
+    : 'Generate a report first to unlock optimization';
+
+  const handleOptimize = () => {
+    if (!report) return;
+    tunePlan.mutate(
+      { reportId: report.id },
+      {
+        onSuccess: (response) => {
+          setBatch(response.data);
+          setModalOpen(true);
+        },
+        onError: (err: unknown) => {
+          const msg =
+            (err as { message?: string })?.message ??
+            'Failed to generate plan suggestions. Try again later.';
+          toast.error(msg);
+        },
+      },
+    );
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setBatch(null);
+  };
 
   const createDialog = (
     <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -83,7 +123,21 @@ export function PlanPage() {
         ) : (
           <>
             {activeVersion && (
-              <PlanVersionCard version={activeVersion} isActive={true} defaultExpanded={true} />
+              <PlanVersionCard
+                version={activeVersion}
+                isActive={true}
+                defaultExpanded={true}
+                onOptimize={handleOptimize}
+                optimizeDisabled={!hasReport}
+                optimizeLoading={tunePlan.isPending}
+                optimizeTooltip={optimizeTooltip}
+              />
+            )}
+            {hasReport && (
+              <p className="text-xs text-muted-foreground -mt-2 mb-4 ml-1">
+                Optimization powered by report from{' '}
+                {format(new Date(report.createdAt), 'MMM d, yyyy')}
+              </p>
             )}
             {previousVersions.map((v) => (
               <PlanVersionCard key={v.id} version={v} isActive={false} />
@@ -93,6 +147,7 @@ export function PlanPage() {
       </div>
 
       {createDialog}
+      {batch && <AdjustmentReviewModal batch={batch} open={modalOpen} onClose={handleModalClose} />}
     </div>
   );
 }

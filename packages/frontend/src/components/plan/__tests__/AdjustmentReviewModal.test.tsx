@@ -117,7 +117,7 @@ describe('AdjustmentReviewModal', () => {
     // Default: all accepted
     fireEvent.click(screen.getByRole('button', { name: /commit changes/i }));
     expect(mockMutate).toHaveBeenCalledWith(
-      { decisions: { 'adj-001': 'accepted', 'adj-002': 'accepted' } },
+      { decisions: { 'adj-001': { status: 'accepted' }, 'adj-002': { status: 'accepted' } } },
       expect.anything(),
     );
   });

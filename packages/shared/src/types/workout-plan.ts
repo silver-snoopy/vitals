@@ -241,8 +241,14 @@ export interface TunePlanRequest {
   reportId: string;
 }
 
+/** A single adjustment decision with optional user-overridden value. */
+export interface AdjustmentDecision {
+  status: 'accepted' | 'rejected';
+  overrideValue?: unknown;
+}
+
 /** Body for PATCH /api/workout-plans/adjustments/:batchId */
 export interface DecideAdjustmentsRequest {
   /** Map of adjustmentId → decision. */
-  decisions: Record<string, 'accepted' | 'rejected'>;
+  decisions: Record<string, AdjustmentDecision>;
 }

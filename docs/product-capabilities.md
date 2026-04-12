@@ -663,6 +663,8 @@ adjustments creates an immutable new plan version.
 | UC-PLAN-03 | Optimize plan from weekly report | Implemented |
 | UC-PLAN-04 | Review plan adjustments | Implemented |
 | UC-PLAN-05 | Accept adjustments → new plan version | Implemented |
+| UC-PLAN-06 | Optimize plan from Plan screen | Implemented |
+| UC-PLAN-07 | Modify proposed adjustment values | Implemented |
 
 ### UC-PLAN-01: Create workout plan from free text
 
@@ -705,10 +707,14 @@ adjustments creates an immutable new plan version.
 **so that** next week's training reflects my actual performance data.
 
 **Behavior:**
-- Expanded `ReportCard` renders `OptimizePlanButton`
-- When no plan exists: button disabled with tooltip "Create a workout plan to unlock" and link to `/plan`
-- When a plan exists: button enabled — "Optimize next week's plan"
-- Click calls `POST /api/workout-plans/:id/tune` with `{ reportId }`
+- **From Reports page:** Expanded `ReportCard` renders `OptimizePlanButton`
+  - When no plan exists: button disabled with tooltip "Create a workout plan to unlock" and link to `/plan`
+  - When a plan exists: button enabled — "Optimize next week's plan"
+  - Click calls `POST /api/workout-plans/:id/tune` with `{ reportId }`
+- **From Plan page (UC-PLAN-06):** Active version card shows a Sparkles icon button
+  - Automatically uses the latest available report
+  - Disabled with tooltip "Generate a report first to unlock optimization" when no reports exist
+  - Shows "Optimization powered by report from {date}" context line below the active version card
 - Tuner service loads: current plan version, target report, recent Hevy workout sessions, PHIE correlations
 
 **E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
@@ -726,6 +732,11 @@ adjustments creates an immutable new plan version.
   - Confidence score 1–5
   - Expandable rationale text and evidence chips (at least 1 evidence reference required per LLM selection)
 - Triage row: "Accept all" / "Reject all" / per-row toggle; all accepted by default
+- **Modify values (UC-PLAN-07):** Pencil icon on each accepted non-hold adjustment opens an inline `SetEditor`
+  - Editable fields: number of sets, target reps (preserves single/range format), target weight (kg), target RPE
+  - "Apply" saves the user's override; "Cancel" reverts to AI suggestion
+  - Modified adjustments show a blue "modified" badge next to the new value
+  - Overridden values are sent to backend as `overrideValue` in the decision payload; backend validates against `PlanSet` schema before storing
 - Batch `rationale` field shows the LLM's overall intensity/volume narrative
 
 **E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
@@ -744,7 +755,43 @@ adjustments creates an immutable new plan version.
 
 **E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
 
-### Under the Hood
+### UC-PLAN-06: Optimize plan from Plan screen
+
+**As a** user viewing my workout plan, **I want to** trigger optimization directly from the plan page,
+**so that** I don't have to navigate to the Reports page to improve my training program.
+
+**Behavior:**
+- Active `PlanVersionCard` shows a Sparkles icon button in the header (amber color, next to "Active" badge)
+- Click automatically fetches the latest report via `useLatestReport` and calls `POST /api/workout-plans/:id/tune`
+- On success: `AdjustmentReviewModal` opens with the batch (same modal used by OptimizePlanButton)
+- On error: toast notification with error message
+- When no reports exist: button is disabled with tooltip "Generate a report first to unlock optimization"
+- Context line "Optimization powered by report from {date}" shown below active version card
+- Loading state: Loader2 spinner replaces Sparkles icon during API call
+- After accepting/rejecting adjustments and closing modal, version list auto-refreshes via query invalidation
+
+**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
+
+### UC-PLAN-07: Modify proposed adjustment values
+
+**As a** user reviewing AI-proposed adjustments, **I want to** modify the suggested values before accepting,
+**so that** I can apply my domain knowledge (e.g., equipment availability, injury history) to fine-tune the AI's recommendations.
+
+**Behavior:**
+- Each accepted, non-hold adjustment row shows a Pencil icon button next to the new value
+- Clicking the pencil opens an inline `SetEditor` with fields: set count, target reps, target weight (kg), target RPE
+- Rep ranges preserved: if the original was `[8, 10]`, both min and max are editable
+- Only fields present in the original value are shown (e.g., no weight field for bodyweight exercises)
+- "Apply" button saves the user's override into `decisions[adjId].overrideValue`; "Cancel" reverts
+- Modified adjustments display a blue "modified" badge
+- Accept All preserves existing overrides; Reject All clears them
+- On commit, `PATCH /api/workout-plans/adjustments/:batchId` receives `AdjustmentDecision` objects with optional `overrideValue`
+- Backend validates `overrideValue` as a valid `PlanSet[]` via `isValidPlanSetArray()` — rejects malformed data and falls back to AI's original value
+- New plan version uses the user-modified values for overridden adjustments
+
+**E2E Coverage:** `e2e/workout-plan-tuner.spec.ts`
+
+
 
 **Rule-first / LLM-selects architecture:**
 - `progression-rules.ts` generates the legal candidate set per exercise: `hold`, double progression (2-for-2), deload

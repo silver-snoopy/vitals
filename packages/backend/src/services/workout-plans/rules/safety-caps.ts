@@ -201,9 +201,7 @@ export function applyInjuryLock(
     const hasKeyword = keywords.some((kw) => new RegExp('\\b' + kw + '\\b', 'i').test(hazardText));
     if (!hasKeyword) continue;
 
-    const matchesMuscle = muscles.some(
-      (m) => m.toLowerCase() === exerciseMuscle.toLowerCase(),
-    );
+    const matchesMuscle = muscles.some((m) => m.toLowerCase() === exerciseMuscle.toLowerCase());
     if (matchesMuscle) {
       return {
         ...holdCandidate,

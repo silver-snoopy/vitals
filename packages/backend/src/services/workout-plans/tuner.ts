@@ -266,9 +266,15 @@ export async function tunePlan(
   for (const day of planData.days) {
     fieldsToScan.push({ label: `day.name:${day.name}`, value: day.name });
     for (const exercise of day.exercises) {
-      fieldsToScan.push({ label: `exercise.name:${exercise.exerciseName}`, value: exercise.exerciseName });
+      fieldsToScan.push({
+        label: `exercise.name:${exercise.exerciseName}`,
+        value: exercise.exerciseName,
+      });
       if (exercise.notes) {
-        fieldsToScan.push({ label: `exercise.notes:${exercise.exerciseName}`, value: exercise.notes });
+        fieldsToScan.push({
+          label: `exercise.notes:${exercise.exerciseName}`,
+          value: exercise.notes,
+        });
       }
     }
   }

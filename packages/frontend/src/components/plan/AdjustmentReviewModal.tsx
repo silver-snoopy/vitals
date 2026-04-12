@@ -1,6 +1,12 @@
 import { useState, useCallback } from 'react';
-import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
-import type { PlanAdjustmentBatch, PlanAdjustment, ChangeType } from '@vitals/shared';
+import { ChevronDown, ChevronUp, Loader2, Pencil } from 'lucide-react';
+import type {
+  AdjustmentDecision,
+  PlanAdjustmentBatch,
+  PlanAdjustment,
+  PlanSet,
+  ChangeType,
+} from '@vitals/shared';
 import {
   Dialog,
   DialogContent,
@@ -17,8 +23,6 @@ interface AdjustmentReviewModalProps {
   open: boolean;
   onClose: () => void;
 }
-
-type Decision = 'accepted' | 'rejected';
 
 const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
   hold: 'Hold',
@@ -76,14 +80,128 @@ function ConfidenceDots({ score }: { score: number }) {
   );
 }
 
-interface AdjustmentRowProps {
-  adjustment: PlanAdjustment;
-  decision: Decision;
-  onDecide: (id: string, d: Decision) => void;
+function SetEditor({
+  sets,
+  onEditSet,
+  onSetCount,
+}: {
+  sets: PlanSet[];
+  onEditSet: (idx: number, field: string, value: number | [number, number]) => void;
+  onSetCount: (count: number) => void;
+}) {
+  return (
+    <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <span>Sets:</span>
+        <input
+          type="number"
+          min={1}
+          max={10}
+          value={sets.length}
+          onChange={(e) => onSetCount(Math.max(1, Math.min(10, Number(e.target.value))))}
+          className="w-14 rounded border border-border bg-background px-1.5 py-0.5 text-xs text-foreground"
+        />
+      </div>
+      {sets.map((s, i) => (
+        <div key={i} className="flex items-center gap-2 text-xs">
+          <span className="w-8 text-muted-foreground">#{i + 1}</span>
+          <label className="flex items-center gap-1">
+            Reps:
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={Array.isArray(s.targetReps) ? s.targetReps[0] : s.targetReps}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (Array.isArray(s.targetReps)) {
+                  onEditSet(i, 'targetReps', [v, s.targetReps[1]]);
+                } else {
+                  onEditSet(i, 'targetReps', v);
+                }
+              }}
+              className="w-14 rounded border border-border bg-background px-1.5 py-0.5 text-foreground"
+            />
+            {Array.isArray(s.targetReps) && (
+              <>
+                –
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={s.targetReps[1]}
+                  onChange={(e) =>
+                    onEditSet(i, 'targetReps', [
+                      (s.targetReps as [number, number])[0],
+                      Number(e.target.value),
+                    ])
+                  }
+                  className="w-14 rounded border border-border bg-background px-1.5 py-0.5 text-foreground"
+                />
+              </>
+            )}
+          </label>
+          {s.targetWeightKg !== undefined && (
+            <label className="flex items-center gap-1">
+              kg:
+              <input
+                type="number"
+                min={0}
+                max={500}
+                step={2.5}
+                value={s.targetWeightKg}
+                onChange={(e) => onEditSet(i, 'targetWeightKg', Number(e.target.value))}
+                className="w-16 rounded border border-border bg-background px-1.5 py-0.5 text-foreground"
+              />
+            </label>
+          )}
+          {s.targetRpe !== undefined && (
+            <label className="flex items-center gap-1">
+              RPE:
+              <input
+                type="number"
+                min={1}
+                max={10}
+                step={0.5}
+                value={s.targetRpe}
+                onChange={(e) => onEditSet(i, 'targetRpe', Number(e.target.value))}
+                className="w-14 rounded border border-border bg-background px-1.5 py-0.5 text-foreground"
+              />
+            </label>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
-function AdjustmentRow({ adjustment, decision, onDecide }: AdjustmentRowProps) {
+interface AdjustmentRowProps {
+  adjustment: PlanAdjustment;
+  decision: AdjustmentDecision;
+  onDecide: (id: string, status: 'accepted' | 'rejected') => void;
+  editingId: string | null;
+  editSets: PlanSet[];
+  onStartEdit: (adjId: string, currentNewValue: unknown) => void;
+  onCancelEdit: () => void;
+  onConfirmEdit: (adjId: string) => void;
+  onEditSet: (setIndex: number, field: string, value: number | [number, number]) => void;
+  onSetCount: (count: number) => void;
+}
+
+function AdjustmentRow({
+  adjustment,
+  decision,
+  onDecide,
+  editingId,
+  editSets,
+  onStartEdit,
+  onCancelEdit,
+  onConfirmEdit,
+  onEditSet,
+  onSetCount,
+}: AdjustmentRowProps) {
   const [expanded, setExpanded] = useState(false);
+  const isEditing = editingId === adjustment.id;
 
   return (
     <div className="rounded-md border p-3 space-y-2">
@@ -104,7 +222,7 @@ function AdjustmentRow({ adjustment, decision, onDecide }: AdjustmentRowProps) {
 
         <div className="flex items-center gap-1">
           <Button
-            variant={decision === 'accepted' ? 'default' : 'outline'}
+            variant={decision.status === 'accepted' ? 'default' : 'outline'}
             size="sm"
             className="h-7 px-2 text-xs"
             onClick={() => onDecide(adjustment.id, 'accepted')}
@@ -113,7 +231,7 @@ function AdjustmentRow({ adjustment, decision, onDecide }: AdjustmentRowProps) {
             Accept
           </Button>
           <Button
-            variant={decision === 'rejected' ? 'destructive' : 'outline'}
+            variant={decision.status === 'rejected' ? 'destructive' : 'outline'}
             size="sm"
             className="h-7 px-2 text-xs"
             onClick={() => onDecide(adjustment.id, 'rejected')}
@@ -124,10 +242,54 @@ function AdjustmentRow({ adjustment, decision, onDecide }: AdjustmentRowProps) {
         </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground flex items-center gap-1 flex-wrap">
         <span className="line-through">{formatValue(adjustment.oldValue)}</span>
-        {' → '}
-        <span className="text-foreground font-medium">{formatValue(adjustment.newValue)}</span>
+        <span>→</span>
+        {isEditing ? (
+          <div className="flex-1 space-y-2">
+            <SetEditor sets={editSets} onEditSet={onEditSet} onSetCount={onSetCount} />
+            <div className="flex gap-1">
+              <button
+                onClick={() => onConfirmEdit(adjustment.id)}
+                className="rounded bg-green-600 px-2 py-0.5 text-xs text-white hover:bg-green-500"
+              >
+                Apply
+              </button>
+              <button
+                onClick={onCancelEdit}
+                className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted/80"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <span className="flex items-center gap-1 text-foreground font-medium">
+            {decision.overrideValue
+              ? formatSets(decision.overrideValue as Record<string, unknown>[])
+              : formatValue(adjustment.newValue)}
+            {decision.overrideValue ? (
+              <span
+                className="rounded bg-blue-500/20 px-1 py-0.5 text-[10px] text-blue-400"
+                data-testid={`modified-badge-${adjustment.id}`}
+              >
+                modified
+              </span>
+            ) : null}
+            {decision.status === 'accepted' && adjustment.changeType !== 'hold' && (
+              <button
+                onClick={() =>
+                  onStartEdit(adjustment.id, decision.overrideValue ?? adjustment.newValue)
+                }
+                className="ml-1 rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                title="Modify values"
+                data-testid={`edit-${adjustment.id}`}
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
+          </span>
+        )}
       </p>
 
       <button
@@ -162,37 +324,89 @@ function AdjustmentRow({ adjustment, decision, onDecide }: AdjustmentRowProps) {
 
 /**
  * Modal for reviewing AI-proposed plan adjustments.
- * Grouped by day, per-row accept/reject, batch commit.
+ * Grouped by day, per-row accept/reject/modify, batch commit.
  */
 export function AdjustmentReviewModal({ batch, open, onClose }: AdjustmentReviewModalProps) {
-  const [decisions, setDecisions] = useState<Record<string, Decision>>(() => {
-    const initial: Record<string, Decision> = {};
-    for (const adj of batch.adjustments) {
-      initial[adj.id] = 'accepted';
-    }
-    return initial;
-  });
+  const initDecisions = (): Record<string, AdjustmentDecision> => {
+    const d: Record<string, AdjustmentDecision> = {};
+    for (const adj of batch.adjustments) d[adj.id] = { status: 'accepted' };
+    return d;
+  };
+  const [decisions, setDecisions] = useState<Record<string, AdjustmentDecision>>(initDecisions);
   const [commitError, setCommitError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editSets, setEditSets] = useState<PlanSet[]>([]);
 
   const decide = useDecideAdjustments(batch.id);
 
-  const handleDecide = useCallback((id: string, d: Decision) => {
-    setDecisions((prev) => ({ ...prev, [id]: d }));
+  const handleDecide = useCallback((id: string, status: 'accepted' | 'rejected') => {
+    setDecisions((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], status },
+    }));
   }, []);
 
   const handleAcceptAll = () => {
-    const next: Record<string, Decision> = {};
-    for (const adj of batch.adjustments) next[adj.id] = 'accepted';
+    const next: Record<string, AdjustmentDecision> = {};
+    for (const adj of batch.adjustments) {
+      next[adj.id] = decisions[adj.id]?.overrideValue
+        ? { status: 'accepted', overrideValue: decisions[adj.id].overrideValue }
+        : { status: 'accepted' };
+    }
     setDecisions(next);
   };
 
   const handleRejectAll = () => {
-    const next: Record<string, Decision> = {};
-    for (const adj of batch.adjustments) next[adj.id] = 'rejected';
+    const next: Record<string, AdjustmentDecision> = {};
+    for (const adj of batch.adjustments) next[adj.id] = { status: 'rejected' };
     setDecisions(next);
   };
 
-  const acceptedCount = Object.values(decisions).filter((d) => d === 'accepted').length;
+  const handleStartEdit = (adjId: string, currentNewValue: unknown) => {
+    setEditingId(adjId);
+    setEditSets(
+      Array.isArray(currentNewValue) ? (currentNewValue as PlanSet[]).map((s) => ({ ...s })) : [],
+    );
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setEditSets([]);
+  };
+
+  const handleConfirmEdit = (adjId: string) => {
+    setDecisions((prev) => ({
+      ...prev,
+      [adjId]: { status: 'accepted', overrideValue: editSets },
+    }));
+    setEditingId(null);
+    setEditSets([]);
+  };
+
+  const handleEditSet = (setIndex: number, field: string, value: number | [number, number]) => {
+    setEditSets((prev) => {
+      const next = [...prev];
+      next[setIndex] = { ...next[setIndex], [field]: value };
+      return next;
+    });
+  };
+
+  const handleSetCount = (count: number) => {
+    setEditSets((prev) => {
+      if (count > prev.length) {
+        const template = prev[prev.length - 1] ?? { type: 'normal' as const, targetReps: 10 };
+        return [
+          ...prev,
+          ...Array(count - prev.length)
+            .fill(null)
+            .map(() => ({ ...template })),
+        ];
+      }
+      return prev.slice(0, count);
+    });
+  };
+
+  const acceptedCount = Object.values(decisions).filter((d) => d.status === 'accepted').length;
 
   const handleCommit = () => {
     setCommitError(null);
@@ -236,6 +450,7 @@ export function AdjustmentReviewModal({ batch, open, onClose }: AdjustmentReview
       <DialogContent
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
         showCloseButton={!decide.isPending}
+        data-testid="adjustment-review-modal"
       >
         <DialogHeader>
           <DialogTitle>Review plan adjustments for next week</DialogTitle>
@@ -274,8 +489,15 @@ export function AdjustmentReviewModal({ batch, open, onClose }: AdjustmentReview
                   <AdjustmentRow
                     key={adj.id}
                     adjustment={adj}
-                    decision={decisions[adj.id] ?? 'accepted'}
+                    decision={decisions[adj.id] ?? { status: 'accepted' }}
                     onDecide={handleDecide}
+                    editingId={editingId}
+                    editSets={editSets}
+                    onStartEdit={handleStartEdit}
+                    onCancelEdit={handleCancelEdit}
+                    onConfirmEdit={handleConfirmEdit}
+                    onEditSet={handleEditSet}
+                    onSetCount={handleSetCount}
                   />
                 ))}
               </div>
@@ -293,7 +515,7 @@ export function AdjustmentReviewModal({ batch, open, onClose }: AdjustmentReview
           <Button variant="outline" onClick={onClose} disabled={decide.isPending}>
             Cancel
           </Button>
-          <Button onClick={handleCommit} disabled={decide.isPending}>
+          <Button onClick={handleCommit} disabled={decide.isPending} data-testid="commit-button">
             {decide.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
