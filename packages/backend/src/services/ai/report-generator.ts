@@ -16,6 +16,7 @@ import { getLatestReport, saveReport, logAiGeneration } from '../../db/queries/r
 import { promoteActionItems, listActionItems } from '../../db/queries/action-items.js';
 import { jsonrepair } from 'jsonrepair';
 import { buildReportPrompt } from './prompt-builder.js';
+import { completeWithRetry } from './retry-utils.js';
 import { measureOutcomes, determineOutcome } from '../action-items/outcome-measurer.js';
 import { expireStaleItems, supersedeItems } from '../action-items/lifecycle-manager.js';
 import { runCorrelationAnalysis } from '../intelligence/correlation-engine.js';
@@ -182,31 +183,6 @@ function parseAIResponse(content: string): ParsedAIReport {
 
 function countDistinctDays(dates: string[]): number {
   return new Set(dates.map((d) => d.split('T')[0])).size;
-}
-
-async function completeWithRetry(
-  aiProvider: AIProvider,
-  messages: Parameters<AIProvider['complete']>[0],
-  maxRetries = 3,
-): ReturnType<AIProvider['complete']> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await aiProvider.complete(messages);
-    } catch (err: unknown) {
-      const isRateLimit =
-        (err instanceof Error && /429|rate.limit|too many requests/i.test(err.message)) ||
-        (typeof err === 'object' &&
-          err !== null &&
-          'status' in err &&
-          (err as { status: number }).status === 429);
-
-      if (!isRateLimit || attempt === maxRetries) throw err;
-
-      const delay = Math.min(1000 * 2 ** attempt, 30_000);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-  throw new Error('Unreachable');
 }
 
 export interface GatherAndGenerateResult {

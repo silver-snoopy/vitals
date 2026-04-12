@@ -40,17 +40,25 @@ const CHANGE_TYPE_COLORS: Record<ChangeType, string> = {
   add: 'bg-green-500/15 text-green-700 dark:text-green-400',
 };
 
+function formatSets(sets: Record<string, unknown>[]): string {
+  const s = sets[0];
+  const reps = Array.isArray(s['targetReps'])
+    ? `${s['targetReps'][0]}–${s['targetReps'][1]}`
+    : String(s['targetReps'] ?? '?');
+  const load = s['targetWeightKg'] !== undefined ? `${s['targetWeightKg']} kg` : 'BW';
+  return `${sets.length}×${reps} @ ${load}`;
+}
+
 function formatValue(value: unknown): string {
   if (!value || typeof value !== 'object') return String(value ?? '—');
+  // PlanSet[] — direct array from tuner oldValue/newValue
+  if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+    return formatSets(value as Record<string, unknown>[]);
+  }
+  // Legacy { sets: [...] } wrapper (defensive)
   const v = value as Record<string, unknown>;
-  const sets = v['sets'];
-  if (Array.isArray(sets) && sets.length > 0) {
-    const s = sets[0] as Record<string, unknown>;
-    const reps = Array.isArray(s['targetReps'])
-      ? `${s['targetReps'][0]}–${s['targetReps'][1]}`
-      : String(s['targetReps'] ?? '?');
-    const load = s['targetWeightKg'] !== undefined ? `${s['targetWeightKg']} kg` : 'BW';
-    return `${sets.length}×${reps} @ ${load}`;
+  if (Array.isArray(v['sets']) && v['sets'].length > 0) {
+    return formatSets(v['sets'] as Record<string, unknown>[]);
   }
   return JSON.stringify(value);
 }

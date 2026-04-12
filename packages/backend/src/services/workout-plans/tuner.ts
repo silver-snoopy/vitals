@@ -24,6 +24,7 @@ import { applyMaxChangeRatio } from './rules/safety-caps.js';
 import { buildTunePrompt } from './tuner-prompt-builder.js';
 import { validatePlanData } from './plan-schema.js';
 import { flagSuspiciousInput } from '../ai/conversation-service.js';
+import { completeWithRetry } from '../ai/retry-utils.js';
 
 // ---------------------------------------------------------------------------
 // Types for AI output
@@ -150,31 +151,6 @@ function validateTunerOutput(
 // ---------------------------------------------------------------------------
 // completeWithRetry (mirrors report-generator.ts)
 // ---------------------------------------------------------------------------
-
-async function completeWithRetry(
-  aiProvider: AIProvider,
-  messages: Parameters<AIProvider['complete']>[0],
-  maxRetries = 3,
-): ReturnType<AIProvider['complete']> {
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await aiProvider.complete(messages);
-    } catch (err: unknown) {
-      const isRateLimit =
-        (err instanceof Error && /429|rate.limit|too many requests/i.test(err.message)) ||
-        (typeof err === 'object' &&
-          err !== null &&
-          'status' in err &&
-          (err as { status: number }).status === 429);
-
-      if (!isRateLimit || attempt === maxRetries) throw err;
-
-      const delay = Math.min(1000 * 2 ** attempt, 30_000);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-  }
-  throw new Error('Unreachable');
-}
 
 // ---------------------------------------------------------------------------
 // Map AI selections to PlanAdjustment fields

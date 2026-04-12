@@ -37,7 +37,7 @@ const ADJUSTMENT_COLUMNS = `
 // ---------------------------------------------------------------------------
 
 /** Maps a raw DB row to a WorkoutPlan. */
-export function mapPlanRow(r: Record<string, unknown>): WorkoutPlan {
+function mapPlanRow(r: Record<string, unknown>): WorkoutPlan {
   return {
     id: String(r['id']),
     userId: String(r['user_id']),
@@ -53,7 +53,7 @@ export function mapPlanRow(r: Record<string, unknown>): WorkoutPlan {
 }
 
 /** Maps a raw DB row to a PlanVersion (including JSONB data round-trip). */
-export function mapVersionRow(r: Record<string, unknown>): PlanVersion {
+function mapVersionRow(r: Record<string, unknown>): PlanVersion {
   return {
     id: String(r['id']),
     planId: String(r['plan_id']),
@@ -76,7 +76,7 @@ export function mapVersionRow(r: Record<string, unknown>): PlanVersion {
 }
 
 /** Maps a raw DB row to a PlanAdjustment (including JSONB evidence round-trip). */
-export function mapAdjustmentRow(r: Record<string, unknown>): PlanAdjustment {
+function mapAdjustmentRow(r: Record<string, unknown>): PlanAdjustment {
   const exerciseRef =
     typeof r['exercise_ref'] === 'object' && r['exercise_ref'] !== null
       ? (r['exercise_ref'] as ExerciseRef)
