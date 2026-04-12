@@ -269,7 +269,10 @@ function AdjustmentRow({
               ? formatSets(decision.overrideValue as Record<string, unknown>[])
               : formatValue(adjustment.newValue)}
             {decision.overrideValue ? (
-              <span className="rounded bg-blue-500/20 px-1 py-0.5 text-[10px] text-blue-400">
+              <span
+                className="rounded bg-blue-500/20 px-1 py-0.5 text-[10px] text-blue-400"
+                data-testid={`modified-badge-${adjustment.id}`}
+              >
                 modified
               </span>
             ) : null}
@@ -280,6 +283,7 @@ function AdjustmentRow({
                 }
                 className="ml-1 rounded p-0.5 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 title="Modify values"
+                data-testid={`edit-${adjustment.id}`}
               >
                 <Pencil className="h-3 w-3" />
               </button>
@@ -446,6 +450,7 @@ export function AdjustmentReviewModal({ batch, open, onClose }: AdjustmentReview
       <DialogContent
         className="max-w-2xl max-h-[90vh] overflow-y-auto"
         showCloseButton={!decide.isPending}
+        data-testid="adjustment-review-modal"
       >
         <DialogHeader>
           <DialogTitle>Review plan adjustments for next week</DialogTitle>
@@ -510,7 +515,7 @@ export function AdjustmentReviewModal({ batch, open, onClose }: AdjustmentReview
           <Button variant="outline" onClick={onClose} disabled={decide.isPending}>
             Cancel
           </Button>
-          <Button onClick={handleCommit} disabled={decide.isPending}>
+          <Button onClick={handleCommit} disabled={decide.isPending} data-testid="commit-button">
             {decide.isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

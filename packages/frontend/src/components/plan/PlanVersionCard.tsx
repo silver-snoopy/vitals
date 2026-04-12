@@ -71,6 +71,7 @@ export function PlanVersionCard({
                   }}
                   disabled={optimizeDisabled || optimizeLoading}
                   title={optimizeTooltip ?? 'Optimize with AI'}
+                  data-testid="optimize-plan-button"
                   className="ml-2 rounded-md p-1 text-amber-500 hover:bg-amber-500/10 hover:text-amber-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   {optimizeLoading ? (

@@ -30,6 +30,7 @@ export async function buildApp(env: EnvConfig) {
   }
   await app.register(cors, {
     origin: env.nodeEnv === 'production' ? env.frontendUrl || false : true,
+    methods: ['GET', 'HEAD', 'PUT', 'POST', 'DELETE', 'PATCH'],
   });
 
   await app.register(multipart);
