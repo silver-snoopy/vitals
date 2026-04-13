@@ -72,14 +72,24 @@ src/
     │   ├── cronometer/            Nutrition + biometrics scraper
     │   ├── hevy/                  Workout API client
     │   └── apple-health/          XML upload parser (Phase 3)
+    ├── action-items/              Action item lifecycle (outcome measurer, lifecycle manager)
+    ├── intelligence/              PHIE: correlation engine + trajectory projector
+    ├── workout-plans/
+    │   ├── plan-parser.ts         LLM structured output parser + regex fallback
+    │   ├── plan-schema.ts         validatePlanData()
+    │   ├── exercise-metadata.ts   getExerciseMeta() — 50+ exercise classification table
+    │   ├── tuner.ts               AI plan fine-tuner (structured output → candidate selection)
+    │   ├── tuner-prompt-builder.ts  Prompt assembly for tuner
+    │   └── rules/                 Candidate generator + progression rules + safety caps
     ├── report-event-bus.ts  In-process pub/sub for report status
     ├── report-runner.ts     Background report orchestrator
     └── ai/
-        ├── claude-provider.ts     AIProvider implementation (Claude)
-        ├── gemini-provider.ts     AIProvider implementation (Gemini)
+        ├── claude-provider.ts     AIProvider impl (Claude) — complete, completeStructured (tool_use), stream
+        ├── gemini-provider.ts     AIProvider impl (Gemini) — complete, completeStructured (responseSchema), stream
         ├── ai-service.ts          Provider factory (AI_PROVIDER env)
+        ├── retry-utils.ts         completeWithRetry + completeStructuredWithRetry (exponential backoff)
         ├── conversation-service.ts Agentic loop: chat() + chatStream() (Phase 6A)
-        ├── report-generator.ts    Report orchestration (data fetch + AI call + save)
+        ├── report-generator.ts    Report orchestration (structured output → schema-guaranteed JSON)
         ├── prompt-builder.ts      Data formatting + prompt assembly
         ├── prompt-loader.ts       Loads .md prompt files at startup
         ├── prompts/               Prompt files
@@ -108,6 +118,10 @@ src/
 | `conversations` | Chat conversation sessions (Phase 6A) | PK: UUID, FK: user_id |
 | `messages` | Individual chat messages (Phase 6A) | role CHECK: user/assistant/tool, JSONB tool_calls |
 | `action_items` | Persistent tracked action items from weekly reports (F3) | FK: weekly_reports(id) CASCADE; status CHECK with 7 states; 3 indexes |
+| `workout_plans` | User workout plans with active version tracking | PK: UUID, FK: user_id; one active plan per user |
+| `plan_versions` | Versioned plan data (JSONB PlanData) | FK: workout_plans(id); source: user/tuner; parent chain |
+| `adjustment_batches` | AI tuner output batches | FK: plan_versions, weekly_reports; rationale + AI metadata |
+| `plan_adjustments` | Individual exercise adjustments within a batch | FK: adjustment_batches; status: pending/accepted/rejected |
 | `correlations` | PHIE: discovered Pearson correlations across nutrition/training/biometric data | Unique: `(user_id, factor_metric, factor_condition, outcome_metric)`; CHECK on `confidence_level`, `status`, `category`; `first_detected_at` preserved across re-runs |
 | `projections` | PHIE: 30-day trajectory projections with OLS confidence bands | Unique: `(user_id, metric, projection_date)`; CHECK on `method` |
 
@@ -221,6 +235,13 @@ POST /api/reports/generate
 | PATCH | `/api/action-items/:id/status` | X-API-Key | F3 |
 | GET | `/api/correlations` | None | PHIE Phase 1 |
 | GET | `/api/projections/:metric` | None | PHIE Phase 1 |
+| POST | `/api/workout-plans` | X-API-Key | F2 |
+| GET | `/api/workout-plans/current` | None | F2 |
+| GET | `/api/workout-plans/:id/versions` | None | F2 |
+| GET | `/api/workout-plans/versions/:versionId` | None | F2 |
+| PUT | `/api/workout-plans/:id` | X-API-Key | F2 |
+| POST | `/api/workout-plans/:id/tune` | X-API-Key | F2 |
+| PATCH | `/api/workout-plans/adjustments/:batchId` | X-API-Key | F2 |
 
 ## Authentication
 

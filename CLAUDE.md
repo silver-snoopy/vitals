@@ -98,6 +98,7 @@ These are stored in `.mcp.json` and shared with all team members.
 - Implementation plans: `docs/plans/` (dated, versioned by phase)
 - Decision records: `docs/research/` (dated ADR-style documents)
 - **New features must be added to `docs/product-capabilities.md`** with a use-case ID (e.g., UC-RPT-05), user story, behavior description, and E2E coverage reference
+- **Update `docs/architecture.md`** when adding or modifying: services, routes/endpoints, database tables, or `@vitals/shared` interfaces. The file tree, API endpoints table, and data model table must stay in sync with the code.
 - Feature spec template: `.claude/skills/dev-pipeline/templates/feature-spec.md`
 
 ## Development Pipeline
@@ -158,6 +159,10 @@ Fix all HIGH and MEDIUM findings before proceeding.
 acceptance criterion from Phase 0.
 
 **Phase 8 — DOCUMENTATION**: Update affected project documentation.
+Check each trigger: (1) new/changed services or file tree → update `docs/architecture.md` tree,
+(2) new/changed routes → update `docs/architecture.md` API endpoints table,
+(3) new/changed tables → update `docs/architecture.md` data model table,
+(4) user-facing feature → update `docs/product-capabilities.md`.
 
 **Phase 9 — COMMIT & PR**: Stage, commit, push, open PR.
 

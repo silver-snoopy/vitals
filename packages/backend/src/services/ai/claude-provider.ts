@@ -7,6 +7,7 @@ import type {
   AITool,
   AIToolCompletionResult,
   AIStreamChunk,
+  StructuredOutputConfig,
 } from '@vitals/shared';
 
 const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
@@ -84,6 +85,49 @@ export class ClaudeProvider implements AIProvider {
 
     return {
       content,
+      model: response.model,
+      usage: {
+        promptTokens: response.usage.input_tokens,
+        completionTokens: response.usage.output_tokens,
+        totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+      },
+    };
+  }
+
+  async completeStructured<T>(
+    messages: AIMessage[],
+    output: StructuredOutputConfig,
+    config?: Partial<AIProviderConfig>,
+  ): Promise<{ data: T } & AICompletionResult> {
+    const model = config?.model || this.model;
+    const maxTokens = config?.maxTokens ?? this.maxTokens;
+
+    const systemMessage = messages.find((m) => m.role === 'system');
+
+    const tool: Anthropic.Tool = {
+      name: output.name,
+      description: output.description,
+      input_schema: output.schema as Anthropic.Tool['input_schema'],
+    };
+
+    const response = await this.client.messages.create({
+      model,
+      max_tokens: maxTokens,
+      system: systemMessage?.content,
+      messages: this.buildAnthropicMessages(messages),
+      tools: [tool],
+      tool_choice: { type: 'tool', name: output.name },
+    });
+
+    const toolBlock = response.content.find((block) => block.type === 'tool_use');
+    if (!toolBlock || toolBlock.type !== 'tool_use') {
+      throw new Error(`Expected tool_use block for "${output.name}" but got none`);
+    }
+
+    return {
+      data: (toolBlock as { type: 'tool_use'; id: string; name: string; input: unknown })
+        .input as T,
+      content: '',
       model: response.model,
       usage: {
         promptTokens: response.usage.input_tokens,

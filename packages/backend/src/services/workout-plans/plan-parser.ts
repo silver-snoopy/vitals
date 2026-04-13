@@ -1,12 +1,16 @@
 import type {
+  AIProvider,
   PlanData,
   PlanDay,
   PlanExercise,
   PlanSet,
   ProgressionRule,
   SfrTier,
+  StructuredOutputConfig,
 } from '@vitals/shared';
 import { getExerciseMeta } from './exercise-metadata.js';
+import { completeStructuredWithRetry } from '../ai/retry-utils.js';
+import { flagSuspiciousInput } from '../ai/conversation-service.js';
 
 /**
  * Infer progressionRule from SFR tier.
@@ -134,6 +138,160 @@ function inferTargetMuscles(dayName: string): string[] {
   return [];
 }
 
+const PLAN_PARSER_SCHEMA: StructuredOutputConfig = {
+  name: 'submit_parsed_plan',
+  description: 'Submit the structured workout plan parsed from free text',
+  schema: {
+    type: 'object',
+    required: ['splitType', 'progressionPersonality', 'days'],
+    properties: {
+      splitType: { type: 'string', description: 'PPL, UL, FB, or Custom' },
+      progressionPersonality: {
+        type: 'string',
+        enum: ['conservative', 'balanced', 'aggressive'],
+      },
+      days: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['name', 'targetMuscles', 'exercises'],
+          properties: {
+            name: { type: 'string' },
+            targetMuscles: { type: 'array', items: { type: 'string' } },
+            exercises: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: [
+                  'id',
+                  'exerciseName',
+                  'orderInDay',
+                  'sets',
+                  'progressionRule',
+                  'primaryMuscle',
+                  'secondaryMuscles',
+                  'pattern',
+                  'equipment',
+                  'sfrTier',
+                ],
+                properties: {
+                  id: { type: 'string' },
+                  exerciseName: { type: 'string' },
+                  orderInDay: { type: 'number' },
+                  supersetGroup: { type: 'number' },
+                  sets: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      required: ['type', 'targetReps'],
+                      properties: {
+                        type: {
+                          type: 'string',
+                          enum: ['warmup', 'normal', 'drop', 'failure', 'amrap'],
+                        },
+                        targetReps: {},
+                        targetWeightKg: { type: 'number' },
+                        targetRpe: { type: 'number' },
+                        restSec: { type: 'number' },
+                      },
+                    },
+                  },
+                  progressionRule: {
+                    type: 'string',
+                    enum: ['double', 'linear', 'rpe_stop', 'manual'],
+                  },
+                  primaryMuscle: { type: 'string' },
+                  secondaryMuscles: { type: 'array', items: { type: 'string' } },
+                  pattern: {
+                    type: 'string',
+                    description: 'push, pull, hinge, squat, carry, isolation, other',
+                  },
+                  equipment: {
+                    type: 'string',
+                    description: 'barbell, dumbbell, cable, machine, bodyweight, other',
+                  },
+                  sfrTier: { type: 'string', enum: ['S', 'A', 'B', 'C'] },
+                  notes: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+const PARSER_SYSTEM_PROMPT = `You are an expert strength and conditioning coach. Parse the provided free-text workout plan into structured data.
+
+## Rules
+1. Identify exercise names, sets, reps, weight, and RPE from ANY format.
+2. Classify exercises by muscle group, movement pattern, equipment, and SFR tier.
+3. S-tier = big compounds (bench, squat, deadlift, overhead press, barbell row, pull-ups, chin-ups).
+4. A-tier = secondary compounds (dumbbell press, lunges, RDL). B-tier = accessories. C-tier = isolation.
+5. Infer split type from day structure: PPL (push/pull/legs), UL (upper/lower), FB (full body), or Custom.
+6. Progression rules: S-tier → 'linear', everything else → 'double'.
+7. Generate stable IDs for exercises in format 'ex-N' where N is the order (1-based).
+8. Default progressionPersonality to 'balanced'.
+9. If you can't determine a field, use reasonable defaults (unknown muscle, 'other' pattern, 'unknown' equipment, 'B' sfrTier).`;
+
+/**
+ * Parses a free-text workout plan using LLM structured output with regex fallback.
+ * When aiProvider is available, uses LLM for intelligent parsing.
+ * Falls back to regex parser when aiProvider is null/undefined (dev mode, tests).
+ */
+export async function parseFreeTextPlan(
+  rawText: string,
+  aiProvider?: AIProvider,
+): Promise<PlanData> {
+  if (!rawText || rawText.trim().length === 0) {
+    return buildFallback(rawText);
+  }
+
+  // If no AI provider, fall back to regex parser
+  if (!aiProvider || !aiProvider.completeStructured) {
+    return parseFreeTextPlanRegex(rawText);
+  }
+
+  try {
+    // Defense-in-depth: warn if user text contains prompt-injection patterns
+    if (flagSuspiciousInput(rawText)) {
+      console.warn('[plan-parser] suspicious input detected in rawText');
+    }
+
+    const messages = [
+      { role: 'system' as const, content: PARSER_SYSTEM_PROMPT },
+      { role: 'user' as const, content: rawText },
+    ];
+
+    const result = await completeStructuredWithRetry<PlanData>(
+      aiProvider,
+      messages,
+      PLAN_PARSER_SCHEMA,
+    );
+
+    // Post-process with exercise metadata to enrich/correct classification
+    for (const day of result.data.days) {
+      for (const exercise of day.exercises) {
+        const meta = getExerciseMeta(exercise.exerciseName);
+        if (meta.primaryMuscle !== 'unknown') {
+          exercise.primaryMuscle = meta.primaryMuscle;
+          exercise.secondaryMuscles = meta.secondaryMuscles;
+          exercise.pattern = meta.pattern;
+          exercise.equipment = meta.equipment;
+          exercise.sfrTier = meta.sfrTier;
+          exercise.progressionRule = inferProgressionRule(meta.sfrTier);
+        }
+      }
+    }
+
+    return result.data;
+  } catch (err) {
+    console.warn('[plan-parser] LLM parsing failed, falling back to regex parser:', err);
+    return parseFreeTextPlanRegex(rawText);
+  }
+}
+
 /**
  * Parses a free-text workout plan (e.g. pasted from a note or doc) into a
  * structured PlanData shape.
@@ -149,7 +307,7 @@ function inferTargetMuscles(dayName: string): string[] {
  * @returns A best-effort PlanData. Never throws — falls back to the single-day
  *          notes wrapper so the caller always gets a valid (if minimal) plan.
  */
-export function parseFreeTextPlan(rawText: string): PlanData {
+export function parseFreeTextPlanRegex(rawText: string): PlanData {
   if (!rawText || rawText.trim().length === 0) {
     return buildFallback(rawText);
   }
