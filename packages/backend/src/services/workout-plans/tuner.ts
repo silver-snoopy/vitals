@@ -6,8 +6,8 @@ import type {
   PlanSet,
   PlanData,
   EvidenceKind,
+  StructuredOutputConfig,
 } from '@vitals/shared';
-import { jsonrepair } from 'jsonrepair';
 import {
   getPlanVersion,
   getPlanById,
@@ -24,7 +24,7 @@ import { applyMaxChangeRatio } from './rules/safety-caps.js';
 import { buildTunePrompt } from './tuner-prompt-builder.js';
 import { validatePlanData } from './plan-schema.js';
 import { flagSuspiciousInput } from '../ai/conversation-service.js';
-import { completeWithRetry } from '../ai/retry-utils.js';
+import { completeStructuredWithRetry } from '../ai/retry-utils.js';
 
 // ---------------------------------------------------------------------------
 // Types for AI output
@@ -43,74 +43,61 @@ interface TunerAIOutput {
 }
 
 // ---------------------------------------------------------------------------
-// JSON parsing helpers (mirrors report-generator.ts)
+// Structured output schema
 // ---------------------------------------------------------------------------
 
-function extractFirstJson(text: string): Record<string, unknown> | null {
-  const start = text.indexOf('{');
-  if (start === -1) return null;
-
-  let depth = 0;
-  let inStr = false;
-  let esc = false;
-
-  for (let i = start; i < text.length; i++) {
-    const c = text[i];
-    if (esc) {
-      esc = false;
-      continue;
-    }
-    if (c === '\\') {
-      esc = true;
-      continue;
-    }
-    if (c === '"') {
-      inStr = !inStr;
-      continue;
-    }
-    if (inStr) continue;
-    if (c === '{') depth++;
-    if (c === '}') {
-      depth--;
-      if (depth === 0) {
-        try {
-          return JSON.parse(text.substring(start, i + 1)) as Record<string, unknown>;
-        } catch {
-          return null;
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function parseTunerResponse(content: string): TunerAIOutput | null {
-  const cleaned = content
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim();
-
-  let parsed: Record<string, unknown> | null = null;
-
-  try {
-    parsed = JSON.parse(cleaned) as Record<string, unknown>;
-  } catch {
-    try {
-      parsed = JSON.parse(jsonrepair(cleaned)) as Record<string, unknown>;
-    } catch {
-      parsed = extractFirstJson(cleaned);
-    }
-  }
-
-  if (!parsed) return null;
-
-  const rationale = typeof parsed['rationale'] === 'string' ? parsed['rationale'] : '';
-  const adjustments = Array.isArray(parsed['adjustments'])
-    ? (parsed['adjustments'] as TunerAdjustmentSelection[])
-    : [];
-
-  return { rationale, adjustments };
-}
+const TUNER_SCHEMA: StructuredOutputConfig = {
+  name: 'submit_plan_adjustments',
+  description: 'Submit workout plan adjustment recommendations',
+  schema: {
+    type: 'object',
+    required: ['rationale', 'adjustments'],
+    properties: {
+      rationale: { type: 'string' },
+      adjustments: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['exerciseRef', 'selectedCandidateIndex', 'evidence', 'rationale'],
+          properties: {
+            exerciseRef: {
+              type: 'object',
+              required: ['dayIndex', 'exerciseOrder'],
+              properties: {
+                dayIndex: { type: 'number' },
+                exerciseOrder: { type: 'number' },
+              },
+            },
+            selectedCandidateIndex: { type: 'number' },
+            evidence: {
+              type: 'array',
+              minItems: 1,
+              items: {
+                type: 'object',
+                required: ['kind', 'excerpt'],
+                properties: {
+                  kind: {
+                    type: 'string',
+                    enum: [
+                      'report_section',
+                      'correlation',
+                      'metric',
+                      'hazard',
+                      'exercise_progress',
+                    ],
+                  },
+                  refId: { type: 'string' },
+                  excerpt: { type: 'string' },
+                },
+              },
+            },
+            rationale: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -147,10 +134,6 @@ function validateTunerOutput(
   }
   return { valid: true };
 }
-
-// ---------------------------------------------------------------------------
-// completeWithRetry (mirrors report-generator.ts)
-// ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
 // Map AI selections to PlanAdjustment fields
@@ -317,35 +300,17 @@ export async function tunePlan(
   // Build prompt + call AI
   const messages = buildTunePrompt({ candidateInput, candidates, correlations, report });
 
-  let aiResult = await completeWithRetry(aiProvider, messages);
-  let parsed = parseTunerResponse(aiResult.content);
-  let validation = parsed
-    ? validateTunerOutput(parsed, candidates)
-    : { valid: false, reason: 'Could not parse AI response' };
+  const aiResult = await completeStructuredWithRetry<TunerAIOutput>(
+    aiProvider,
+    messages,
+    TUNER_SCHEMA,
+  );
+  const parsed: TunerAIOutput = aiResult.data;
 
-  // Step 7: Retry once on evidence/validation failure
+  // Post-schema safety check: validate candidate index bounds
+  const validation = validateTunerOutput(parsed, candidates);
   if (!validation.valid) {
-    const retryMessages = [
-      ...messages,
-      { role: 'assistant' as const, content: aiResult.content },
-      {
-        role: 'user' as const,
-        content: `Your response was invalid: ${validation.reason}. Please respond with valid JSON matching the required schema. Every adjustment MUST have a non-empty evidence array and a valid selectedCandidateIndex.`,
-      },
-    ];
-    aiResult = await completeWithRetry(aiProvider, retryMessages);
-    parsed = parseTunerResponse(aiResult.content);
-    validation = parsed
-      ? validateTunerOutput(parsed, candidates)
-      : { valid: false, reason: 'Could not parse AI response after retry' };
-
-    if (!validation.valid || !parsed) {
-      throw new Error('tuner: LLM output failed evidence validation after 1 retry');
-    }
-  }
-
-  if (!parsed) {
-    throw new Error('tuner: LLM output failed evidence validation after 1 retry');
+    throw new Error(`tuner: structured output failed validation: ${validation.reason}`);
   }
 
   // Step 8a: Apply max-change-ratio cap (40% of exercises may change per batch).

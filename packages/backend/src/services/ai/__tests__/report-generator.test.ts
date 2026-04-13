@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateWeeklyReport } from '../report-generator.js';
 import type pg from 'pg';
-import type { AIProvider, AICompletionResult } from '@vitals/shared';
+import type { AIProvider } from '@vitals/shared';
 
 vi.mock('../../../db/queries/measurements.js', () => ({
   queryDailyNutritionSummary: vi
@@ -47,21 +47,30 @@ vi.mock('../../action-items/lifecycle-manager.js', () => ({
   supersedeItems: vi.fn().mockResolvedValue(0),
 }));
 
-const validAIResponse = JSON.stringify({
+const validAIData = {
   summary: 'A productive week.',
-  insights: '- Calories on target\n- Protein slightly low',
+  biometricsOverview: '',
+  nutritionAnalysis: '',
+  trainingLoad: '',
+  crossDomainCorrelation: '',
+  whatsWorking: '',
+  hazards: '',
+  recommendations: '',
+  scorecard: {},
   actionItems: [{ category: 'nutrition', priority: 'medium', text: 'Increase protein by 20g.' }],
-});
+};
 
 const mockAIProvider: AIProvider = {
   name: () => 'claude',
+  complete: vi.fn(),
   completeWithTools: vi.fn(),
   stream: vi.fn(),
-  complete: vi.fn().mockResolvedValue({
-    content: validAIResponse,
+  completeStructured: vi.fn().mockResolvedValue({
+    data: validAIData,
+    content: '',
     model: 'claude-sonnet-4-20250514',
     usage: { promptTokens: 500, completionTokens: 200, totalTokens: 700 },
-  } satisfies AICompletionResult),
+  }),
 };
 
 const mockPool = {} as pg.Pool;
@@ -69,8 +78,9 @@ const mockPool = {} as pg.Pool;
 describe('generateWeeklyReport', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (mockAIProvider.complete as ReturnType<typeof vi.fn>).mockResolvedValue({
-      content: validAIResponse,
+    (mockAIProvider.completeStructured as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: validAIData,
+      content: '',
       model: 'claude-sonnet-4-20250514',
       usage: { promptTokens: 500, completionTokens: 200, totalTokens: 700 },
     });
@@ -135,27 +145,24 @@ describe('generateWeeklyReport', () => {
     expect(logAiGeneration).toHaveBeenCalledOnce();
   });
 
-  it('handles malformed AI JSON with fallback', async () => {
-    (mockAIProvider.complete as ReturnType<typeof vi.fn>).mockResolvedValue({
-      content: 'This is not JSON at all.',
-      model: 'claude-sonnet-4-20250514',
-      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-    });
-
-    const result = await generateWeeklyReport(
-      mockPool,
-      mockAIProvider,
-      'user-uuid',
-      new Date('2026-03-01'),
-      new Date('2026-03-07'),
+  it('propagates AI provider error when completeStructured fails', async () => {
+    (mockAIProvider.completeStructured as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error('AI service error'),
     );
 
-    expect(result.summary).toBeTruthy();
-    expect(result.actionItems).toEqual([]);
+    await expect(
+      generateWeeklyReport(
+        mockPool,
+        mockAIProvider,
+        'user-uuid',
+        new Date('2026-03-01'),
+        new Date('2026-03-07'),
+      ),
+    ).rejects.toThrow('AI service error');
   });
 
   it('parses structured sections from AI response', async () => {
-    const sectionsResponse = JSON.stringify({
+    const sectionsData = {
       summary: 'Solid week with HRV concerns.',
       biometricsOverview: '## Body Composition\nWeight stable at 67 kg.',
       nutritionAnalysis: '## Daily Averages\nCalories: 2200 kcal.',
@@ -169,10 +176,11 @@ describe('generateWeeklyReport', () => {
         recovery: { score: 4, notes: 'HRV dropping' },
       },
       actionItems: [{ category: 'nutrition', priority: 'high', text: 'Add 150 kcal' }],
-    });
+    };
 
-    (mockAIProvider.complete as ReturnType<typeof vi.fn>).mockResolvedValue({
-      content: sectionsResponse,
+    (mockAIProvider.completeStructured as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: sectionsData,
+      content: '',
       model: 'claude-sonnet-4-20250514',
       usage: { promptTokens: 1000, completionTokens: 500, totalTokens: 1500 },
     });
@@ -189,53 +197,7 @@ describe('generateWeeklyReport', () => {
     expect(result.sections!.biometricsOverview).toContain('Weight stable');
     expect(result.sections!.scorecard.recovery.score).toBe(4);
     expect(result.summary).toBe('Solid week with HRV concerns.');
-    // insights should be concatenated markdown for backward compat
     expect(result.insights).toContain('Body Composition');
     expect(result.insights).toContain('HRV drop');
-  });
-
-  it('recovers summary when AI response contains unescaped quotes in JSON strings', async () => {
-    // AI writes "adequate" with straight double quotes inside a JSON string value,
-    // which breaks JSON.parse() — jsonrepair should fix this.
-    const brokenJson =
-      '{"summary": "Recovery was "adequate" this week.", "actionItems": [], ' +
-      '"biometricsOverview": "Weight stable.", "nutritionAnalysis": "", ' +
-      '"trainingLoad": "", "crossDomainCorrelation": "", ' +
-      '"whatsWorking": "", "hazards": "", "recommendations": ""}';
-
-    (mockAIProvider.complete as ReturnType<typeof vi.fn>).mockResolvedValue({
-      content: brokenJson,
-      model: 'claude-sonnet-4-20250514',
-      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-    });
-
-    const result = await generateWeeklyReport(
-      mockPool,
-      mockAIProvider,
-      'user-uuid',
-      new Date('2026-03-01'),
-      new Date('2026-03-07'),
-    );
-
-    expect(result.summary).not.toBe('AI-generated weekly summary.');
-    expect(result.summary).toContain('adequate');
-  });
-
-  it('strips markdown code fences from AI response', async () => {
-    (mockAIProvider.complete as ReturnType<typeof vi.fn>).mockResolvedValue({
-      content: '```json\n' + validAIResponse + '\n```',
-      model: 'claude-sonnet-4-20250514',
-      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-    });
-
-    const result = await generateWeeklyReport(
-      mockPool,
-      mockAIProvider,
-      'user-uuid',
-      new Date('2026-03-01'),
-      new Date('2026-03-07'),
-    );
-
-    expect(result.summary).toBe('A productive week.');
   });
 });

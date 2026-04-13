@@ -5,7 +5,7 @@ import type {
   ActionItem,
   ActionItemFollowUp,
   ReportSections,
-  ScorecardEntry,
+  StructuredOutputConfig,
 } from '@vitals/shared';
 import {
   queryDailyNutritionSummary,
@@ -14,9 +14,8 @@ import {
 import { queryWorkoutSessions } from '../../db/queries/workouts.js';
 import { getLatestReport, saveReport, logAiGeneration } from '../../db/queries/reports.js';
 import { promoteActionItems, listActionItems } from '../../db/queries/action-items.js';
-import { jsonrepair } from 'jsonrepair';
 import { buildReportPrompt } from './prompt-builder.js';
-import { completeWithRetry } from './retry-utils.js';
+import { completeStructuredWithRetry } from './retry-utils.js';
 import { measureOutcomes, determineOutcome } from '../action-items/outcome-measurer.js';
 import { expireStaleItems, supersedeItems } from '../action-items/lifecycle-manager.js';
 import { runCorrelationAnalysis } from '../intelligence/correlation-engine.js';
@@ -34,100 +33,13 @@ const BIOMETRIC_METRICS = [
   'steps',
 ];
 
-interface ParsedAIReport {
-  summary: string;
-  insights: string;
-  actionItems: ActionItem[];
-  sections?: ReportSections;
-}
-
-function isValidScorecard(obj: unknown): obj is Record<string, ScorecardEntry> {
-  if (typeof obj !== 'object' || obj === null) return false;
-  for (const val of Object.values(obj)) {
-    if (
-      typeof val !== 'object' ||
-      val === null ||
-      typeof (val as ScorecardEntry).score !== 'number' ||
-      typeof (val as ScorecardEntry).notes !== 'string'
-    )
-      return false;
-  }
-  return true;
-}
-
-/**
- * Extract the first complete JSON object from a string using brace-matching.
- * Handles cases where AI responses contain multiple concatenated JSON objects
- * or trailing text after the JSON.
- */
-function extractFirstJson(text: string): Record<string, unknown> | null {
-  const start = text.indexOf('{');
-  if (start === -1) return null;
-
-  let depth = 0;
-  let inStr = false;
-  let esc = false;
-
-  for (let i = start; i < text.length; i++) {
-    const c = text[i];
-    if (esc) {
-      esc = false;
-      continue;
-    }
-    if (c === '\\') {
-      esc = true;
-      continue;
-    }
-    if (c === '"') {
-      inStr = !inStr;
-      continue;
-    }
-    if (inStr) continue;
-    if (c === '{') depth++;
-    if (c === '}') {
-      depth--;
-      if (depth === 0) {
-        try {
-          return JSON.parse(text.substring(start, i + 1)) as Record<string, unknown>;
-        } catch {
-          return null;
-        }
-      }
-    }
-  }
-  return null;
-}
-
-function parseAIResponse(content: string): ParsedAIReport {
-  try {
-    const cleaned = content
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```\s*$/i, '')
-      .trim();
-
-    // 1. Fast path: direct parse
-    // 2. Repair path: jsonrepair handles unescaped quotes, trailing commas, etc.
-    // 3. Extraction path: brace-matching for responses with surrounding prose
-    let parsed: Record<string, unknown>;
-    try {
-      parsed = JSON.parse(cleaned) as Record<string, unknown>;
-    } catch {
-      try {
-        parsed = JSON.parse(jsonrepair(cleaned)) as Record<string, unknown>;
-      } catch {
-        const extracted = extractFirstJson(cleaned);
-        if (!extracted) throw new Error('No valid JSON found');
-        parsed = extracted;
-      }
-    }
-
-    const summary = typeof parsed.summary === 'string' ? parsed.summary : 'Weekly health summary.';
-    const actionItems = Array.isArray(parsed.actionItems)
-      ? (parsed.actionItems as ActionItem[])
-      : [];
-
-    // Build sections from parsed response
-    const sectionFields = [
+const REPORT_SCHEMA: StructuredOutputConfig = {
+  name: 'submit_weekly_report',
+  description: 'Submit the structured weekly health report analysis',
+  schema: {
+    type: 'object',
+    required: [
+      'summary',
       'biometricsOverview',
       'nutritionAnalysis',
       'trainingLoad',
@@ -135,50 +47,57 @@ function parseAIResponse(content: string): ParsedAIReport {
       'whatsWorking',
       'hazards',
       'recommendations',
-    ] as const;
+      'scorecard',
+      'actionItems',
+    ],
+    properties: {
+      summary: { type: 'string', description: 'One-paragraph executive summary' },
+      biometricsOverview: { type: 'string' },
+      nutritionAnalysis: { type: 'string' },
+      trainingLoad: { type: 'string' },
+      crossDomainCorrelation: { type: 'string' },
+      whatsWorking: { type: 'string' },
+      hazards: { type: 'string' },
+      recommendations: { type: 'string' },
+      scorecard: {
+        type: 'object',
+        description: 'Domain scores (1-10) with notes',
+        additionalProperties: {
+          type: 'object',
+          properties: { score: { type: 'number' }, notes: { type: 'string' } },
+          required: ['score', 'notes'],
+        },
+      },
+      actionItems: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['category', 'priority', 'text'],
+          properties: {
+            category: {
+              type: 'string',
+              enum: ['nutrition', 'workout', 'recovery', 'general'],
+            },
+            priority: { type: 'string', enum: ['high', 'medium', 'low'] },
+            text: { type: 'string' },
+          },
+        },
+      },
+    },
+  },
+};
 
-    const hasSections = sectionFields.some((f) => typeof parsed[f] === 'string');
-
-    let sections: ReportSections | undefined;
-    if (hasSections) {
-      sections = {
-        biometricsOverview: String(parsed.biometricsOverview ?? ''),
-        nutritionAnalysis: String(parsed.nutritionAnalysis ?? ''),
-        trainingLoad: String(parsed.trainingLoad ?? ''),
-        crossDomainCorrelation: String(parsed.crossDomainCorrelation ?? ''),
-        whatsWorking: String(parsed.whatsWorking ?? ''),
-        hazards: String(parsed.hazards ?? ''),
-        recommendations: String(parsed.recommendations ?? ''),
-        scorecard: isValidScorecard(parsed.scorecard) ? parsed.scorecard : {},
-      };
-    }
-
-    // Build insights as concatenated markdown for backward compat
-    const insights = sections
-      ? [
-          sections.biometricsOverview && `## Biometrics Overview\n${sections.biometricsOverview}`,
-          sections.nutritionAnalysis && `## Nutrition Analysis\n${sections.nutritionAnalysis}`,
-          sections.trainingLoad && `## Training Load\n${sections.trainingLoad}`,
-          sections.crossDomainCorrelation &&
-            `## Cross-Domain Correlation\n${sections.crossDomainCorrelation}`,
-          sections.whatsWorking && `## What's Working\n${sections.whatsWorking}`,
-          sections.hazards && `## Hazards & Red Flags\n${sections.hazards}`,
-          sections.recommendations && `## Recommendations\n${sections.recommendations}`,
-        ]
-          .filter(Boolean)
-          .join('\n\n')
-      : typeof parsed.insights === 'string'
-        ? parsed.insights
-        : '';
-
-    return { summary, insights, actionItems, sections };
-  } catch {
-    return {
-      summary: 'AI-generated weekly summary.',
-      insights: content,
-      actionItems: [],
-    };
-  }
+interface StructuredReportResponse {
+  summary: string;
+  biometricsOverview: string;
+  nutritionAnalysis: string;
+  trainingLoad: string;
+  crossDomainCorrelation: string;
+  whatsWorking: string;
+  hazards: string;
+  recommendations: string;
+  scorecard: Record<string, { score: number; notes: string }>;
+  actionItems: ActionItem[];
 }
 
 function countDistinctDays(dates: string[]): number {
@@ -324,17 +243,45 @@ export async function gatherAndGenerate(
     workoutPlan,
     actionItemFollowUp,
   });
-  const result = await completeWithRetry(aiProvider, messages);
+  const result = await completeStructuredWithRetry<StructuredReportResponse>(
+    aiProvider,
+    messages,
+    REPORT_SCHEMA,
+  );
 
-  // 4. Parse response
-  const parsed = parseAIResponse(result.content);
+  // 4. Map structured response to report fields
+  const { data } = result;
+
+  const sections: ReportSections = {
+    biometricsOverview: data.biometricsOverview,
+    nutritionAnalysis: data.nutritionAnalysis,
+    trainingLoad: data.trainingLoad,
+    crossDomainCorrelation: data.crossDomainCorrelation,
+    whatsWorking: data.whatsWorking,
+    hazards: data.hazards,
+    recommendations: data.recommendations,
+    scorecard: data.scorecard,
+  };
+
+  const insights = [
+    sections.biometricsOverview && `## Biometrics Overview\n${sections.biometricsOverview}`,
+    sections.nutritionAnalysis && `## Nutrition Analysis\n${sections.nutritionAnalysis}`,
+    sections.trainingLoad && `## Training Load\n${sections.trainingLoad}`,
+    sections.crossDomainCorrelation &&
+      `## Cross-Domain Correlation\n${sections.crossDomainCorrelation}`,
+    sections.whatsWorking && `## What's Working\n${sections.whatsWorking}`,
+    sections.hazards && `## Hazards & Red Flags\n${sections.hazards}`,
+    sections.recommendations && `## Recommendations\n${sections.recommendations}`,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 
   return {
-    summary: parsed.summary,
-    insights: parsed.insights,
-    actionItems: parsed.actionItems,
+    summary: data.summary,
+    insights,
+    actionItems: data.actionItems,
     dataCoverage,
-    sections: parsed.sections,
+    sections,
     providerName: aiProvider.name(),
     model: result.model,
     usage: result.usage,

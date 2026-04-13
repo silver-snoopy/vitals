@@ -173,7 +173,7 @@ function formatExerciseHistory(input: CandidateInput): string {
  * Builds the system + user messages for the plan tuner AI call.
  *
  * @param input - All data required to assemble the prompt.
- * @returns [system, user] message array ready for completeWithRetry.
+ * @returns [system, user] message array ready for completeStructuredWithRetry.
  */
 export function buildTunePrompt(input: TunerPromptInput): AIMessage[] {
   const system: AIMessage = {
@@ -188,25 +188,7 @@ export function buildTunePrompt(input: TunerPromptInput): AIMessage[] {
 5. Do NOT add or remove training days. Only modify exercises within existing days.
 6. If no progression signal is clear, select the "hold" candidate.
 
-## Output Schema (strict JSON)
-Respond with ONLY valid JSON matching this exact schema — no prose before or after:
-\`\`\`json
-{
-  "rationale": "string — overall adjustment direction narrative for this week",
-  "adjustments": [
-    {
-      "exerciseRef": { "dayIndex": 0, "exerciseOrder": 1 },
-      "selectedCandidateIndex": 0,
-      "evidence": [
-        { "kind": "report_section|correlation|metric|hazard|exercise_progress", "refId": "optional-id", "excerpt": "brief excerpt explaining the signal" }
-      ],
-      "rationale": "string — why this specific change for this exercise"
-    }
-  ]
-}
-\`\`\`
-
-Every element in the adjustments array must have a non-empty evidence array. Fail fast — do not include any adjustment without evidence.`,
+Every element in the adjustments array must have a non-empty evidence array.`,
   };
 
   const userContent = [

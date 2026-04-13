@@ -8,6 +8,7 @@ import type {
   AITool,
   AIToolCompletionResult,
   AIStreamChunk,
+  StructuredOutputConfig,
 } from '@vitals/shared';
 
 const DEFAULT_MODEL = 'gemini-2.0-flash';
@@ -77,6 +78,56 @@ export class GeminiProvider implements AIProvider {
     const usage = result.response.usageMetadata;
 
     return {
+      content,
+      model,
+      usage: {
+        promptTokens: usage?.promptTokenCount ?? 0,
+        completionTokens: usage?.candidatesTokenCount ?? 0,
+        totalTokens: usage?.totalTokenCount ?? 0,
+      },
+    };
+  }
+
+  async completeStructured<T>(
+    messages: AIMessage[],
+    output: StructuredOutputConfig,
+    config?: Partial<AIProviderConfig>,
+  ): Promise<{ data: T } & AICompletionResult> {
+    const model = config?.model || this.model;
+    const maxOutputTokens = config?.maxTokens ?? this.maxTokens;
+
+    const systemMessage = messages.find((m) => m.role === 'system');
+    const contents = this.buildGeminiContents(messages);
+
+    if (contents.length === 0) {
+      throw new Error('At least one user message is required.');
+    }
+
+    const generativeModel = this.client.getGenerativeModel({
+      model,
+      systemInstruction: systemMessage?.content,
+      generationConfig: {
+        maxOutputTokens,
+        responseMimeType: 'application/json',
+        responseSchema: output.schema as any,
+      },
+    });
+
+    const result = await generativeModel.generateContent({ contents });
+    const content = result.response.text();
+    const usage = result.response.usageMetadata;
+
+    let data: T;
+    try {
+      data = JSON.parse(content) as T;
+    } catch {
+      throw new Error(
+        `GeminiProvider: structured output was not valid JSON. Response: ${content.slice(0, 200)}`,
+      );
+    }
+
+    return {
+      data,
       content,
       model,
       usage: {

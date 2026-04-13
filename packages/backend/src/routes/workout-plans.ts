@@ -89,7 +89,13 @@ export async function workoutPlanRoutes(
           statusCode: 400,
         });
       } else if (rawText) {
-        planData = parseFreeTextPlan(rawText);
+        let aiProvider: AIProvider | undefined;
+        try {
+          aiProvider = createAIProvider(opts.env);
+        } catch {
+          // AI not configured — regex fallback will be used
+        }
+        planData = await parseFreeTextPlan(rawText, aiProvider);
       } else {
         return reply.code(400).send({
           error: 'Bad Request',
@@ -175,7 +181,22 @@ export async function workoutPlanRoutes(
         });
       }
 
-      const planData = parseFreeTextPlan(rawText);
+      const RAW_TEXT_MAX_CHARS = 50_000;
+      if (rawText.length > RAW_TEXT_MAX_CHARS) {
+        return reply.code(413).send({
+          error: 'Payload Too Large',
+          message: 'Plan text too large',
+          statusCode: 413,
+        });
+      }
+
+      let aiProvider: AIProvider | undefined;
+      try {
+        aiProvider = createAIProvider(opts.env);
+      } catch {
+        // AI not configured — regex fallback will be used
+      }
+      const planData = await parseFreeTextPlan(rawText, aiProvider);
       const version = await insertPlanVersion(app.db, plan.id, {
         source: 'user',
         parentVersionId: plan.activeVersionId,

@@ -46,6 +46,15 @@ export interface AIStreamChunk {
   toolCall?: Partial<AIToolCall>;
 }
 
+export interface StructuredOutputConfig {
+  /** Tool name used internally for the schema constraint */
+  name: string;
+  /** Human-readable description of what the output represents */
+  description: string;
+  /** JSON Schema for the expected output */
+  schema: Record<string, unknown>;
+}
+
 export interface AIProvider {
   complete(messages: AIMessage[], config?: Partial<AIProviderConfig>): Promise<AICompletionResult>;
   completeWithTools(
@@ -58,5 +67,10 @@ export interface AIProvider {
     tools?: AITool[],
     config?: Partial<AIProviderConfig>,
   ): AsyncIterable<AIStreamChunk>;
+  completeStructured?<T>(
+    messages: AIMessage[],
+    output: StructuredOutputConfig,
+    config?: Partial<AIProviderConfig>,
+  ): Promise<{ data: T } & AICompletionResult>;
   name(): string;
 }
